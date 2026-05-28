@@ -40,7 +40,7 @@ interface NavItem {
 const studentNav: NavItem[] = [
   { label: "Dashboard",    href: "/dashboard/student",             icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Programım",    href: "/dashboard/student/program",     icon: <CalendarDays className="w-4.5 h-4.5" /> },
-  { label: "Denemelerim",  href: "/dashboard/student/denemeler",   icon: <BarChart2 className="w-4.5 h-4.5" /> },
+  { label: "Denemelerim",  href: "/dashboard/student/mock-exams",  icon: <BarChart2 className="w-4.5 h-4.5" /> },
   { label: "Kaynaklar",    href: "/dashboard/student/kaynaklar",   icon: <BookOpen className="w-4.5 h-4.5" /> },
   { label: "DORA",         href: "/dashboard/student/dora",        icon: <Bot className="w-4.5 h-4.5" /> },
   { label: "Testler",      href: "/dashboard/student/testler",     icon: <HeartPulse className="w-4.5 h-4.5" /> },
