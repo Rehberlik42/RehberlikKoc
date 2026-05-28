@@ -25,17 +25,18 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getClaims() JWT'yi dogrular — getSession() kullanilmamali
+  // getClaims(): JWT'yi yerel olarak dogrular — ag cagrisi YOK, token tuketmez.
+  // getUser() yerine bu kullanilmali; cift network cagrisindan kaynaklanan
+  // token-refresh cakismasini onler.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  // Korunan rotalar: /dashboard ile baslayan tum yollar
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith("/dashboard")
-  ) {
+  const { pathname } = request.nextUrl;
+
+  // Giris yapmamis kullanici /dashboard'a erismeye calisirsa → landing page
+  if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
