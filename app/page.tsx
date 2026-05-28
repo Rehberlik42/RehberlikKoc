@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bot,
   Brain,
@@ -15,7 +16,12 @@ import {
   Phone,
   Sparkles,
   GraduationCap,
+  LogIn,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 const gradientText =
@@ -50,12 +56,212 @@ const features = [
   },
 ];
 
+// ─── Auth Modal ───────────────────────────────────────────────────────────────
+type AuthMode = "student" | "teacher";
+
+function AuthModal({
+  mode,
+  onClose,
+}: {
+  mode: AuthMode;
+  onClose: () => void;
+}) {
+  const supabase = createClient();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
+
+  const roleLabel = mode === "student" ? "Öğrenci" : "Öğretmen";
+  const roleColor =
+    mode === "student"
+      ? "from-[#7B2FFF] to-[#4F7CFF]"
+      : "from-[#4F7CFF] to-[#00D4FF]";
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { role: mode },
+        },
+      });
+      if (error) {
+        setMessage({ type: "error", text: error.message });
+      } else {
+        setMessage({
+          type: "success",
+          text: "Kayıt başarılı! E-posta adresinizi doğrulayın.",
+        });
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        setMessage({ type: "error", text: "Hatalı e-posta veya şifre." });
+      } else {
+        window.location.href = "/dashboard";
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#0d0d2b] p-8 shadow-2xl shadow-[#7B2FFF]/20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute right-5 top-5 text-white/30 hover:text-white transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="mb-7 text-center">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${roleColor} bg-opacity-20 mb-4`}
+          >
+            <LogIn className="w-3.5 h-3.5 text-white" />
+            <span className="text-white text-xs font-bold uppercase tracking-widest">
+              {roleLabel} {isSignUp ? "Kaydı" : "Girişi"}
+            </span>
+          </div>
+          <h2 className={`text-2xl font-black ${gradientText}`}>MINDORA</h2>
+          <p className="text-white/40 text-sm mt-1">
+            {isSignUp
+              ? "Hesap oluşturmak için bilgilerini gir."
+              : `${roleLabel} hesabına giriş yap.`}
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-white/60 text-xs font-semibold mb-1.5 uppercase tracking-wide">
+              E-posta
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="ornek@email.com"
+              className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#7B2FFF]/60 focus:bg-white/8 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-white/60 text-xs font-semibold mb-1.5 uppercase tracking-wide">
+              Şifre
+            </label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-11 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#7B2FFF]/60 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              >
+                {showPass ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {message && (
+            <div
+              className={`rounded-xl px-4 py-3 text-sm ${
+                message.type === "error"
+                  ? "bg-red-500/10 border border-red-500/20 text-red-400"
+                  : "bg-green-500/10 border border-green-500/20 text-green-400"
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r ${roleColor} shadow-lg hover:opacity-90 hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2`}
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogIn className="w-4 h-4" />
+            )}
+            {isSignUp ? "Hesap Oluştur" : "Giriş Yap"}
+          </button>
+        </form>
+
+        <div className="mt-5 text-center">
+          <button
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setMessage(null);
+            }}
+            className="text-white/40 hover:text-[#A78BFF] text-sm transition-colors"
+          >
+            {isSignUp ? (
+              <>
+                Zaten hesabın var mı?{" "}
+                <span className="text-[#A78BFF] font-semibold">Giriş Yap</span>
+              </>
+            ) : (
+              <>
+                Hesabın yok mu?{" "}
+                <span className="text-[#A78BFF] font-semibold">
+                  Kayıt Ol
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Components ───────────────────────────────────────────────────────────────
 
-function Header() {
+function Header({
+  onOpenAuth,
+}: {
+  onOpenAuth: (mode: AuthMode) => void;
+}) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 bg-[#05050f]/80 backdrop-blur-md border-b border-white/5">
-      {/* Logo */}
+    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-12 py-4 bg-[#05050f]/80 backdrop-blur-md border-b border-white/5">
       <div className="flex items-center gap-2">
         <GraduationCap className="w-7 h-7 text-[#7B2FFF]" />
         <span
@@ -65,33 +271,34 @@ function Header() {
         </span>
       </div>
 
-      {/* Nav Buttons */}
       <nav className="flex items-center gap-3">
-        <a
-          href="#"
+        <button
+          onClick={() => onOpenAuth("student")}
           className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white/80 border border-white/10 hover:border-[#4F7CFF]/60 hover:text-white transition-all duration-300"
         >
           Öğrenci Girişi
-        </a>
-        <a
-          href="#"
+        </button>
+        <button
+          onClick={() => onOpenAuth("teacher")}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] text-white shadow-lg shadow-[#7B2FFF]/30 hover:shadow-[#7B2FFF]/60 hover:scale-105 transition-all duration-300"
         >
           Öğretmen Girişi
-        </a>
+        </button>
       </nav>
     </header>
   );
 }
 
-function HeroSection() {
+function HeroSection({
+  onOpenAuth,
+}: {
+  onOpenAuth: (mode: AuthMode) => void;
+}) {
   return (
     <section className="relative flex flex-col items-center justify-center text-center px-6 pt-40 pb-32 overflow-hidden">
-      {/* Background glow orbs */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-[#7B2FFF]/10 blur-[140px] pointer-events-none" />
       <div className="absolute top-24 right-0 w-[300px] h-[300px] rounded-full bg-[#00D4FF]/8 blur-[100px] pointer-events-none" />
 
-      {/* Badge */}
       <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#7B2FFF]/40 bg-[#7B2FFF]/10 text-[#A78BFF] text-xs font-semibold uppercase tracking-widest mb-8">
         <Sparkles className="w-3.5 h-3.5" />
         Yapay Zeka Destekli Eğitim Platformu
@@ -112,12 +319,12 @@ function HeroSection() {
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
-        <a
-          href="#"
+        <button
+          onClick={() => onOpenAuth("student")}
           className="px-8 py-3.5 rounded-full font-bold text-white bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] shadow-xl shadow-[#7B2FFF]/40 hover:shadow-[#7B2FFF]/70 hover:scale-105 transition-all duration-300 text-sm sm:text-base"
         >
           Erken Erişime Katıl →
-        </a>
+        </button>
         <a
           href="#features"
           className="px-8 py-3.5 rounded-full font-semibold text-white/70 border border-white/10 hover:border-white/30 hover:text-white transition-all duration-300 text-sm sm:text-base"
@@ -126,7 +333,6 @@ function HeroSection() {
         </a>
       </div>
 
-      {/* Floating stats */}
       <div className="mt-20 grid grid-cols-3 gap-6 sm:gap-12 text-center">
         {[
           { val: "10K+", label: "Aktif Öğrenci" },
@@ -137,7 +343,9 @@ function HeroSection() {
             <p className={`text-3xl sm:text-4xl font-black ${gradientText}`}>
               {stat.val}
             </p>
-            <p className="text-white/40 text-xs sm:text-sm mt-1">{stat.label}</p>
+            <p className="text-white/40 text-xs sm:text-sm mt-1">
+              {stat.label}
+            </p>
           </div>
         ))}
       </div>
@@ -149,12 +357,10 @@ function DoraSection() {
   return (
     <section className="relative px-6 py-24 flex justify-center">
       <div className="relative max-w-5xl w-full rounded-3xl border border-[#7B2FFF]/20 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] p-8 md:p-14 overflow-hidden">
-        {/* Glow */}
         <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-[#4F7CFF]/10 blur-[80px] pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-72 h-72 rounded-full bg-[#7B2FFF]/10 blur-[80px] pointer-events-none" />
 
         <div className="relative flex flex-col md:flex-row items-center gap-10">
-          {/* Icon cluster */}
           <div className="flex-shrink-0 relative">
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl bg-gradient-to-br from-[#7B2FFF]/30 to-[#00D4FF]/20 border border-[#7B2FFF]/30 flex items-center justify-center shadow-2xl shadow-[#7B2FFF]/20">
               <Bot className="w-14 h-14 md:w-20 md:h-20 text-[#A78BFF]" />
@@ -164,7 +370,6 @@ function DoraSection() {
             </div>
           </div>
 
-          {/* Content */}
           <div className="text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#7B2FFF]/15 border border-[#7B2FFF]/30 text-[#A78BFF] text-xs font-semibold uppercase tracking-widest mb-4">
               <Sparkles className="w-3 h-3" />
@@ -181,16 +386,19 @@ function DoraSection() {
               sağlar. Stres mi var? DORA bunu da fark eder ve seni destekler.
             </p>
             <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-3">
-              {["Günlük Analiz", "Motivasyon Koçu", "Kaynak Önerisi", "Duygu Takibi"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full text-xs font-semibold text-[#A78BFF] bg-[#7B2FFF]/15 border border-[#7B2FFF]/25"
-                  >
-                    {tag}
-                  </span>
-                )
-              )}
+              {[
+                "Günlük Analiz",
+                "Motivasyon Koçu",
+                "Kaynak Önerisi",
+                "Duygu Takibi",
+              ].map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 rounded-full text-xs font-semibold text-[#A78BFF] bg-[#7B2FFF]/15 border border-[#7B2FFF]/25"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -212,7 +420,8 @@ function FeaturesSection() {
             <span className={gradientText}>Her Şey Burada</span>
           </h2>
           <p className="mt-4 text-white/40 text-base max-w-xl mx-auto">
-            MINDORA'nın sunduğu araçlarla eğitim sürecinin her boyutunu kontrol altına al.
+            MINDORA&apos;nın sunduğu araçlarla eğitim sürecinin her boyutunu
+            kontrol altına al.
           </p>
         </div>
 
@@ -224,7 +433,6 @@ function FeaturesSection() {
                 i === 4 ? "sm:col-span-2 lg:col-span-1" : ""
               }`}
             >
-              {/* Hover glow */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7B2FFF]/0 to-[#00D4FF]/0 group-hover:from-[#7B2FFF]/5 group-hover:to-[#00D4FF]/5 transition-all duration-500" />
 
               <div className="relative">
@@ -234,7 +442,9 @@ function FeaturesSection() {
                 <h3 className="text-white font-bold text-base mb-2 group-hover:text-[#A78BFF] transition-colors duration-300">
                   {f.title}
                 </h3>
-                <p className="text-white/40 text-sm leading-relaxed">{f.desc}</p>
+                <p className="text-white/40 text-sm leading-relaxed">
+                  {f.desc}
+                </p>
               </div>
             </div>
           ))}
@@ -244,25 +454,26 @@ function FeaturesSection() {
   );
 }
 
-function CtaBanner() {
+function CtaBanner({ onOpenAuth }: { onOpenAuth: (mode: AuthMode) => void }) {
   return (
     <section className="px-6 py-16">
       <div className="max-w-4xl mx-auto rounded-3xl relative overflow-hidden bg-gradient-to-br from-[#7B2FFF]/20 via-[#4F7CFF]/10 to-[#00D4FF]/10 border border-[#7B2FFF]/30 p-10 md:p-16 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#7B2FFF22_0%,_transparent_70%)] pointer-events-none" />
         <h2 className="relative text-3xl sm:text-4xl font-black text-white mb-4">
-          Erken Erişim için <span className={gradientText}>Hemen Kaydol</span>
+          Erken Erişim için{" "}
+          <span className={gradientText}>Hemen Kaydol</span>
         </h2>
         <p className="relative text-white/50 text-base mb-8 max-w-lg mx-auto">
           Sınırlı kontenjan. İlk kullanıcılara özel indirimler ve özel DORA
           özellikleri seni bekliyor.
         </p>
-        <a
-          href="#"
+        <button
+          onClick={() => onOpenAuth("student")}
           className="relative inline-flex items-center gap-2 px-10 py-4 rounded-full font-bold text-white bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] shadow-2xl shadow-[#7B2FFF]/40 hover:shadow-[#7B2FFF]/70 hover:scale-105 transition-all duration-300"
         >
           <Sparkles className="w-4 h-4" />
           Erken Erişime Katıl
-        </a>
+        </button>
       </div>
     </section>
   );
@@ -272,22 +483,25 @@ function Footer() {
   return (
     <footer className="border-t border-white/5 bg-[#05050f] px-6 py-14">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-10">
-        {/* Brand */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <GraduationCap className="w-6 h-6 text-[#7B2FFF]" />
-            <span className={`text-xl font-black tracking-widest uppercase ${gradientText}`}>
+            <span
+              className={`text-xl font-black tracking-widest uppercase ${gradientText}`}
+            >
               MINDORA
             </span>
           </div>
           <p className="text-white/30 text-sm max-w-xs leading-relaxed">
-            Yapay zeka destekli eğitim koçluğu ve rehberlik platformu. Öğrencinin yanında, her adımda.
+            Yapay zeka destekli eğitim koçluğu ve rehberlik platformu.
+            Öğrencinin yanında, her adımda.
           </p>
         </div>
 
-        {/* Contact */}
         <div className="flex flex-col gap-3 text-center md:text-left">
-          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest">İletişim</p>
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest">
+            İletişim
+          </p>
           <a
             href="mailto:iletisim@mindora.ai"
             className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors"
@@ -304,9 +518,10 @@ function Footer() {
           </a>
         </div>
 
-        {/* Social */}
         <div className="flex flex-col items-center md:items-end gap-4">
-          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest">Sosyal Medya</p>
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest">
+            Sosyal Medya
+          </p>
           <div className="flex items-center gap-3">
             {[
               { icon: <X className="w-4 h-4" />, href: "#" },
@@ -336,14 +551,20 @@ function Footer() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function Home() {
+  const [authModal, setAuthModal] = useState<AuthMode | null>(null);
+
   return (
     <div className="min-h-screen bg-[#05050f] text-white antialiased scroll-smooth">
-      <Header />
+      {authModal && (
+        <AuthModal mode={authModal} onClose={() => setAuthModal(null)} />
+      )}
+
+      <Header onOpenAuth={setAuthModal} />
       <main>
-        <HeroSection />
+        <HeroSection onOpenAuth={setAuthModal} />
         <DoraSection />
         <FeaturesSection />
-        <CtaBanner />
+        <CtaBanner onOpenAuth={setAuthModal} />
       </main>
       <Footer />
     </div>
