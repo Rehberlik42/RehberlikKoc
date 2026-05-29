@@ -43,7 +43,7 @@ const studentNav: NavItem[] = [
   { label: "Denemelerim",  href: "/dashboard/student/mock-exams",  icon: <BarChart2 className="w-4.5 h-4.5" /> },
   { label: "Önerilerim",   href: "/dashboard/student/recommendations", icon: <BookOpen className="w-4.5 h-4.5" /> },
   { label: "DORA",         href: "/dashboard/student/dora",        icon: <Bot className="w-4.5 h-4.5" /> },
-  { label: "Testler",      href: "/dashboard/student/testler",     icon: <HeartPulse className="w-4.5 h-4.5" /> },
+  { label: "Testler",      href: "/dashboard/student/tests",       icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Randevular",   href: "/dashboard/student/randevular",  icon: <CalendarCheck className="w-4.5 h-4.5" /> },
 ];
 
@@ -51,6 +51,7 @@ const teacherNav: NavItem[] = [
   { label: "Dashboard",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Öğrencilerim",   href: "/dashboard/teacher/students",         icon: <Users className="w-4.5 h-4.5" /> },
   { label: "Randevular",     href: "/dashboard/teacher/appointments",     icon: <CalendarCheck className="w-4.5 h-4.5" /> },
+  { label: "Test Sonuçları", href: "/dashboard/teacher/tests",            icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
 ];
 
@@ -212,6 +213,7 @@ function Topbar({
       kaynaklar:      "Kaynaklar",
       dora:           "DORA ile Konuş",
       testler:        "Testler & Envanter",
+      tests:          "Testler & Envanterler",
       randevular:     "Randevularım",
       ogrenciler:     "Öğrencilerim",
       students:       "Öğrencilerim",
