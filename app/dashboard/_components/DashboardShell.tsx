@@ -49,9 +49,9 @@ const studentNav: NavItem[] = [
 
 const teacherNav: NavItem[] = [
   { label: "Dashboard",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
-  { label: "Öğrencilerim",   href: "/dashboard/teacher/ogrenciler",       icon: <Users className="w-4.5 h-4.5" /> },
-  { label: "Randevular",     href: "/dashboard/teacher/randevular",       icon: <CalendarCheck className="w-4.5 h-4.5" /> },
-  { label: "Raporlar",       href: "/dashboard/teacher/raporlar",         icon: <FileBarChart className="w-4.5 h-4.5" /> },
+  { label: "Öğrencilerim",   href: "/dashboard/teacher/students",         icon: <Users className="w-4.5 h-4.5" /> },
+  { label: "Randevular",     href: "/dashboard/teacher/appointments",     icon: <CalendarCheck className="w-4.5 h-4.5" /> },
+  { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
 ];
 
 // ─── Gradient helpers ─────────────────────────────────────────────────────────
@@ -202,16 +202,22 @@ function Topbar({
     const segments = pathname.split("/").filter(Boolean);
     const last = segments[segments.length - 1];
     const titles: Record<string, string> = {
-      student:    "Ana Sayfa",
-      teacher:    "Ana Sayfa",
-      program:    "Çalışma Programım",
-      denemeler:  "Deneme Analizleri",
-      kaynaklar:  "Kaynaklar",
-      dora:       "DORA ile Konuş",
-      testler:    "Testler & Envanter",
-      randevular: "Randevularım",
-      ogrenciler: "Öğrencilerim",
-      raporlar:   "Raporlar",
+      student:        "Ana Sayfa",
+      teacher:        "Ana Sayfa",
+      program:        "Çalışma Programım",
+      "mock-exams":   "Deneme Analizleri",
+      recommendations:"DORA Önerileri",
+      progress:       "Konu İlerlemem",
+      denemeler:      "Deneme Analizleri",
+      kaynaklar:      "Kaynaklar",
+      dora:           "DORA ile Konuş",
+      testler:        "Testler & Envanter",
+      randevular:     "Randevularım",
+      ogrenciler:     "Öğrencilerim",
+      students:       "Öğrencilerim",
+      appointments:   "Randevular",
+      reports:        "Raporlar",
+      raporlar:       "Raporlar",
     };
     return titles[last] ?? "Dashboard";
   };
