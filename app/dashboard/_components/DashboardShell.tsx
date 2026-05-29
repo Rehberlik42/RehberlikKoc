@@ -11,6 +11,7 @@ import {
   BookOpen,
   Bot,
   HeartPulse,
+  Compass,
   CalendarCheck,
   Users,
   FileBarChart,
@@ -44,6 +45,7 @@ const studentNav: NavItem[] = [
   { label: "Önerilerim",   href: "/dashboard/student/recommendations", icon: <BookOpen className="w-4.5 h-4.5" /> },
   { label: "DORA",         href: "/dashboard/student/dora",        icon: <Bot className="w-4.5 h-4.5" /> },
   { label: "Testler",      href: "/dashboard/student/tests",       icon: <HeartPulse className="w-4.5 h-4.5" /> },
+  { label: "Rehberlik",    href: "/dashboard/student/guidance",    icon: <Compass className="w-4.5 h-4.5" /> },
   { label: "Randevular",   href: "/dashboard/student/randevular",  icon: <CalendarCheck className="w-4.5 h-4.5" /> },
 ];
 
@@ -214,6 +216,7 @@ function Topbar({
       dora:           "DORA ile Konuş",
       testler:        "Testler & Envanter",
       tests:          "Testler & Envanterler",
+      guidance:       "Rehberlik Merkezi",
       randevular:     "Randevularım",
       ogrenciler:     "Öğrencilerim",
       students:       "Öğrencilerim",
