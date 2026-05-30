@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["html2canvas-pro"],
   images: {
     remotePatterns: [
       // YouTube thumbnail'lari icin

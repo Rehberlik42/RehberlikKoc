@@ -12,6 +12,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import PdfReportHeader from "@/app/dashboard/_components/PdfReportHeader";
+import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import MockExamForm from "./MockExamForm";
 import MockExamChart from "./MockExamChart";
 import MockExamsList from "./MockExamsList";
@@ -253,65 +255,67 @@ export default function MockExamsClient({
     <>
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
-      {/* ── Stat Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          icon={<FileBarChart2 className="w-5 h-5" />}
-          label="Girilen Toplam Deneme"
-          value={stats.total > 0 ? String(stats.total) : "—"}
-          sub="Tüm zamanlar"
-          glow="rgba(123,47,255,0.25)"
-        />
-        <StatCard
-          icon={<Trophy className="w-5 h-5" />}
-          label="Son Deneme Neti"
-          value={stats.total > 0 ? stats.lastNet : "—"}
-          sub={
-            stats.total > 0
-              ? `Toplam net (${chartData[chartData.length - 1]?.examName ?? ""})`
-              : "Henüz deneme girilmedi"
-          }
-          glow="rgba(79,124,255,0.25)"
-        />
-        <StatCard
-          icon={<TrendingUp className="w-5 h-5" />}
-          label="Net Artış Trendi"
-          value={
-            stats.trend === "flat" && stats.total < 2
-              ? "—"
-              : `${parseFloat(stats.diff) >= 0 ? "+" : ""}${stats.diff}`
-          }
-          sub={
-            stats.trend === "up"
-              ? "Bir önceki denemeye göre artış"
-              : stats.trend === "down"
-              ? "Bir önceki denemeye göre azalış"
-              : "Karşılaştırma için en az 2 deneme gerek"
-          }
-          trend={stats.trend}
-          glow="rgba(0,212,255,0.25)"
-        />
-      </div>
+      {/* ── PDF yakalama alani: ozet kartlar + grafik ───────────────────── */}
+      <div
+        id="mock-exams-export-root"
+        className="space-y-4 rounded-2xl p-4 sm:p-5"
+        style={{ backgroundColor: PDF_EXPORT_BG }}
+      >
+        <PdfReportHeader subtitle="Deneme Analizi Raporu" />
 
-      {/* ── Form + Chart yan yana (lg) ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* Form: 2/5 */}
-        <div className="lg:col-span-2">
-          <MockExamForm
-            exams={exams}
-            subjects={subjects}
-            onSuccess={(message) => {
-              setToast({ type: "success", message });
-              refresh();
-            }}
-            onError={(message) => setToast({ type: "error", message })}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            icon={<FileBarChart2 className="w-5 h-5" />}
+            label="Girilen Toplam Deneme"
+            value={stats.total > 0 ? String(stats.total) : "—"}
+            sub="Tüm zamanlar"
+            glow="rgba(123,47,255,0.25)"
+          />
+          <StatCard
+            icon={<Trophy className="w-5 h-5" />}
+            label="Son Deneme Neti"
+            value={stats.total > 0 ? stats.lastNet : "—"}
+            sub={
+              stats.total > 0
+                ? `Toplam net (${chartData[chartData.length - 1]?.examName ?? ""})`
+                : "Henüz deneme girilmedi"
+            }
+            glow="rgba(79,124,255,0.25)"
+          />
+          <StatCard
+            icon={<TrendingUp className="w-5 h-5" />}
+            label="Net Artış Trendi"
+            value={
+              stats.trend === "flat" && stats.total < 2
+                ? "—"
+                : `${parseFloat(stats.diff) >= 0 ? "+" : ""}${stats.diff}`
+            }
+            sub={
+              stats.trend === "up"
+                ? "Bir önceki denemeye göre artış"
+                : stats.trend === "down"
+                ? "Bir önceki denemeye göre azalış"
+                : "Karşılaştırma için en az 2 deneme gerek"
+            }
+            trend={stats.trend}
+            glow="rgba(0,212,255,0.25)"
           />
         </div>
 
-        {/* Chart: 3/5 */}
-        <div className="lg:col-span-3">
-          <MockExamChart data={chartData} />
-        </div>
+        <MockExamChart data={chartData} />
+      </div>
+
+      {/* ── Form (PDF disinda) ─────────────────────────────────────────── */}
+      <div className="pdf-export-hide print-hidden max-w-xl">
+        <MockExamForm
+          exams={exams}
+          subjects={subjects}
+          onSuccess={(message) => {
+            setToast({ type: "success", message });
+            refresh();
+          }}
+          onError={(message) => setToast({ type: "error", message })}
+        />
       </div>
 
       {/* ── Liste ───────────────────────────────────────────────────────── */}

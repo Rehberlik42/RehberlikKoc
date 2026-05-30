@@ -42,7 +42,13 @@ function formatDate(dateStr: string) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function SessionsList({ refreshKey }: { refreshKey: number }) {
+export default function SessionsList({
+  refreshKey,
+  embedded = false,
+}: {
+  refreshKey: number;
+  embedded?: boolean;
+}) {
   const supabase = createClient();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +97,13 @@ export default function SessionsList({ refreshKey }: { refreshKey: number }) {
   }, [fetchSessions, refreshKey]);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#0d0d2b]/50 overflow-hidden">
+    <div
+      className={
+        embedded
+          ? "rounded-xl border border-white/8 bg-slate-900/40 overflow-hidden"
+          : "rounded-2xl border border-white/8 bg-[#0d0d2b]/50 overflow-hidden"
+      }
+    >
       {/* Header */}
       <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -108,7 +120,7 @@ export default function SessionsList({ refreshKey }: { refreshKey: number }) {
         <button
           onClick={fetchSessions}
           disabled={loading}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white hover:bg-white/5 transition-all"
+          className="pdf-export-hide print-hidden w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white hover:bg-white/5 transition-all"
           title="Yenile"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

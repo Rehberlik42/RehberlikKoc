@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MINDORA — Proje Dokümantasyonu</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #1a1a2e;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 22pt;
+      color: #7B2FFF;
+      border-bottom: 3px solid #4F7CFF;
+      padding-bottom: 8px;
+      margin-top: 0;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 14pt;
+      color: #4F7CFF;
+      margin-top: 24px;
+      border-left: 4px solid #7B2FFF;
+      padding-left: 10px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: #333;
+      margin-top: 16px;
+      page-break-after: avoid;
+    }
+    h4 { font-size: 10.5pt; margin-top: 12px; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0; padding-left: 22px; }
+    li { margin: 4px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th { background: #f0ebff; color: #4a2a8a; font-weight: 600; }
+    tr:nth-child(even) td { background: #fafafa; }
+    code {
+      font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+      background: #f4f4f8;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 9pt;
+    }
+    pre {
+      background: #0d0d2b;
+      color: #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      page-break-inside: avoid;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    .subtitle { color: #666; font-size: 11pt; margin-bottom: 24px; }
+    .badge { display: inline-block; background: #7B2FFF15; color: #7B2FFF; padding: 2px 8px; border-radius: 12px; font-size: 8.5pt; font-weight: 600; }
+    .warn { background: #fff8e6; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+    .page-break { page-break-before: always; }
+    hr { border: none; border-top: 1px solid #e0e0e0; margin: 20px 0; }
+    .footer-note { font-size: 8.5pt; color: #888; margin-top: 32px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h1>MINDORA (rehberlik-koc)<br/>Kapsamlı Proje Dokümantasyonu</h1>
+<p class="subtitle">Bu doküman, projeyi başka bir yapay zekaya öğretmek için hazırlanmıştır. Her katman, dosya, veri modeli, akış ve bilinen eksiklikler ayrıntılı olarak açıklanmıştır.</p>
+
+<h2>1. Proje Kimliği ve Amacı</h2>
+<table>
+  <tr><th>Alan</th><th>Değer</th></tr>
+  <tr><td>Ürün adı</td><td>MINDORA</td></tr>
+  <tr><td>npm paket adı</td><td><code>rehberlik-koc</code></td></tr>
+  <tr><td>Tür</td><td>Yapay zeka destekli eğitim koçluğu / rehberlik platformu</td></tr>
+  <tr><td>Hedef kitle</td><td>YKS, LGS, KPSS ve ara sınıf öğrencileri + rehberlik koçları (öğretmenler)</td></tr>
+  <tr><td>Dil</td><td>Kullanıcı arayüzü tamamen Türkçe; kod İngilizce</td></tr>
+  <tr><td>AI karakteri</td><td><strong>DORA</strong> — dijital koç (henüz gerçek AI chat yok, kural tabanlı öneriler var)</td></tr>
+  <tr><td>Durum</td><td>Aktif geliştirme; birçok modül çalışıyor, bazı nav linkleri implemente edilmemiş</td></tr>
+</table>
+<p><strong>Temel vaat:</strong> Öğrencinin çalışma verisini (soru çözümü, deneme netleri, konu ilerlemesi, psikolojik testler) toplayıp koçluk kararlarını desteklemek; DORA markası altında kişiselleştirilmiş kaynak önerileri sunmak.</p>
+
+<h2>2. Teknoloji Yığını</h2>
+<h3>Çekirdek</h3>
+<ul>
+  <li><strong>Next.js 16.2.6</strong> — App Router, React Server Components (RSC)</li>
+  <li><strong>React 19.2.4</strong></li>
+  <li><strong>TypeScript 5</strong> (strict mode)</li>
+  <li><strong>Tailwind CSS v4</strong></li>
+  <li><strong>Geist Sans / Geist Mono</strong> — next/font/google</li>
+</ul>
+<h3>Backend / Veri</h3>
+<ul>
+  <li><strong>Supabase</strong> — Auth + Postgres + RLS</li>
+  <li><strong>@supabase/ssr 0.10.3</strong> — cookie tabanlı SSR oturum yönetimi</li>
+  <li><strong>@supabase/supabase-js 2.106.2</strong></li>
+  <li><strong>REST API yok</strong> — tüm veri işlemleri doğrudan Supabase client üzerinden</li>
+</ul>
+<h3>UI kütüphaneleri</h3>
+<ul>
+  <li><strong>lucide-react</strong> — ikonlar</li>
+  <li><strong>recharts</strong> — deneme grafikleri</li>
+  <li><strong>@dnd-kit</strong> — öğretmen randevu Kanban tahtası</li>
+  <li><strong>html2canvas-pro + jspdf</strong> — istemci tarafı PDF export</li>
+</ul>
+<h3>Next.js 16 farkları</h3>
+<ul>
+  <li><code>middleware.ts</code> yerine kök dizinde <strong>proxy.ts</strong> kullanılıyor</li>
+  <li>AGENTS.md: Next.js 16 breaking change'ler var; kod yazmadan önce <code>node_modules/next/dist/docs/</code> okunmalı</li>
+  <li>Dev script: <code>next dev --webpack</code></li>
+</ul>
+
+<h2>3. Mimari Genel Bakış</h2>
+<pre><code>Tarayıcı (Landing + Dashboard)
+    ↓
+proxy.ts (oturum yenileme, auth gate)
+    ↓
+lib/supabase/ (client.ts, server.ts, proxy.ts)
+    ↓
+Supabase (Auth + Postgres + RLS)</code></pre>
+<p><strong>BaaS mimarisi:</strong> Backend ayrı bir Node servisi değil; Postgres + RLS güvenlik katmanı. Tüm iş kuralları frontend'de veya Supabase RLS/trigger'larında (trigger'lar repoda yok).</p>
+
+<h2>4. Dizin Yapısı</h2>
+<pre><code>rehberlik-koc/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx, page.tsx, globals.css
+│   └── dashboard/
+│       ├── layout.tsx, page.tsx
+│       ├── _components/    # DashboardShell, PdfExportButton, vb.
+│       ├── student/        # Öğrenci modülleri
+│       └── teacher/        # Öğretmen modülleri
+├── lib/                    # Domain logic + Supabase client'ları
+├── public/
+├── supabase/migrations/
+├── proxy.ts
+├── next.config.ts
+└── package.json</code></pre>
+<p>Kök <code>components/</code> klasörü yok. Bileşenler route-colocated pattern ile <code>app/.../_components/</code> altında. Merkezi <code>types/</code> klasörü yok.</p>
+
+<h2>5. Ortam Değişkenleri</h2>
+<table>
+  <tr><th>Değişken</th><th>Kullanım</th></tr>
+  <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Supabase proje URL'si</td></tr>
+  <tr><td><code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code></td><td>Anon/publishable key</td></tr>
+</table>
+<p><code>.env.example</code> repoda yok. Service role key kullanılmıyor.</p>
+
+<div class="page-break"></div>
+
+<h2>6. Kimlik Doğrulama ve Oturum Akışı</h2>
+<h3>6.1 Kayıt (Signup)</h3>
+<p>Landing sayfasındaki AuthModal: <code>signUp({ email, password, options: { data: { role: "student"|"teacher" } } })</code></p>
+<ul>
+  <li>Rol auth <code>user_metadata.role</code> alanına yazılıyor</li>
+  <li><code>profiles</code> tablosuna satır oluşturan DB trigger varsayılıyor (repoda yok)</li>
+  <li>Kayıt sonrası e-posta doğrulama mesajı gösteriliyor</li>
+</ul>
+<h3>6.2 Giriş</h3>
+<p><code>signInWithPassword</code> → başarılı ise <code>/dashboard</code> redirect</p>
+<h3>6.3 proxy.ts</h3>
+<ol>
+  <li>Cookie'lerden Supabase oturumunu yeniler</li>
+  <li><strong>getClaims()</strong> kullanır (JWT yerel doğrulama, network yok)</li>
+  <li>Kullanıcı yoksa ve path <code>/dashboard/*</code> ise → <code>/</code> redirect</li>
+</ol>
+<h3>6.4 dashboard/layout.tsx</h3>
+<ol>
+  <li><code>getUser()</code> — sunucu tarafında doğrulama</li>
+  <li><code>profiles</code> tablosundan profil çeker</li>
+  <li>Profil yoksa → <code>/</code> redirect</li>
+  <li><code>DashboardShell</code> ile sarmalar</li>
+</ol>
+<h3>6.5 Rol yönlendirme</h3>
+<ul>
+  <li><code>role === "teacher" | "admin"</code> → <code>/dashboard/teacher</code></li>
+  <li>Diğer → <code>/dashboard/student</code></li>
+</ul>
+<h3>6.6 Üç Supabase client</h3>
+<table>
+  <tr><th>Dosya</th><th>Ortam</th><th>Kullanım</th></tr>
+  <tr><td>lib/supabase/client.ts</td><td>Browser</td><td>Client component'ler, formlar, DnD</td></tr>
+  <tr><td>lib/supabase/server.ts</td><td>Server (RSC)</td><td>Sayfa veri fetch, auth guard</td></tr>
+  <tr><td>lib/supabase/proxy.ts</td><td>Proxy</td><td>Cookie refresh, route gate</td></tr>
+</table>
+
+<h2>7. Kullanıcı Rolleri</h2>
+<table>
+  <tr><th>Rol</th><th>DB değeri</th><th>Dashboard</th><th>Notlar</th></tr>
+  <tr><td>Öğrenci</td><td>student</td><td>/dashboard/student/*</td><td>Varsayılan</td></tr>
+  <tr><td>Öğretmen/Koç</td><td>teacher</td><td>/dashboard/teacher/*</td><td>UI'da "Öğretmen" / "Koç"</td></tr>
+  <tr><td>Admin</td><td>admin</td><td>Teacher dashboard</td><td>Ayrı admin UI yok</td></tr>
+</table>
+<div class="warn"><strong>Bilinen sorunlar:</strong> admin rolü student nav görür; sayfa bazında rol guard tutarsız; öğrenci-öğretmen ataması admin paneli olmadan yapılıyor.</div>
+
+<h2>8. Veritabanı Şeması</h2>
+<p><strong>Kritik:</strong> Şema kaynağı uzak Supabase projesi. Repoda sadece <code>guidance_contents</code> migration'ı var. Generated TypeScript tipleri yok.</p>
+
+<h3>8.1 profiles</h3>
+<p>id (UUID), full_name, role (student|teacher|admin), avatar_url, grade, school, phone, bio</p>
+
+<h3>8.2 teacher_students</h3>
+<p>teacher_id, student_id, assigned_at, is_active</p>
+
+<h3>8.3 Müfredat hiyerarşisi</h3>
+<p>exams (YKS, LGS, KPSS, ARA_SINIF) → subjects (name, color, icon, order_index) → topics (name, order_index)</p>
+
+<h3>8.4 study_sessions</h3>
+<p>student_id, subject_id, topic_id, correct_count, wrong_count, questions_solved, duration_minutes, notes, study_date</p>
+
+<h3>8.5 mock_exams + mock_exam_results</h3>
+<p>Net hesabı: <code>correct - wrong/4</code> (Türkiye sınav sistemi)</p>
+
+<h3>8.6 topic_progress</h3>
+<p>status: not_started | in_progress | completed | needs_review; completion_percentage; last_studied_at</p>
+
+<h3>8.7 resources</h3>
+<p>type: youtube | book | document | website; is_approved; view_count; subject_id; topic_id</p>
+
+<h3>8.8 psychological_tests</h3>
+<p>type: motivation | anxiety | focus | burnout | general; questions JSONB (şema lib/tests.ts'de)</p>
+
+<h3>8.9 test_results</h3>
+<p>student_id, test_id, answers (JSONB), score, interpretation, taken_at</p>
+
+<h3>8.10 appointments</h3>
+<p>status: pending | confirmed | completed | cancelled; notes; session_notes</p>
+
+<h3>8.11 guidance_contents</h3>
+<p>content_type: blog | video | pdf; target_exam: YKS | LGS | KPSS | ARA_SINIF</p>
+
+<div class="page-break"></div>
+
+<h2>9. Tasarım Sistemi (Dark-Neon)</h2>
+<table>
+  <tr><th>Renk</th><th>Hex</th><th>Kullanım</th></tr>
+  <tr><td>Mor</td><td>#7B2FFF</td><td>Birincil accent, öğrenci</td></tr>
+  <tr><td>Mavi</td><td>#4F7CFF</td><td>İkincil accent, öğretmen</td></tr>
+  <tr><td>Cyan</td><td>#00D4FF</td><td>Üçüncül accent</td></tr>
+  <tr><td>Arka plan</td><td>#05050f, #07071a</td><td>Katmanlı koyu tonlar</td></tr>
+</table>
+<p>Tüm UI metinleri hardcoded Türkçe. i18n framework yok. Tarihler <code>toLocaleDateString("tr-TR")</code>. <code>&lt;html lang="en"&gt;</code> tutarsızlığı var.</p>
+
+<h2>10. Tüm Route'lar ve Özellikler</h2>
+
+<h3>10.1 / — Landing Page</h3>
+<p>Client component. Header, Hero, DORA tanıtım, Features grid, CTA, Footer. AuthModal ile öğrenci/öğretmen kayıt ve giriş.</p>
+
+<h3>10.2 Öğrenci Modülleri</h3>
+<table>
+  <tr><th>Route</th><th>Açıklama</th><th>Durum</th></tr>
+  <tr><td>/dashboard/student</td><td>Ana sayfa, statik DORA motivasyon kartı, günlük özet</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/program</td><td>Çalışma kaydı (Faz 2), PDF export</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/mock-exams</td><td>Deneme CRUD, Recharts grafik, PDF export</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/recommendations</td><td>Kural tabanlı DORA kaynak önerileri</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/progress</td><td>Konu ilerleme (sidebar'da gizli)</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/tests</td><td>Psikolojik test kataloğu</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/tests/[id]</td><td>Likert test çözme, skorlama</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/guidance</td><td>Rehberlik Content Hub (Faz 4)</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/guidance/[id]</td><td>Blog detay sayfası</td><td>✅</td></tr>
+  <tr><td>/dashboard/student/dora</td><td>AI chat</td><td>❌</td></tr>
+  <tr><td>/dashboard/student/randevular</td><td>Öğrenci randevuları</td><td>❌</td></tr>
+</table>
+
+<h3>10.3 Öğretmen Modülleri</h3>
+<table>
+  <tr><th>Route</th><th>Açıklama</th><th>Durum</th></tr>
+  <tr><td>/dashboard/teacher</td><td>Koç dashboard, metrikler, yaklaşan randevular</td><td>✅</td></tr>
+  <tr><td>/dashboard/teacher/students</td><td>Atanan öğrenci listesi + metrikler</td><td>✅</td></tr>
+  <tr><td>/dashboard/teacher/students/[id]</td><td>Öğrenci detay profili</td><td>✅</td></tr>
+  <tr><td>/dashboard/teacher/appointments</td><td>@dnd-kit Kanban randevu tahtası</td><td>✅</td></tr>
+  <tr><td>/dashboard/teacher/tests</td><td>Öğrenci psikolojik test sonuçları</td><td>✅</td></tr>
+  <tr><td>/dashboard/teacher/reports</td><td>Raporlar</td><td>❌</td></tr>
+</table>
+
+<h3>10.4 Kırık linkler</h3>
+<ul>
+  <li><code>/dashboard/student/denemeler</code> → doğrusu <code>mock-exams</code></li>
+  <li><code>/dashboard/student/kaynaklar</code> → doğrusu <code>recommendations</code></li>
+  <li>Teacher "Raporlar" → <code>/dashboard/teacher/reports</code> (sayfa yok)</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>11. Bileşen Organizasyon Pattern'leri</h2>
+<ul>
+  <li><strong>Server Page + Client Island:</strong> page.tsx async RSC fetch → ClientComponent props</li>
+  <li><strong>Route-colocated _components/:</strong> Her feature kendi klasöründe</li>
+  <li><strong>dynamic = "force-dynamic":</strong> Veri değişken sayfalarda cache bypass</li>
+  <li><strong>Supabase join normalizasyonu:</strong> Array.isArray join sonuçları düzeltilir</li>
+  <li><strong>PDF Export:</strong> wrapper div id + pdf-export-hide class + PdfExportButton</li>
+</ul>
+
+<h2>12. lib/ Yardımcı Modüller</h2>
+<table>
+  <tr><th>Dosya</th><th>Amaç</th></tr>
+  <tr><td>lib/student-helpers.ts</td><td>gradeToExam, targetExamLabel, targetExamColors, initialsFromName, timeAgo</td></tr>
+  <tr><td>lib/tests.ts</td><td>Psikolojik test JSON şeması, calculateScore, interpretScore, typeMeta, levelTone</td></tr>
+  <tr><td>lib/guidance.ts</td><td>Rehberlik içerik tipleri, filtre chip'leri, YouTube embed, fallback cover</td></tr>
+  <tr><td>lib/pdf-export.ts</td><td>html2canvas-pro + jsPDF multi-page PDF generation</td></tr>
+  <tr><td>lib/pdf-export-constants.ts</td><td>PDF_EXPORT_BG = "#0f172a"</td></tr>
+</table>
+
+<h2>13. Veri Akış Örnekleri</h2>
+<h3>Deneme kaydetme</h3>
+<p>MockExamForm → insert mock_exams → insert mock_exam_results[] → parent state refresh</p>
+<h3>Kaynak önerisi</h3>
+<p>mock_exam_results aggregate → topic_progress → resources WHERE is_approved → RecommendationsClient → click view_count++</p>
+<h3>Randevu status</h3>
+<p>AppointmentsBoard @dnd-kit → onDragEnd → supabase update status → optimistic UI</p>
+<h3>Psikolojik test</h3>
+<p>TestRunner → calculateScore → interpretScore → insert test_results</p>
+
+<h2>14. Güvenlik Modeli</h2>
+<ol>
+  <li>Auth gate: proxy.ts + dashboard layout (çift katman)</li>
+  <li>RLS: Postgres seviyesinde veri izolasyonu</li>
+  <li>Client-side role check: UX redirect; asıl güvenlik RLS'te</li>
+  <li>Service role key kullanılmıyor</li>
+</ol>
+
+<h2>15. Bilinen Eksiklikler ve Teknik Borç</h2>
+<ul>
+  <li>DORA AI chat, öğrenci randevu görünümü, öğretmen raporları, admin paneli</li>
+  <li>Gerçek zamanlı DORA analizi (motivasyon kartı statik)</li>
+  <li>Bildirim sistemi dekoratif; profil düzenleme sayfası yok</li>
+  <li>DB tipleri generate edilmemiş; RLS politikaları repoda yok</li>
+  <li>README güncel değil; admin nav tutarsızlığı</li>
+</ul>
+
+<h2>16. Geliştirme Komutları</h2>
+<pre><code>npm run dev          # next dev --webpack (port 3000)
+npm run dev:turbo    # Turbopack ile dev
+npm run build        # Production build
+npm run start        # Production server
+npm run lint         # ESLint</code></pre>
+
+<h2>17. Proje Evreleri</h2>
+<table>
+  <tr><th>Faz</th><th>Modül</th><th>Durum</th></tr>
+  <tr><td>—</td><td>Landing + Auth</td><td>✅</td></tr>
+  <tr><td>—</td><td>Dashboard shell</td><td>✅</td></tr>
+  <tr><td>Faz 2</td><td>Çalışma programı + veri girişi + PDF export</td><td>✅</td></tr>
+  <tr><td>—</td><td>Deneme analizi + grafik + PDF export</td><td>✅</td></tr>
+  <tr><td>—</td><td>Kaynak önerileri (kural tabanlı DORA)</td><td>✅</td></tr>
+  <tr><td>—</td><td>Konu ilerleme</td><td>✅ (nav'da gizli)</td></tr>
+  <tr><td>—</td><td>Psikolojik testler</td><td>✅</td></tr>
+  <tr><td>Faz 4</td><td>Rehberlik Content Hub</td><td>✅</td></tr>
+  <tr><td>—</td><td>Öğretmen öğrenci yönetimi</td><td>✅ (kısıtlı)</td></tr>
+  <tr><td>—</td><td>Randevu Kanban</td><td>✅</td></tr>
+  <tr><td>—</td><td>Öğretmen test sonuçları</td><td>✅</td></tr>
+  <tr><td>—</td><td>DORA AI chat</td><td>❌</td></tr>
+  <tr><td>—</td><td>Admin panel</td><td>❌</td></tr>
+  <tr><td>—</td><td>Raporlar</td><td>❌</td></tr>
+</table>
+
+<h2>18. Yeni AI Agent İçin Kritik Notlar</h2>
+<ol>
+  <li><strong>Backend yok</strong> — Supabase direct client pattern</li>
+  <li><strong>Next.js 16</strong> — proxy.ts, AGENTS.md kuralları</li>
+  <li><strong>DORA şu an kural tabanlı</strong> — gerçek LLM entegrasyonu yok</li>
+  <li><strong>Schema remote Supabase'de</strong> — local migration sadece guidance_contents</li>
+  <li><strong>Nav vs route uyumsuzlukları</strong> — yeni feature eklerken kontrol edilmeli</li>
+</ol>
+
+<p class="footer-note">MINDORA rehberlik-koc — Teknik Dokümantasyon · Oluşturulma: Mayıs 2026</p>
+
+</body>
+</html>

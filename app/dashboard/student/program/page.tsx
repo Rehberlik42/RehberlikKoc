@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarDays, Sparkles } from "lucide-react";
 import ProgramContent from "./_components/ProgramContent";
+import ProgramExportBar from "./_components/ProgramExportBar";
 import type { Subject } from "./_components/SessionEntryForm";
 
 export default async function ProgramPage() {
@@ -50,10 +51,12 @@ export default async function ProgramPage() {
           </p>
         </div>
 
-        {/* Toplam konu sayısı bilgi pill */}
-        <div className="shrink-0 px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-center">
-          <p className="text-white font-black text-xl">{subjects.length}</p>
-          <p className="text-white/30 text-[10px] uppercase tracking-wider">Ders</p>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-center">
+            <p className="text-white font-black text-xl">{subjects.length}</p>
+            <p className="text-white/30 text-[10px] uppercase tracking-wider">Ders</p>
+          </div>
+          <ProgramExportBar />
         </div>
       </div>
 

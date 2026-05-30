@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import MockExamsExportBar from "./_components/MockExamsExportBar";
 import MockExamsClient, {
   type ExamOption,
   type SubjectOption,
@@ -51,14 +52,17 @@ export default async function MockExamsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-black text-white">
-          Deneme Sınavlarım ve Performans Analizim
-        </h2>
-        <p className="text-white/40 text-sm mt-1">
-          Her denemeyi kaydet, DORA senin için ilerlemeni grafiksel olarak izlesin.
-        </p>
+      {/* Header + PDF */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white">
+            Deneme Sınavlarım ve Performans Analizim
+          </h2>
+          <p className="text-white/40 text-sm mt-1">
+            Her denemeyi kaydet, DORA senin için ilerlemeni grafiksel olarak izlesin.
+          </p>
+        </div>
+        <MockExamsExportBar />
       </div>
 
       <MockExamsClient
