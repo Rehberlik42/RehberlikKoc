@@ -29,10 +29,9 @@ body {
 }
 
 .brand-logo-hero {
-  image-rendering: auto;
-  filter: saturate(1.1) contrast(1.05)
-    drop-shadow(0 0 40px rgba(123, 47, 255, 0.45))
-    drop-shadow(0 0 80px rgba(0, 212, 255, 0.2));
+  filter: saturate(1.2) contrast(1.14) brightness(1.06)
+    drop-shadow(0 2px 26px rgba(123, 47, 255, 0.55))
+    drop-shadow(0 0 60px rgba(0, 212, 255, 0.3));
 }
 
 /* ─── Page mesh (lighter, animated base) ──────────────────────────────────── */
@@ -134,6 +133,48 @@ body {
   animation: particle-float linear infinite;
   will-change: transform, opacity;
 }
+
+/* ─── Uçan dekoratif öğeler ───────────────────────────────────────────────── */
+@keyframes fly-drift-1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  12% { opacity: 0.75; }
+  50% { transform: translate(60px, -90px) rotate(18deg); opacity: 0.9; }
+  88% { opacity: 0.4; }
+  100% { transform: translate(120px, -160px) rotate(-10deg); opacity: 0; }
+}
+@keyframes fly-drift-2 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.65; }
+  45% { transform: translate(-70px, -55px) rotate(-14deg); opacity: 0.85; }
+  90% { opacity: 0.35; }
+  100% { transform: translate(-130px, -120px) rotate(8deg); opacity: 0; }
+}
+@keyframes fly-drift-3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  15% { opacity: 0.7; }
+  55% { transform: translate(40px, 70px) scale(1.15); opacity: 0.8; }
+  100% { transform: translate(80px, 130px) scale(0.9); opacity: 0; }
+}
+@keyframes comet-sweep {
+  0% { transform: translateX(-120%) translateY(40%) rotate(-35deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translateX(220%) translateY(-60%) rotate(-35deg); opacity: 0; }
+}
+@keyframes orbit-sparkle {
+  from { transform: rotate(0deg) translateX(var(--orbit-r, 120px)) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(var(--orbit-r, 120px)) rotate(-360deg); }
+}
+@keyframes bob-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-fly-1 { animation: fly-drift-1 ease-in-out infinite; will-change: transform, opacity; }
+.animate-fly-2 { animation: fly-drift-2 ease-in-out infinite; will-change: transform, opacity; }
+.animate-fly-3 { animation: fly-drift-3 ease-in-out infinite; will-change: transform, opacity; }
+.animate-comet { animation: comet-sweep linear infinite; will-change: transform, opacity; }
+.animate-orbit-sparkle { animation: orbit-sparkle linear infinite; will-change: transform; }
+.animate-bob-gentle { animation: bob-gentle 4s ease-in-out infinite; will-change: transform; }
 
 /* ─── Animated gradient text ──────────────────────────────────────────────── */
 @keyframes gradient-shift {
@@ -251,6 +292,44 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(167, 139, 255, 0.35) transparent;
+}
+
+.logo-flip-back-inner::-webkit-scrollbar {
+  width: 4px;
+}
+
+.logo-flip-back-inner::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 255, 0.35);
+  border-radius: 999px;
+}
+
+.logo-flip-back-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hero — ekip sözü için daha ferah kart */
+.logo-flip-scene.is-flipped-hero {
+  aspect-ratio: auto;
+  min-height: min(320px, 72vw);
+}
+
+@media (min-width: 640px) {
+  .logo-flip-scene.is-flipped-hero {
+    min-height: 360px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .logo-flip-scene.is-flipped-hero {
+    min-height: 400px;
+  }
+}
+
+.logo-flip-scene.is-flipped-hero .logo-flip-back-inner {
+  overflow-y: visible;
+  justify-content: center;
 }
 
 .reveal-section {
@@ -275,6 +354,12 @@ body {
   .animate-particle,
   .animate-mesh-drift,
   .animate-orb-drift,
+  .animate-fly-1,
+  .animate-fly-2,
+  .animate-fly-3,
+  .animate-comet,
+  .animate-orbit-sparkle,
+  .animate-bob-gentle,
   .page-grid-overlay {
     opacity: 0.05;
     animation: none !important;
@@ -291,6 +376,13 @@ body {
   }
   .animate-particle,
   .animate-star {
+    display: none;
+  }
+  .animate-fly-1,
+  .animate-fly-2,
+  .animate-fly-3,
+  .animate-comet,
+  .animate-orbit-sparkle {
     display: none;
   }
   .reveal-section {

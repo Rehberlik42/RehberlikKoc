@@ -13,7 +13,6 @@ import {
   ClipboardList,
   X,
   Share2,
-  Briefcase,
   Mail,
   Phone,
   Sparkles,
@@ -39,8 +38,10 @@ const LOGO_SRC = "/mindora-logo-transparent.png";
 const DORA_SRC = "/dora-icon-transparent.png";
 
 // Trim sonrası boyutlar script çıktısından güncellenir; oran için yaklaşık değerler.
-const ICON_W = 668;
-const ICON_H = 554;
+const ICON_W = 697;
+const ICON_H = 298;
+const LOGO_W = 980;
+const LOGO_H = 547;
 const DORA_W = 975;
 const DORA_H = 996;
 
@@ -249,6 +250,30 @@ const STARS = [
   { left: "92%", top: "8%", size: 2, delay: "0.15s", duration: "3.1s" },
 ];
 
+const FLYING_ICONS = [
+  { left: "6%", top: "22%", delay: "0s", duration: "22s", anim: "animate-fly-1", Icon: Sparkles, color: "#A78BFF" },
+  { left: "88%", top: "18%", delay: "4s", duration: "26s", anim: "animate-fly-2", Icon: BookOpen, color: "#00D4FF" },
+  { left: "14%", top: "68%", delay: "8s", duration: "24s", anim: "animate-fly-3", Icon: Target, color: "#4F7CFF" },
+  { left: "78%", top: "62%", delay: "2s", duration: "20s", anim: "animate-fly-1", Icon: Sparkles, color: "#C04BFF" },
+  { left: "42%", top: "12%", delay: "6s", duration: "28s", anim: "animate-fly-2", Icon: Target, color: "#2DE1FF" },
+  { left: "55%", top: "78%", delay: "10s", duration: "25s", anim: "animate-fly-3", Icon: BookOpen, color: "#A78BFF" },
+  { left: "92%", top: "42%", delay: "12s", duration: "23s", anim: "animate-fly-1", Icon: Sparkles, color: "#00D4FF" },
+  { left: "3%", top: "48%", delay: "14s", duration: "27s", anim: "animate-fly-2", Icon: BookOpen, color: "#7B2FFF" },
+] as const;
+
+const COMETS = [
+  { top: "18%", delay: "0s", duration: "9s" },
+  { top: "52%", delay: "4.5s", duration: "11s" },
+  { top: "72%", delay: "7s", duration: "10s" },
+] as const;
+
+const HERO_ORBIT_SPARKLES = [
+  { delay: "0s", duration: "14s", radius: "min(140px,28vw)", size: "w-2 h-2", color: "#A78BFF" },
+  { delay: "-4s", duration: "18s", radius: "min(170px,34vw)", size: "w-1.5 h-1.5", color: "#00D4FF" },
+  { delay: "-8s", duration: "22s", radius: "min(200px,40vw)", size: "w-2.5 h-2.5", color: "#4F7CFF" },
+  { delay: "-11s", duration: "16s", radius: "min(115px,24vw)", size: "w-1.5 h-1.5", color: "#C04BFF" },
+] as const;
+
 // ─── Decorative layers ────────────────────────────────────────────────────────
 function AuroraBackground() {
   return (
@@ -324,6 +349,82 @@ function FloatingParticles() {
   );
 }
 
+function FlyingElements() {
+  return (
+    <div
+      className="absolute inset-0 overflow-hidden pointer-events-none"
+      aria-hidden="true"
+    >
+      {COMETS.map((c, i) => (
+        <span
+          key={`comet-${i}`}
+          className="absolute left-0 w-[min(180px,40vw)] h-px animate-comet"
+          style={{
+            top: c.top,
+            animationDelay: c.delay,
+            animationDuration: c.duration,
+            background:
+              "linear-gradient(90deg, transparent, rgba(167,139,255,0.9) 40%, rgba(0,212,255,0.6) 70%, transparent)",
+            boxShadow: "0 0 12px rgba(123,47,255,0.5)",
+          }}
+        />
+      ))}
+      {FLYING_ICONS.map((item, i) => {
+        const Icon = item.Icon;
+        return (
+          <span
+            key={`fly-${i}`}
+            className={`absolute ${item.anim}`}
+            style={{
+              left: item.left,
+              top: item.top,
+              animationDelay: item.delay,
+              animationDuration: item.duration,
+              color: item.color,
+            }}
+          >
+            <Icon
+              className="w-4 h-4 sm:w-5 sm:h-5 opacity-60 drop-shadow-[0_0_8px_currentColor]"
+              strokeWidth={1.75}
+            />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function HeroOrbitSparkles() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none hidden sm:block"
+      aria-hidden="true"
+    >
+      {HERO_ORBIT_SPARKLES.map((s, i) => (
+        <span
+          key={i}
+          className="absolute left-1/2 top-1/2 w-0 h-0 animate-orbit-sparkle"
+          style={
+            {
+              "--orbit-r": s.radius,
+              animationDelay: s.delay,
+              animationDuration: s.duration,
+            } as React.CSSProperties
+          }
+        >
+          <span
+            className={`block rounded-full ${s.size} opacity-70`}
+            style={{
+              background: s.color,
+              boxShadow: `0 0 10px ${s.color}, 0 0 20px ${s.color}88`,
+            }}
+          />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function PageBackground() {
   return (
     <div
@@ -335,6 +436,7 @@ function PageBackground() {
       <AuroraBackground />
       <StarField />
       <FloatingParticles />
+      <FlyingElements />
       <div className="absolute top-[30%] left-[12%] w-36 h-36 rounded-full bg-[#7B2FFF]/25 blur-3xl animate-orb-drift" />
       <div
         className="absolute top-[55%] right-[10%] w-44 h-44 rounded-full bg-[#00D4FF]/20 blur-3xl animate-orb-drift"
@@ -392,6 +494,25 @@ function ScrollReveal({
 }
 
 // ─── Marka logosu ─────────────────────────────────────────────────────────────
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
 function MindoraLogo({
   priority = false,
   variant = "default",
@@ -399,7 +520,7 @@ function MindoraLogo({
   priority?: boolean;
   variant?: "default" | "modal";
 }) {
-  const sizeClass = variant === "modal" ? "h-20 w-20" : "h-14 w-14";
+  const sizeClass = variant === "modal" ? "h-16 w-auto" : "h-12 w-auto";
   return (
     <Image
       src={ICON_SRC}
@@ -408,6 +529,7 @@ function MindoraLogo({
       height={ICON_H}
       priority={priority}
       quality={100}
+      unoptimized
       className={`brand-logo ${sizeClass} shrink-0 object-contain select-none`}
     />
   );
@@ -457,25 +579,28 @@ function LogoLongPressFlip({
 
   const sceneCls =
     variant === "hero"
-      ? "w-full max-w-[min(560px,96vw)] h-[min(520px,82vw)] sm:h-[min(560px,78vw)] sm:max-w-[min(600px,94vw)]"
+      ? "w-full max-w-[min(720px,96vw)] sm:max-w-[min(780px,94vw)] aspect-[980/547]"
       : variant === "header"
-        ? "h-16 w-[min(260px,58vw)] sm:h-[4.5rem] sm:w-[min(300px,52vw)]"
-        : "h-[min(300px,70vw)] w-[min(300px,80vw)] md:h-[min(320px,65vw)]";
+        ? "h-12 sm:h-14 w-auto max-w-[min(240px,52vw)] aspect-[980/547]"
+        : "w-[min(320px,80vw)] aspect-[980/547]";
 
   const quoteBody =
     variant === "hero" ? MINDORA_TEAM_QUOTE.text : MINDORA_TEAM_QUOTE.short;
 
   const quoteCls =
     variant === "hero"
-      ? "text-xs sm:text-sm leading-relaxed"
+      ? "text-[11px] sm:text-xs md:text-sm leading-[1.7] sm:leading-relaxed"
       : "text-[10px] sm:text-[11px] leading-snug";
+
+  const sceneFlipped =
+    flipped && variant === "hero" ? "is-flipped-hero" : "";
 
   return (
     <div
       className={`flex flex-col ${variant === "footer" ? "items-start" : "items-center"}`}
     >
       <div
-        className={`logo-flip-scene relative ${sceneCls}`}
+        className={`logo-flip-scene relative ${sceneCls} ${sceneFlipped} transition-[min-height] duration-500 ease-out`}
         onPointerDown={startHold}
         onPointerUp={endHold}
         onPointerCancel={endHold}
@@ -490,34 +615,51 @@ function LogoLongPressFlip({
             <Image
               src={LOGO_SRC}
               alt="MINDORA — Rehber Öğretmen ve Öğrenci Koçluğu Yazılımı"
-              fill
+              width={LOGO_W}
+              height={LOGO_H}
               priority={priority}
               quality={100}
+              unoptimized
               sizes={
                 variant === "hero"
-                  ? "(max-width: 1024px) 96vw, 600px"
+                  ? "(max-width: 1024px) 96vw, 780px"
                   : variant === "header"
-                    ? "260px"
-                    : "300px"
+                    ? "240px"
+                    : "320px"
               }
-              className={`object-contain ${variant === "hero" ? "brand-logo-hero" : "brand-logo"}`}
+              className={`h-full w-full object-contain ${variant === "hero" ? "brand-logo-hero" : "brand-logo"}`}
               draggable={false}
             />
           </div>
 
           <div className="logo-flip-face logo-flip-back border border-[#7B2FFF]/40 bg-gradient-to-br from-[#2a1f5c] via-[#1e1a48] to-[#141432] shadow-inner shadow-[#7B2FFF]/20">
             <div
-              className={`logo-flip-back-inner flex flex-col items-center justify-center text-center gap-2 ${
+              className={`logo-flip-back-inner flex flex-col items-center justify-center text-center ${
                 variant === "hero"
-                  ? "py-8 px-5 sm:px-7 sm:py-10 gap-3"
-                  : "py-5 px-4 sm:py-6"
+                  ? "py-6 px-5 sm:px-8 sm:py-8 md:py-10 gap-3 sm:gap-4"
+                  : "py-5 px-4 sm:py-6 gap-2"
               }`}
             >
               <Sparkles className="w-5 h-5 text-[#A78BFF] shrink-0" />
-              <p className={`text-white/80 italic ${quoteCls} max-w-[95%]`}>
-                &ldquo;{quoteBody}&rdquo;
-              </p>
-              <p className="text-[#A78BFF] text-xs font-semibold tracking-wide pt-1">
+              {variant === "hero" ? (
+                <>
+                  <p
+                    className={`text-white/85 sm:hidden ${quoteCls} max-w-[92%] font-normal not-italic`}
+                  >
+                    &ldquo;{MINDORA_TEAM_QUOTE.short}&rdquo;
+                  </p>
+                  <p
+                    className={`text-white/85 hidden sm:block ${quoteCls} max-w-[88%] md:max-w-[85%] font-normal italic`}
+                  >
+                    &ldquo;{MINDORA_TEAM_QUOTE.text}&rdquo;
+                  </p>
+                </>
+              ) : (
+                <p className={`text-white/85 italic ${quoteCls} max-w-[92%]`}>
+                  &ldquo;{quoteBody}&rdquo;
+                </p>
+              )}
+              <p className="text-[#A78BFF] text-[11px] sm:text-xs font-semibold tracking-wide shrink-0">
                 — {MINDORA_TEAM_QUOTE.author}
               </p>
             </div>
@@ -526,7 +668,7 @@ function LogoLongPressFlip({
       </div>
       {showHint && (
         <p
-          className={`mt-5 text-white/45 text-sm text-center max-w-md transition-all duration-300 ${
+          className={`mt-6 sm:mt-7 text-white/55 text-sm sm:text-base text-center max-w-md tracking-wide transition-all duration-300 ${
             flipped ? "opacity-0 max-h-0 mt-0 overflow-hidden" : "opacity-100"
           }`}
           aria-hidden={flipped}
@@ -540,21 +682,31 @@ function LogoLongPressFlip({
 
 function HeroBrandShowcase() {
   return (
-    <div className="relative mx-auto w-full max-w-2xl lg:max-w-none flex items-center justify-center py-8 lg:py-4 min-h-[360px] sm:min-h-[480px] lg:min-h-[600px]">
+    <div className="relative mx-auto w-full max-w-3xl lg:max-w-none flex items-center justify-center py-10 lg:py-8 min-h-[420px] sm:min-h-[540px] lg:min-h-[680px]">
       <div
-        className="absolute inset-[5%] rounded-full bg-[#7B2FFF]/30 blur-[90px] md:blur-[110px] animate-dora-glow pointer-events-none"
+        className="absolute inset-0 rounded-full bg-[#7B2FFF]/22 blur-[100px] md:blur-[130px] animate-dora-glow pointer-events-none"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-[15%] rounded-full bg-[#00D4FF]/18 blur-[70px] animate-aurora-2 pointer-events-none"
+        className="absolute inset-[8%] rounded-full bg-[#7B2FFF]/35 blur-[80px] md:blur-[100px] animate-dora-glow pointer-events-none"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-[25%] rounded-full bg-[#4F7CFF]/15 blur-[50px] animate-aurora-3 pointer-events-none"
+        className="absolute inset-[12%] rounded-full bg-[#00D4FF]/22 blur-[60px] md:blur-[80px] animate-aurora-2 pointer-events-none"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-[20%] rounded-full bg-[#4F7CFF]/20 blur-[40px] animate-aurora-3 pointer-events-none"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-[28%] rounded-full border border-[#7B2FFF]/15 bg-[#7B2FFF]/5 blur-sm pointer-events-none"
         aria-hidden="true"
       />
 
-      <div className="relative z-10 w-full flex justify-center animate-dora-float">
+      <HeroOrbitSparkles />
+
+      <div className="relative z-10 w-full flex justify-center animate-dora-float scale-[1.04] sm:scale-105 lg:scale-[1.1]">
         <LogoLongPressFlip variant="hero" priority showHint />
       </div>
     </div>
@@ -761,8 +913,8 @@ function Header({
 }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-6 md:px-12 py-3.5 md:py-4 bg-[#141432]/70 backdrop-blur-xl border-b border-white/10">
-      {/* Logo — 1. yerleşim */}
-      <LogoLongPressFlip variant="header" priority />
+      {/* Logo — header: yatay ikon markası */}
+      <MindoraLogo priority />
 
       <nav className="flex items-center gap-3">
         <button
@@ -1228,11 +1380,11 @@ function Footer() {
             iletisim@mindora.ai
           </a>
           <a
-            href="tel:+902121234567"
+            href="tel:+905364052801"
             className="flex items-center gap-2 text-white/55 hover:text-white text-sm transition-colors justify-center md:justify-start"
           >
             <Phone className="w-4 h-4" />
-            +90 212 123 45 67
+            +90 536 405 28 01
           </a>
         </div>
 
@@ -1242,13 +1394,20 @@ function Footer() {
           </p>
           <div className="flex items-center gap-3">
             {[
-              { icon: <X className="w-4 h-4" />, href: "#" },
-              { icon: <Share2 className="w-4 h-4" />, href: "#" },
-              { icon: <Briefcase className="w-4 h-4" />, href: "#" },
-            ].map((s, i) => (
+              {
+                icon: <InstagramIcon className="w-4 h-4" />,
+                href: "https://www.instagram.com/psk.dan.efedemirel_/",
+                label: "Instagram",
+              },
+              { icon: <X className="w-4 h-4" />, href: "#", label: "X" },
+              { icon: <Share2 className="w-4 h-4" />, href: "#", label: "Paylaş" },
+            ].map((s) => (
               <a
-                key={i}
+                key={s.label}
                 href={s.href}
+                target={s.href.startsWith("http") ? "_blank" : undefined}
+                rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                aria-label={s.label}
                 className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:border-[#7B2FFF]/60 hover:bg-[#7B2FFF]/10 transition-all duration-300"
               >
                 {s.icon}
