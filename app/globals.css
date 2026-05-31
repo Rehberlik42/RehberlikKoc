@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #141432;
+  --background-deep: #121028;
+  --foreground: #ededed;
+  --mindora-purple: #7b2fff;
+  --mindora-blue: #4f7cff;
+  --mindora-cyan: #00d4ff;
 }
 
 @theme inline {
@@ -12,15 +16,318 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Marka logosu — transparan görsel, kutu yok. object-contain ile temiz oturur. */
+.brand-logo {
+  image-rendering: auto;
+  filter: saturate(1.06) contrast(1.04) drop-shadow(0 0 14px rgba(123, 47, 255, 0.25));
+}
+
+.brand-logo-hero {
+  image-rendering: auto;
+  filter: saturate(1.1) contrast(1.05)
+    drop-shadow(0 0 40px rgba(123, 47, 255, 0.45))
+    drop-shadow(0 0 80px rgba(0, 212, 255, 0.2));
+}
+
+/* ─── Page mesh (lighter, animated base) ──────────────────────────────────── */
+.page-mesh-layer {
+  background:
+    radial-gradient(ellipse 110% 70% at 50% -8%, rgba(123, 47, 255, 0.42) 0%, transparent 52%),
+    radial-gradient(ellipse 70% 55% at 92% 22%, rgba(79, 124, 255, 0.28) 0%, transparent 48%),
+    radial-gradient(ellipse 65% 50% at 6% 55%, rgba(0, 212, 255, 0.22) 0%, transparent 48%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(53, 40, 104, 0.55) 0%, transparent 55%),
+    linear-gradient(180deg, #221c52 0%, #1a1744 28%, #141432 58%, #121028 100%);
+}
+
+@keyframes mesh-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(1.5%, -1%) scale(1.03); }
+  100% { transform: translate(-1%, 0.5%) scale(1.01); }
+}
+.animate-mesh-drift {
+  animation: mesh-drift 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes grid-pulse {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.1; }
+}
+.page-grid-overlay {
+  background-image:
+    linear-gradient(rgba(167, 139, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 255, 0.12) 1px, transparent 1px);
+  background-size: 56px 56px;
+  animation: grid-pulse 6s ease-in-out infinite;
+}
+
+@keyframes orb-drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(30px, -20px); }
+}
+.animate-orb-drift {
+  animation: orb-drift 10s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* ─── Aurora blobs ────────────────────────────────────────────────────────── */
+@keyframes aurora-blob-1 {
+  0% { transform: translate(-50%, 0) scale(1); opacity: 0.5; }
+  100% { transform: translate(-38%, 12%) scale(1.22); opacity: 0.75; }
+}
+@keyframes aurora-blob-2 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+  100% { transform: translate(-18%, 10%) scale(1.2); opacity: 0.65; }
+}
+@keyframes aurora-blob-3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+  100% { transform: translate(14%, -10%) scale(1.2); opacity: 0.6; }
+}
+@keyframes aurora-blob-4 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.22; }
+  100% { transform: translate(-12%, -10%) scale(1.2); opacity: 0.42; }
+}
+@keyframes aurora-blob-5 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  100% { transform: translate(14%, 8%) scale(1.18); opacity: 0.4; }
+}
+
+.animate-aurora-1 { animation: aurora-blob-1 13s ease-in-out infinite alternate; will-change: transform; }
+.animate-aurora-2 { animation: aurora-blob-2 16s ease-in-out infinite alternate; will-change: transform; }
+.animate-aurora-3 { animation: aurora-blob-3 18s ease-in-out infinite alternate; will-change: transform; }
+.animate-aurora-4 { animation: aurora-blob-4 21s ease-in-out infinite alternate; will-change: transform; }
+.animate-aurora-5 { animation: aurora-blob-5 24s ease-in-out infinite alternate; will-change: transform; }
+
+/* ─── Rotating light sweep ────────────────────────────────────────────────── */
+@keyframes sweep-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-sweep {
+  animation: sweep-spin 22s linear infinite;
+  will-change: transform;
+}
+
+/* ─── Twinkling stars ─────────────────────────────────────────────────────── */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+.animate-star {
+  animation: star-twinkle ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* ─── Floating particles ──────────────────────────────────────────────────── */
+@keyframes particle-float {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 0.85; }
+  90% { opacity: 0.55; }
+  100% { transform: translateY(-220px); opacity: 0; }
+}
+.animate-particle {
+  animation: particle-float linear infinite;
+  will-change: transform, opacity;
+}
+
+/* ─── Animated gradient text ──────────────────────────────────────────────── */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.gradient-text-animated {
+  background-size: 200% auto;
+  animation: gradient-shift 8s ease-in-out infinite alternate;
+}
+
+/* ─── DORA canlı animasyonları ────────────────────────────────────────────── */
+@keyframes dora-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.035); }
+}
+@keyframes dora-glow-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+/* dönen + nabız atan renkli aura halkası */
+@keyframes dora-aura {
+  0% { transform: rotate(0deg); opacity: 0.35; }
+  50% { opacity: 0.65; }
+  100% { transform: rotate(360deg); opacity: 0.35; }
+}
+.animate-dora-float { animation: dora-float 4.5s ease-in-out infinite; will-change: transform; }
+.animate-dora-glow { animation: dora-glow-pulse 3s ease-in-out infinite; will-change: transform, opacity; }
+.animate-dora-aura { animation: dora-aura 16s linear infinite; will-change: transform, opacity; }
+
+/* ─── CTA hover glow ──────────────────────────────────────────────────────── */
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(123, 47, 255, 0.35), 0 0 48px rgba(79, 124, 255, 0.15); }
+  50% { box-shadow: 0 0 32px rgba(123, 47, 255, 0.55), 0 0 64px rgba(0, 212, 255, 0.25); }
+}
+.btn-cta-glow:hover { animation: cta-glow 2s ease-in-out infinite; }
+
+/* ─── Özellik kartı dialog ─────────────────────────────────────────────────── */
+@keyframes feature-modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes feature-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.feature-modal-backdrop {
+  animation: feature-modal-backdrop-in 0.28s ease-out forwards;
+}
+
+.feature-modal-panel {
+  animation: feature-modal-panel-in 0.42s cubic-bezier(0.34, 1.28, 0.64, 1) forwards;
+  transform-origin: center center;
+}
+
+.feature-card-tile {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.1, 0.64, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+
+@media (hover: hover) {
+  .feature-card-tile:hover {
+    transform: translateY(-6px);
+  }
+}
+
+/* ─── Logo basılı tut → flip (ekip sözü) ───────────────────────────────────── */
+.logo-flip-scene {
+  perspective: 1200px;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transform: translateZ(0);
+}
+
+.logo-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.logo-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.logo-flip-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.25rem;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.logo-flip-back {
+  transform: rotateY(180deg) translateZ(2px);
+  overflow: hidden;
+}
+
+.logo-flip-back-inner {
+  box-sizing: border-box;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reveal-section {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.reveal-section.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora-1,
+  .animate-aurora-2,
+  .animate-aurora-3,
+  .animate-aurora-4,
+  .animate-aurora-5,
+  .animate-sweep,
+  .animate-star,
+  .animate-particle,
+  .animate-mesh-drift,
+  .animate-orb-drift,
+  .page-grid-overlay {
+    opacity: 0.05;
+    animation: none !important;
+  }
+  .page-mesh-layer {
+    animation: none !important;
+  }
+  .gradient-text-animated,
+  .animate-dora-float,
+  .animate-dora-glow,
+  .animate-dora-aura,
+  .btn-cta-glow:hover {
+    animation: none !important;
+  }
+  .animate-particle,
+  .animate-star {
+    display: none;
+  }
+  .reveal-section {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .feature-modal-backdrop,
+  .feature-modal-panel {
+    animation: none !important;
+  }
+  .feature-modal-panel {
+    opacity: 1;
+    transform: none;
+  }
+  .feature-card-tile:hover {
+    transform: none;
+  }
+  .logo-flip-inner {
+    transition: none;
+  }
+  .logo-flip-face {
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+    position: relative;
+  }
+  .logo-flip-back {
+    transform: none;
+    display: none;
+  }
+  .logo-flip-inner.is-flipped .logo-flip-front {
+    display: none;
+  }
+  .logo-flip-inner.is-flipped .logo-flip-back {
+    display: block;
+  }
+  .logo-flip-back-inner {
+    overflow: visible;
+  }
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none" role="img" aria-label="MINDORA">
+  <defs>
+    <linearGradient id="mg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7B2FFF"/>
+      <stop offset="50%" stop-color="#4F7CFF"/>
+      <stop offset="100%" stop-color="#00D4FF"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 38V14l6-4 8 14 8-14 6 4v24h-5V22l-7 12-7-12v16H8z" fill="url(#mg)"/>
+  <path d="M38 38V10l5 2v26h-5zm14 0V14l6-4 6 10 6-10 6 4v24h-5V22l-5 9-5-9v16h-5z" fill="url(#mg)"/>
+  <path d="M88 12l4 8 9-2-5 18h6l3-14 8 2-4-8-9 2 5-18h-6l-3 14-8-2z" fill="url(#mg)"/>
+  <text x="108" y="32" font-family="system-ui,sans-serif" font-size="18" font-weight="800" fill="url(#mg)" letter-spacing="2">MINDORA</text>
+</svg>

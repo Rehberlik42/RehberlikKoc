@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: ["html2canvas-pro"],
   images: {
+    qualities: [75, 100],
     remotePatterns: [
       // YouTube thumbnail'lari icin
       { protocol: "https", hostname: "i.ytimg.com" },
