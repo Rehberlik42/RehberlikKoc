@@ -18,17 +18,25 @@ export const metadata: Metadata = {
   description:
     "YKS, LGS ve ara sınıflar için yapay zeka destekli rehberlik ve koçluk platformu. Kişiselleştirilmiş program, deneme analizi ve DORA AI asistanı.",
   icons: {
-    icon: "/favicon.png",
+    icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: "/apple-icon.png",
   },
   openGraph: {
     type: "website",
     url: "https://www.mindorarehberlik.com",
     siteName: "MINDORA",
+    locale: "tr_TR",
     title: "MINDORA — Yapay Zeka Destekli Eğitim Koçluğu",
     description:
       "YKS, LGS ve ara sınıflar için yapay zeka destekli rehberlik ve koçluk platformu.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MINDORA — Rehber öğretmen ve öğrenci koçluğu",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
