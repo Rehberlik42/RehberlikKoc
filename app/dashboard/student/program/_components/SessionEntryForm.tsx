@@ -35,6 +35,33 @@ interface Props {
   onSuccess: () => void;
 }
 
+function useAnimatedNumber(target: number, active: boolean, duration = 500) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setValue(0);
+      return;
+    }
+
+    const start = performance.now();
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      setValue(target * progress);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [target, active, duration]);
+
+  return value;
+}
+
 // ─── Toast ───────────────────────────────────────────────────────────────────
 type ToastType = "success" | "error";
 
@@ -86,6 +113,8 @@ function NumInput({
   min?: number;
   accentColor?: string;
 }) {
+  const hasValue = value !== "";
+
   return (
     <div className="flex flex-col gap-1.5">
       <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
@@ -97,16 +126,15 @@ function NumInput({
         min={min}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-white/4 border border-white/8 px-3 py-2.5 text-white text-sm placeholder-white/20
-          focus:outline-none focus:border-transparent transition-all duration-200 text-center font-bold text-base"
+        className={`w-full rounded-xl border px-3 py-2.5 text-center text-base text-sm font-bold text-white placeholder-white/20 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${
+          hasValue
+            ? "border-white/15 bg-white/[0.06]"
+            : "border-white/8 bg-white/[0.04]"
+        }`}
         style={{
-          ["--tw-ring-color" as string]: accentColor,
-          boxShadow: undefined,
+          ["--tw-ring-color" as string]: `${accentColor}55`,
+          boxShadow: hasValue ? `0 0 14px ${accentColor}22` : undefined,
         }}
-        onFocus={(e) =>
-          (e.currentTarget.style.boxShadow = `0 0 0 2px ${accentColor}55, 0 0 12px ${accentColor}22`)
-        }
-        onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
         placeholder="0"
       />
     </div>
@@ -121,6 +149,7 @@ function SelectField({
   onChange,
   children,
   disabled = false,
+  highlighted = false,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -128,9 +157,14 @@ function SelectField({
   onChange: (v: string) => void;
   children: React.ReactNode;
   disabled?: boolean;
+  highlighted?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div
+      className={`flex flex-col gap-1.5 transition-opacity duration-300 ${
+        disabled ? "opacity-50" : "opacity-100"
+      }`}
+    >
       <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
         {icon}
         {label}
@@ -140,18 +174,14 @@ function SelectField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full rounded-xl bg-white/4 border border-white/8 px-3 py-2.5 pr-8 text-white text-sm
-            appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed
-            focus:outline-none transition-all duration-200"
-          onFocus={(e) =>
-            (e.currentTarget.style.boxShadow =
-              "0 0 0 2px #7B2FFF55, 0 0 12px #7B2FFF22")
-          }
-          onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+          className={`w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-sm text-white transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${
+            highlighted
+              ? "cursor-pointer border-[#7B2FFF]/25 bg-[#7B2FFF]/[0.06] shadow-[0_0_12px_rgba(123,47,255,0.1)]"
+              : "cursor-pointer border-white/8 bg-white/[0.04]"
+          }`}
         >
           {children}
         </select>
-        {/* custom arrow */}
         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -185,8 +215,10 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
 
   const net =
     correct !== "" && wrong !== ""
-      ? (parseFloat(correct) - parseFloat(wrong) / 4).toFixed(2)
+      ? parseFloat(correct) - parseFloat(wrong) / 4
       : null;
+
+  const animatedNet = useAnimatedNumber(net ?? 0, net !== null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,6 +268,11 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
     onSuccess();
   };
 
+  const netDisplay =
+    net !== null
+      ? `${animatedNet >= 0 ? "+" : ""}${animatedNet.toFixed(2)}`
+      : null;
+
   return (
     <>
       {toast && (
@@ -246,21 +283,24 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
         />
       )}
 
-      <div className="rounded-2xl border border-white/8 bg-[#0d0d2b]/50 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/50">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20 border border-[#7B2FFF]/20 flex items-center justify-center">
-            <Save className="w-4 h-4 text-[#A78BFF]" />
+        <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#7B2FFF]/20 bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20">
+            <Save className="h-4 w-4 text-[#A78BFF]" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-sm">Yeni Çalışma Girişi</h3>
-            <p className="text-white/30 text-[11px]">Bugünkü çalışmanı kaydet</p>
+            <h3 className="text-sm font-bold text-white">Yeni Çalışma Girişi</h3>
+            <p className="text-[11px] text-white/30">Bugünkü çalışmanı kaydet</p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
           {/* Ders + Konu */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            style={{ animationDelay: "0ms" }}
+          >
             <SelectField
               label="Ders"
               icon={<BookOpen className="w-3.5 h-3.5" />}
@@ -282,6 +322,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
               value={topicId}
               onChange={setTopicId}
               disabled={!subjectId || topics.length === 0}
+              highlighted={Boolean(subjectId && topics.length > 0)}
             >
               <option value="">— Konu seçin —</option>
               {topics.map((t) => (
@@ -293,7 +334,10 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
           </div>
 
           {/* Doğru / Yanlış / Süre */}
-          <div className="grid grid-cols-3 gap-4">
+          <div
+            className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            style={{ animationDelay: "50ms" }}
+          >
             <NumInput
               label="Doğru"
               icon={<CheckCircle2 className="w-3.5 h-3.5 text-green-400" />}
@@ -318,24 +362,26 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
           </div>
 
           {/* Net önizleme */}
-          {net !== null && (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/4 border border-white/8">
-              <span className="text-white/40 text-xs font-semibold uppercase tracking-wider">
+          {net !== null && netDisplay && (
+            <div className="animate-in fade-in slide-in-from-top-1 fill-mode-both flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.04] px-4 py-2.5 duration-300">
+              <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
                 Hesaplanan Net
               </span>
               <span
-                className={`text-sm font-black ml-auto ${
-                  parseFloat(net) >= 0 ? "text-green-400" : "text-red-400"
+                className={`ml-auto text-sm font-black tabular-nums ${
+                  net >= 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
-                {parseFloat(net) >= 0 ? "+" : ""}
-                {net}
+                {netDisplay}
               </span>
             </div>
           )}
 
           {/* Notlar */}
-          <div className="flex flex-col gap-1.5">
+          <div
+            className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            style={{ animationDelay: "100ms" }}
+          >
             <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
               <FileText className="w-3.5 h-3.5" />
               Not (opsiyonel)
@@ -345,13 +391,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Bu konuda dikkat ettiğin şeyler, DORA'ya not..."
-              className="w-full rounded-xl bg-white/4 border border-white/8 px-3 py-2.5 text-white text-sm placeholder-white/20 resize-none
-                focus:outline-none transition-all duration-200"
-              onFocus={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 0 2px #7B2FFF55, 0 0 12px #7B2FFF22")
-              }
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+              className="w-full resize-none rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40 focus-visible:ring-offset-0"
             />
           </div>
 
@@ -359,17 +399,13 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-white text-sm
-              bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF]
-              shadow-lg shadow-[#7B2FFF]/25
-              hover:shadow-[#7B2FFF]/50 hover:scale-[1.01]
-              disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed
-              transition-all duration-300 flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[#7B2FFF]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            style={{ animationDelay: "150ms" }}
           >
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Save className="w-4 h-4" />
+              <Save className="h-4 w-4" />
             )}
             {loading ? "Kaydediliyor…" : "Çalışmayı Kaydet"}
           </button>
