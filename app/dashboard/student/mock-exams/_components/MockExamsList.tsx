@@ -42,15 +42,15 @@ function MockExamRow({
   const net = totalNet(m);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#0d0d2b]/40 backdrop-blur-sm hover:border-white/15 transition-all duration-200 overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/40 backdrop-blur-sm transition-all duration-300 hover:border-white/15">
       {/* Header satiri */}
       <div className="flex items-center gap-4 px-5 py-4">
         {/* Net badge */}
         <div
-          className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
+          className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border transition-shadow duration-300 ${
             net >= 0
-              ? "bg-gradient-to-br from-[#7B2FFF]/20 to-[#4F7CFF]/15 border-[#7B2FFF]/30"
-              : "bg-red-500/10 border-red-500/30"
+              ? "border-[#7B2FFF]/30 bg-gradient-to-br from-[#7B2FFF]/20 to-[#4F7CFF]/15 shadow-[0_0_14px_rgba(123,47,255,0.2)]"
+              : "border-red-500/30 bg-red-500/10 shadow-[0_0_14px_rgba(239,68,68,0.15)]"
           }`}
         >
           <span
@@ -117,25 +117,25 @@ function MockExamRow({
             )}
           </button>
           {confirm ? (
-            <>
+            <div className="flex items-center gap-1 animate-in fade-in duration-200 fill-mode-both">
               <button
                 type="button"
                 onClick={() => {
                   onDelete(m.id);
                   setConfirm(false);
                 }}
-                className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-red-300 bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 transition-colors"
+                className="rounded-lg border border-red-500/30 bg-red-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-300 transition-all hover:bg-red-500/25"
               >
                 Eminim
               </button>
               <button
                 type="button"
                 onClick={() => setConfirm(false)}
-                className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white/40 bg-white/4 border border-white/10 hover:bg-white/8 transition-colors"
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/40 transition-all hover:bg-white/[0.08]"
               >
                 İptal
               </button>
-            </>
+            </div>
           ) : (
             <button
               type="button"
@@ -150,57 +150,64 @@ function MockExamRow({
       </div>
 
       {/* Detay (collapsible) */}
-      {open && (
-        <div className="border-t border-white/5 bg-black/15 px-5 py-4">
-          {m.results.length === 0 ? (
-            <p className="text-white/30 text-xs italic">
-              Bu deneme için ders detayı bulunmuyor.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {m.results
-                .slice()
-                .sort((a, b) => {
-                  const an = Number(a.net ?? 0);
-                  const bn = Number(b.net ?? 0);
-                  return bn - an;
-                })
-                .map((r) => {
-                  const subjectNet = Number(r.net ?? 0);
-                  return (
-                    <div
-                      key={r.id}
-                      className="rounded-lg bg-white/3 border border-white/6 px-3 py-2 flex items-center gap-2"
-                    >
-                      <span
-                        className="w-1 h-7 rounded-full shrink-0"
-                        style={{
-                          background: r.subject?.color ?? "#4F7CFF",
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-semibold truncate">
-                          {r.subject?.name ?? "—"}
-                        </p>
-                        <p className="text-white/30 text-[10px]">
-                          {r.correct_count}D · {r.wrong_count}Y · {r.empty_count}B
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs font-black tabular-nums shrink-0 ${
-                          subjectNet >= 0 ? "text-white" : "text-red-400"
-                        }`}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-white/5 bg-black/15 px-5 py-4">
+            {m.results.length === 0 ? (
+              <p className="text-xs italic text-white/30">
+                Bu deneme için ders detayı bulunmuyor.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {m.results
+                  .slice()
+                  .sort((a, b) => {
+                    const an = Number(a.net ?? 0);
+                    const bn = Number(b.net ?? 0);
+                    return bn - an;
+                  })
+                  .map((r) => {
+                    const subjectNet = Number(r.net ?? 0);
+                    return (
+                      <div
+                        key={r.id}
+                        className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
                       >
-                        {subjectNet >= 0 ? "+" : ""}
-                        {subjectNet.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+                        <span
+                          className="h-7 w-1 shrink-0 rounded-full"
+                          style={{
+                            background: r.subject?.color ?? "#4F7CFF",
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-white">
+                            {r.subject?.name ?? "—"}
+                          </p>
+                          <p className="text-[10px] text-white/30">
+                            {r.correct_count}D · {r.wrong_count}Y ·{" "}
+                            {r.empty_count}B
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-xs font-black tabular-nums ${
+                            subjectNet >= 0 ? "text-white" : "text-red-400"
+                          }`}
+                        >
+                          {subjectNet >= 0 ? "+" : ""}
+                          {subjectNet.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -238,8 +245,14 @@ export default function MockExamsList({ mockExams, onDelete }: Props) {
           </div>
         ) : (
           <div className="space-y-2">
-            {mockExams.map((m) => (
-              <MockExamRow key={m.id} m={m} onDelete={onDelete} />
+            {mockExams.map((m, idx) => (
+              <div
+                key={m.id}
+                className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+                style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
+              >
+                <MockExamRow m={m} onDelete={onDelete} />
+              </div>
             ))}
           </div>
         )}

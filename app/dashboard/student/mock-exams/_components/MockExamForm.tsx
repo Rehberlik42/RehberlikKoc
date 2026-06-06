@@ -39,6 +39,33 @@ function calcNet(correct: string, wrong: string): number {
   return c - w / 4;
 }
 
+function useAnimatedNumber(target: number, active: boolean, duration = 500) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setValue(0);
+      return;
+    }
+
+    const start = performance.now();
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      setValue(target * progress);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [target, active, duration]);
+
+  return value;
+}
+
 // ─── Small subject row ────────────────────────────────────────────────────────
 function SubjectInputRow({
   row,
@@ -52,10 +79,10 @@ function SubjectInputRow({
 
   return (
     <div
-      className={`rounded-xl border px-3 py-3 transition-all duration-200 ${
+      className={`rounded-xl border px-3 py-3 transition-all duration-300 ${
         hasData
-          ? "bg-[#0d0d2b]/60 border-[#7B2FFF]/25"
-          : "bg-white/3 border-white/8"
+          ? "border-[#7B2FFF]/30 bg-[#0d0d2b]/60 shadow-[0_0_16px_rgba(123,47,255,0.12)]"
+          : "border-white/8 bg-white/[0.03]"
       }`}
     >
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -126,11 +153,8 @@ function MiniInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="w-full rounded-lg bg-white/4 border border-white/10 pl-7 pr-2 py-1.5 text-white text-sm font-bold text-center placeholder-white/15 focus:outline-none transition-all"
-        onFocus={(e) =>
-          (e.currentTarget.style.boxShadow = `0 0 0 2px ${color}55, 0 0 10px ${color}22`)
-        }
-        onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+        className="w-full rounded-lg border border-white/10 bg-white/[0.04] py-1.5 pl-7 pr-2 text-center text-sm font-bold text-white placeholder-white/15 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0"
+        style={{ ["--tw-ring-color" as string]: `${color}55` }}
       />
     </div>
   );
@@ -192,6 +216,8 @@ export default function MockExamForm({
     }
     return { totalNet: net, totalQuestions: q, hasAnyData: any };
   }, [rows]);
+
+  const animatedTotalNet = useAnimatedNumber(totalNet, hasAnyData);
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -304,12 +330,7 @@ export default function MockExamForm({
             <select
               value={examId}
               onChange={(e) => setExamId(e.target.value)}
-              className="w-full rounded-xl bg-white/4 border border-white/10 px-3 py-2.5 pr-8 text-white text-sm appearance-none cursor-pointer focus:outline-none transition-all"
-              onFocus={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 0 2px #7B2FFF55, 0 0 12px #7B2FFF22")
-              }
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+              className="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 pr-8 text-sm text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
             >
               {exams.map((ex) => (
                 <option key={ex.id} value={String(ex.id)}>
@@ -324,12 +345,7 @@ export default function MockExamForm({
               type="date"
               value={examDate}
               onChange={(e) => setExamDate(e.target.value)}
-              className="w-full rounded-xl bg-white/4 border border-white/10 px-3 py-2.5 text-white text-sm focus:outline-none transition-all"
-              onFocus={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 0 2px #4F7CFF55, 0 0 12px #4F7CFF22")
-              }
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F7CFF]/40"
             />
           </FormField>
         </div>
@@ -342,12 +358,7 @@ export default function MockExamForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="ör. Genel Deneme 5"
-              className="w-full rounded-xl bg-white/4 border border-white/10 px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none transition-all"
-              onFocus={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 0 2px #7B2FFF55, 0 0 12px #7B2FFF22")
-              }
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
             />
           </FormField>
 
@@ -360,12 +371,7 @@ export default function MockExamForm({
               value={publisher}
               onChange={(e) => setPublisher(e.target.value)}
               placeholder="ör. 3D, Limit, ÖSYM"
-              className="w-full rounded-xl bg-white/4 border border-white/10 px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none transition-all"
-              onFocus={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 0 2px #4F7CFF55, 0 0 12px #4F7CFF22")
-              }
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "")}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F7CFF]/40"
             />
           </FormField>
         </div>
@@ -394,19 +400,24 @@ export default function MockExamForm({
               Bu sınav türü için ders tanımlanmamış.
             </div>
           ) : (
-            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="custom-scrollbar max-h-[360px] space-y-2 overflow-y-auto pr-1">
               {rows.map((row, idx) => (
-                <SubjectInputRow
-                  key={row.subjectId}
-                  row={row}
-                  onChange={(next) => {
-                    setRows((prev) => {
-                      const copy = [...prev];
-                      copy[idx] = next;
-                      return copy;
-                    });
-                  }}
-                />
+                <div
+                  key={`${examId}-${row.subjectId}`}
+                  className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+                  style={{ animationDelay: `${Math.min(idx * 50, 300)}ms` }}
+                >
+                  <SubjectInputRow
+                    row={row}
+                    onChange={(next) => {
+                      setRows((prev) => {
+                        const copy = [...prev];
+                        copy[idx] = next;
+                        return copy;
+                      });
+                    }}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -421,12 +432,12 @@ export default function MockExamForm({
             </span>
           </div>
           <span
-            className={`text-xl font-black tabular-nums ${
+            className={`text-xl font-black tabular-nums transition-colors duration-300 ${
               totalNet >= 0 ? "text-white" : "text-red-400"
             }`}
           >
             {hasAnyData
-              ? `${totalNet >= 0 ? "+" : ""}${totalNet.toFixed(2)}`
+              ? `${animatedTotalNet >= 0 ? "+" : ""}${animatedTotalNet.toFixed(2)}`
               : "—"}
           </span>
         </div>
@@ -435,7 +446,7 @@ export default function MockExamForm({
         <button
           type="submit"
           disabled={loading || !hasAnyData}
-          className="w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] shadow-lg shadow-[#7B2FFF]/25 hover:shadow-[#7B2FFF]/50 hover:scale-[1.01] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[#7B2FFF]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

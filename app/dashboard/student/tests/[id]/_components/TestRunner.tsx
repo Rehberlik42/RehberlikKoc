@@ -129,6 +129,35 @@ function resultPalette(level: string | undefined, type: TestType) {
   };
 }
 
+// ─── Animated number (RAF) ────────────────────────────────────────────────────
+function useAnimatedNumber(target: number, active: boolean, duration = 900) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setValue(0);
+      return;
+    }
+
+    setValue(0);
+    const start = performance.now();
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      setValue(target * progress);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [target, active, duration]);
+
+  return value;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function TestRunner({ test, testType, previousResult }: Props) {
   const router = useRouter();
@@ -302,16 +331,16 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
 
       {/* İlerleme şeridi (sticky) */}
       <div className="sticky top-2 z-20">
-        <div className="rounded-2xl border border-white/8 bg-slate-900/80 backdrop-blur-xl p-3 shadow-lg">
-          <div className="flex items-center justify-between text-[11px] text-white/50 mb-2">
+        <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
+          <div className="mb-2 flex items-center justify-between text-[11px] text-white/50">
             <span className="font-semibold">
               {answeredCount} / {total} cevaplandı
             </span>
             <span className="tabular-nums">{progressPct}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-[width] duration-700 ease-out"
               style={{
                 width: `${progressPct}%`,
                 background: `linear-gradient(90deg, ${meta.color}, #4F7CFF)`,
@@ -333,12 +362,12 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
             <div
               id={`q-${item.id}`}
               key={item.id}
-              className={`relative rounded-2xl border bg-slate-900/40 backdrop-blur-md p-5 transition-all duration-300 ${
+              className={`relative rounded-2xl border bg-slate-900/40 p-5 backdrop-blur-md transition-all duration-500 ease-out ${
                 isAnswered
-                  ? "border-white/10 opacity-80"
+                  ? "scale-[0.995] border-white/10 opacity-75"
                   : isActive
-                  ? "border-[#7B2FFF]/30 shadow-md shadow-[#7B2FFF]/10"
-                  : "border-white/8"
+                    ? "scale-100 border-[#7B2FFF]/40 shadow-lg shadow-[#7B2FFF]/15 ring-1 ring-[#7B2FFF]/20"
+                    : "scale-100 border-white/8 opacity-100"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -372,10 +401,10 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
                         key={value}
                         type="button"
                         onClick={() => handleSelect(item.id, value, idx)}
-                        className={`group/btn relative flex flex-col items-center justify-center gap-1 px-1 py-3 rounded-xl border text-[10px] sm:text-[11px] font-semibold transition-all ${
+                        className={`group/btn relative flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-3 text-[10px] font-semibold transition-all duration-200 sm:text-[11px] ${
                           isSelected
-                            ? "bg-[#7B2FFF]/20 border-[#7B2FFF]/50 text-white shadow-md shadow-[#7B2FFF]/20"
-                            : "bg-white/3 border-white/8 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/5"
+                            ? "scale-105 border-[#7B2FFF]/50 bg-[#7B2FFF]/20 text-white shadow-md shadow-[#7B2FFF]/25"
+                            : "scale-100 border-white/8 bg-white/[0.03] text-white/40 hover:scale-[1.02] hover:border-white/20 hover:bg-white/[0.05] hover:text-white active:scale-95"
                         }`}
                         title={label}
                       >
@@ -400,7 +429,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
       </div>
 
       {/* Submit */}
-      <div className="sticky bottom-2 z-20 rounded-2xl border border-white/8 bg-slate-900/80 backdrop-blur-xl p-3 flex items-center justify-between gap-3">
+      <div className="sticky bottom-2 z-20 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-[11px] text-white/40">
           {ready ? (
             <span className="text-emerald-300 font-semibold flex items-center gap-1">
@@ -464,17 +493,27 @@ function ResultScreen({
 }) {
   const meta = typeMeta(testType);
   const palette = resultPalette(interpretation?.level, testType);
+  const [mounted, setMounted] = useState(false);
+  const animatedScore = useAnimatedNumber(score, mounted, 900);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   // 0-100 arası normalize
   const pct = useMemo(() => {
     const span = Math.max(1, range.max - range.min);
     return Math.round(((score - range.min) / span) * 100);
   }, [score, range]);
 
+  const barPct = mounted ? pct : 0;
+
   return (
     <div className="space-y-6">
       {/* Hero result */}
       <div
-        className={`relative rounded-3xl border bg-gradient-to-br ${palette.bg} p-6 md:p-8 overflow-hidden ${palette.border}`}
+        className={`relative animate-in fade-in slide-in-from-bottom-4 fill-mode-both rounded-3xl border bg-gradient-to-br p-6 duration-500 md:p-8 ${palette.bg} overflow-hidden ${palette.border}`}
       >
         <div
           aria-hidden
@@ -519,18 +558,18 @@ function ResultScreen({
           <div className="flex items-end justify-between mb-2 text-[11px] text-white/40">
             <span>
               Skor:{" "}
-              <span className={`text-2xl font-black ${palette.text}`}>
-                {score}
+              <span className={`text-2xl font-black tabular-nums ${palette.text}`}>
+                {Math.round(animatedScore)}
               </span>
               <span className="text-white/30"> / {range.max}</span>
             </span>
             <span className="tabular-nums">{pct}%</span>
           </div>
-          <div className="h-2.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="h-2.5 overflow-hidden rounded-full bg-white/5">
             <div
-              className="h-full rounded-full transition-all duration-1000"
+              className="h-full rounded-full transition-[width] duration-1000 ease-out"
               style={{
-                width: `${pct}%`,
+                width: `${barPct}%`,
                 background: `linear-gradient(90deg, ${meta.color}, ${palette.glow})`,
                 boxShadow: `0 0 16px ${palette.glow}`,
               }}
