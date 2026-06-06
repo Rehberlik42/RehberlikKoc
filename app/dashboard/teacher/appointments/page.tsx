@@ -51,22 +51,15 @@ export default async function TeacherAppointmentsPage() {
       .eq("teacher_id", user.id)
       .order("appointment_date", { ascending: true }),
     supabase
-      .from("teacher_students")
-      .select(
-        `student_id,
-         student:profiles!teacher_students_student_id_fkey(id, full_name, avatar_url, grade)`
-      )
+      .from("profiles")
+      .select("id, full_name, avatar_url, grade")
       .eq("teacher_id", user.id)
-      .eq("is_active", true),
+      .eq("role", "student")
+      .order("full_name", { ascending: true }),
   ]);
 
   const appointments = (appointmentsRes.data ?? []) as unknown as AppointmentRow[];
-  const students = (studentsRes.data ?? [])
-    .map(
-      (r) =>
-        (r as unknown as { student: StudentOption | null }).student ?? null
-    )
-    .filter((s): s is StudentOption => s !== null);
+  const students = (studentsRes.data ?? []) as StudentOption[];
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">

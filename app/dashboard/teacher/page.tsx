@@ -33,14 +33,11 @@ interface UpcomingAppointment {
 }
 
 interface RecentStudent {
-  student_id: string;
-  assigned_at: string;
-  student: {
-    id: string;
-    full_name: string | null;
-    grade: string | null;
-    school: string | null;
-  } | null;
+  id: string;
+  full_name: string | null;
+  grade: string | null;
+  school: string | null;
+  created_at: string | null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -67,10 +64,10 @@ export default async function TeacherDashboardPage() {
     { count: testResultsCount },
   ] = await Promise.all([
     supabase
-      .from("teacher_students")
+      .from("profiles")
       .select("*", { count: "exact", head: true })
       .eq("teacher_id", user.id)
-      .eq("is_active", true),
+      .eq("role", "student"),
     supabase
       .from("appointments")
       .select("*", { count: "exact", head: true })
@@ -102,20 +99,16 @@ export default async function TeacherDashboardPage() {
   const upcomingAppointments =
     (rawUpcoming ?? []) as unknown as UpcomingAppointment[];
 
-  // ─── Son atanan öğrenciler (en fazla 4) ─────────────────────────────────
+  // ─── Son eklenen öğrenciler (en fazla 4) ────────────────────────────────
   const { data: rawRecentStudents } = await supabase
-    .from("teacher_students")
-    .select(
-      `student_id, assigned_at,
-       student:profiles!teacher_students_student_id_fkey(id, full_name, grade, school)`
-    )
+    .from("profiles")
+    .select("id, full_name, grade, school, created_at")
     .eq("teacher_id", user.id)
-    .eq("is_active", true)
-    .order("assigned_at", { ascending: false })
+    .eq("role", "student")
+    .order("created_at", { ascending: false })
     .limit(4);
 
-  const recentStudents =
-    (rawRecentStudents ?? []) as unknown as RecentStudent[];
+  const recentStudents = (rawRecentStudents ?? []) as RecentStudent[];
 
   const hour = new Date().getHours();
   const salut =
@@ -342,22 +335,22 @@ function RecentStudentsPanel({ students }: { students: RecentStudent[] }) {
       ) : (
         <ul className="space-y-2">
           {students.map((s) => {
-            const exam = gradeToExam(s.student?.grade);
+            const exam = gradeToExam(s.grade);
             const colors = targetExamColors(exam);
             return (
               <li
-                key={s.student_id}
+                key={s.id}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/5 bg-white/3 hover:bg-white/5 transition-colors"
               >
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {initialsFromName(s.student?.full_name)}
+                  {initialsFromName(s.full_name)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-semibold truncate">
-                    {s.student?.full_name ?? "Öğrenci"}
+                    {s.full_name ?? "Öğrenci"}
                   </p>
                   <p className="text-white/30 text-[11px] truncate">
-                    {s.student?.school ?? "Okul bilgisi yok"}
+                    {s.school ?? "Okul bilgisi yok"}
                   </p>
                 </div>
                 <span

@@ -50,14 +50,14 @@ export default async function TeacherTestsPage() {
     .single();
   if (profile?.role === "student") redirect("/dashboard/student");
 
-  // ─── 1) Öğretmenin aktif öğrencileri ─────────────────────────────────────
-  const { data: studentLinks } = await supabase
-    .from("teacher_students")
-    .select("student_id")
+  // ─── 1) Öğretmenin öğrencileri (profiles.teacher_id) ─────────────────────
+  const { data: studentProfiles } = await supabase
+    .from("profiles")
+    .select("id")
     .eq("teacher_id", user.id)
-    .eq("is_active", true);
+    .eq("role", "student");
 
-  const studentIds = (studentLinks ?? []).map((s) => s.student_id);
+  const studentIds = (studentProfiles ?? []).map((s) => s.id);
 
   // ─── 2) Bu öğrencilerin tüm test sonuçları (RLS zaten filtreler; ekstra
   //        .in() ile kesin sınırlandırıyoruz)

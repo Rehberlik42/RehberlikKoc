@@ -28,6 +28,7 @@ interface StudentDetail {
   school: string | null;
   phone: string | null;
   bio: string | null;
+  created_at: string | null;
 }
 
 export default async function StudentDetailPage({
@@ -43,22 +44,14 @@ export default async function StudentDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  // ─── Bu öğrenci bu öğretmene atanmış mı? ─────────────────────────────────
-  const { data: link } = await supabase
-    .from("teacher_students")
-    .select("assigned_at, is_active")
-    .eq("teacher_id", user.id)
-    .eq("student_id", id)
-    .maybeSingle();
-
-  if (!link || !link.is_active) notFound();
-
-  // ─── Öğrenci profili ─────────────────────────────────────────────────────
+  // ─── Bu öğrenci bu öğretmene ait mi? ─────────────────────────────────────
   const { data: rawStudent } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, grade, school, phone, bio")
+    .select("id, full_name, avatar_url, grade, school, phone, bio, created_at")
     .eq("id", id)
-    .single();
+    .eq("teacher_id", user.id)
+    .eq("role", "student")
+    .maybeSingle();
 
   if (!rawStudent) notFound();
   const student = rawStudent as unknown as StudentDetail;
@@ -148,9 +141,11 @@ export default async function StudentDetailPage({
                 {student.bio}
               </p>
             )}
-            <p className="text-white/30 text-xs mt-3">
-              {timeAgo(link.assigned_at)} atandı
-            </p>
+            {student.created_at ? (
+              <p className="text-white/30 text-xs mt-3">
+                {timeAgo(student.created_at)} eklendi
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
