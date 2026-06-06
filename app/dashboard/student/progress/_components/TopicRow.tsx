@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle2, Circle, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 
@@ -61,6 +61,24 @@ export const STATUS_CONFIG: Record<
   },
 };
 
+const BAR_GLOW: Record<ProgressStatus, string> = {
+  not_started: "",
+  in_progress: "shadow-[0_0_10px_rgba(79,124,255,0.45)]",
+  needs_review: "shadow-[0_0_10px_rgba(251,146,60,0.45)]",
+  completed: "shadow-[0_0_12px_rgba(123,47,255,0.55)]",
+};
+
+function useMountAnimation() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return mounted;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function TopicRow({
   topicId,
@@ -71,6 +89,7 @@ export default function TopicRow({
   showToast,
 }: TopicRowProps) {
   const supabase = createClient();
+  const mounted = useMountAnimation();
 
   const [status, setStatus] = useState<ProgressStatus>(
     initialProgress?.status ?? "not_started"
@@ -81,6 +100,7 @@ export default function TopicRow({
   const [saving, setSaving] = useState(false);
 
   const cfg = STATUS_CONFIG[status];
+  const displayPct = mounted ? percentage : 0;
 
   const handleChange = async (newStatus: ProgressStatus) => {
     const newPct = STATUS_CONFIG[newStatus].pct;
@@ -117,46 +137,53 @@ export default function TopicRow({
   };
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/2 transition-all duration-200">
+    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:-translate-y-px">
       {/* Konu adı */}
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm font-medium truncate transition-colors duration-200 ${
-            status === "completed" ? "text-white/50 line-through" : "text-white/80"
+          className={`flex items-center gap-1.5 text-sm font-medium truncate transition-colors duration-200 ${
+            status === "completed"
+              ? "text-white/45 decoration-white/20"
+              : "text-white/80"
           }`}
         >
-          {topicName}
+          {status === "completed" && (
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#A78BFF]/80" />
+          )}
+          <span className={status === "completed" ? "line-through decoration-white/25" : ""}>
+            {topicName}
+          </span>
         </p>
         {/* Progress bar */}
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/6 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-700 ease-out ${cfg.barClass}`}
-            style={{ width: `${percentage}%` }}
+            className={`h-full rounded-full transition-[width] duration-700 ease-out ${cfg.barClass} ${BAR_GLOW[status]}`}
+            style={{ width: mounted ? `${percentage}%` : "0%" }}
           />
         </div>
       </div>
 
       {/* Yüzde */}
       <span
-        className={`text-xs font-bold w-7 text-right tabular-nums shrink-0 ${cfg.color}`}
+        className={`w-7 shrink-0 text-right text-xs font-bold tabular-nums transition-colors duration-200 ${cfg.color}`}
       >
-        {percentage}%
+        {displayPct}%
       </span>
 
       {/* Status select */}
       <div className="relative shrink-0">
         {saving ? (
-          <div className="w-28 h-7 flex items-center justify-center">
-            <Loader2 className="w-3.5 h-3.5 text-white/30 animate-spin" />
+          <div className="flex h-7 w-28 items-center justify-center">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-white/30" />
           </div>
         ) : (
           <select
             value={status}
             onChange={(e) => handleChange(e.target.value as ProgressStatus)}
             className={`
-              appearance-none w-28 h-7 pl-6 pr-2 rounded-lg text-[11px] font-semibold
-              bg-white/4 border border-white/8 cursor-pointer
-              focus:outline-none transition-all duration-200
+              h-7 w-28 cursor-pointer appearance-none rounded-lg border border-white/8
+              bg-white/4 pl-6 pr-2 text-[11px] font-semibold
+              transition-all duration-200 focus:outline-none
               ${cfg.color}
             `}
             onFocus={(e) =>
