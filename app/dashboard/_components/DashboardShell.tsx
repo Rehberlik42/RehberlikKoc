@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -57,6 +58,10 @@ const teacherNav: NavItem[] = [
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
 ];
 
+const adminNav: NavItem[] = [
+  { label: "Yönetim Paneli", href: "/dashboard/admin/content",            icon: <Settings className="w-4.5 h-4.5" /> },
+];
+
 // ─── Gradient helpers ─────────────────────────────────────────────────────────
 const gradientText =
   "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] bg-clip-text text-transparent";
@@ -74,7 +79,11 @@ function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const nav = profile.role === "teacher" ? teacherNav : studentNav;
+  const nav = profile.role === "admin" 
+    ? adminNav 
+    : profile.role === "teacher" 
+    ? teacherNav 
+    : studentNav;
   const initials = profile.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
@@ -126,12 +135,14 @@ function Sidebar({
         <div className="px-5 py-3">
           <span className={`
             inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest
-            ${profile.role === "teacher"
+            ${profile.role === "admin"
+              ? "bg-red-500/15 text-red-300 border border-red-500/25"
+              : profile.role === "teacher"
               ? "bg-[#4F7CFF]/15 text-[#7AB3FF] border border-[#4F7CFF]/25"
               : "bg-[#7B2FFF]/15 text-[#A78BFF] border border-[#7B2FFF]/25"
             }
           `}>
-            {profile.role === "teacher" ? "Öğretmen Paneli" : "Öğrenci Paneli"}
+            {profile.role === "admin" ? "Admin Paneli" : profile.role === "teacher" ? "Öğretmen Paneli" : "Öğrenci Paneli"}
           </span>
         </div>
 
@@ -207,6 +218,8 @@ function Topbar({
     const titles: Record<string, string> = {
       student:        "Ana Sayfa",
       teacher:        "Ana Sayfa",
+      admin:          "Yönetim Paneli",
+      content:        "İçerik Yönetim Sistemi (CMS)",
       program:        "Çalışma Programım",
       "mock-exams":   "Deneme Analizleri",
       recommendations:"DORA Önerileri",

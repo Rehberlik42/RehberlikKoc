@@ -1,7 +1,45 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  SUPERADMIN_SESSION_COOKIE,
+  SUPERADMIN_SESSION_VALUE,
+} from "@/lib/superadmin/constants";
+
+function handleSuperadminRoute(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (!pathname.startsWith("/superadmin")) {
+    return null;
+  }
+
+  const session = request.cookies.get(SUPERADMIN_SESSION_COOKIE);
+  const isAuthenticated = session?.value === SUPERADMIN_SESSION_VALUE;
+  const isLoginPage = pathname === "/superadmin/login";
+
+  if (isLoginPage) {
+    if (isAuthenticated) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/superadmin";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
+  if (!isAuthenticated) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/superadmin/login";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next({ request });
+}
 
 export async function updateSession(request: NextRequest) {
+  const superadminResponse = handleSuperadminRoute(request);
+  if (superadminResponse) {
+    return superadminResponse;
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
