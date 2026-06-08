@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Search, Sparkles } from "lucide-react";
 import type { GuidanceContent, GuidanceFilter } from "@/lib/guidance";
 import { FILTER_CHIPS } from "@/lib/guidance";
 import GuidanceCard from "./GuidanceCard";
@@ -15,6 +15,7 @@ export default function GuidanceHub({ initialContents }: Props) {
   const [filter, setFilter] = useState<GuidanceFilter>("all");
   const [query, setQuery] = useState("");
   const [videoItem, setVideoItem] = useState<GuidanceContent | null>(null);
+  const seenCardIds = useRef(new Set<number>());
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -41,8 +42,8 @@ export default function GuidanceHub({ initialContents }: Props) {
       <VideoModal item={videoItem} onClose={() => setVideoItem(null)} />
 
       {/* Kategori filtreleri — Pinterest / Netflix tarzı chip şeridi */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-1">
           {FILTER_CHIPS.map((chip) => {
             const active = filter === chip.id;
             const count =
@@ -54,16 +55,16 @@ export default function GuidanceHub({ initialContents }: Props) {
                 key={chip.id}
                 type="button"
                 onClick={() => setFilter(chip.id)}
-                className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 ${
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ease-out ${
                   active
-                    ? "bg-gradient-to-r from-[#7B2FFF]/25 to-[#4F7CFF]/15 border-[#7B2FFF]/40 text-white shadow-md shadow-[#7B2FFF]/15 scale-[1.02]"
-                    : "bg-slate-900/40 border-white/10 text-white/50 hover:text-white hover:border-white/20 hover:bg-white/5"
+                    ? "scale-[1.02] border-[#7B2FFF]/40 bg-gradient-to-r from-[#7B2FFF]/25 to-[#4F7CFF]/15 text-white shadow-md shadow-[#7B2FFF]/15"
+                    : "border-white/10 bg-slate-900/40 text-white/50 hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
                 }`}
               >
                 <span>{chip.emoji}</span>
                 <span>{chip.label}</span>
                 <span
-                  className={`tabular-nums text-xs ${
+                  className={`text-xs tabular-nums ${
                     active ? "text-[#A78BFF]" : "text-white/30"
                   }`}
                 >
@@ -74,35 +75,54 @@ export default function GuidanceHub({ initialContents }: Props) {
           })}
         </div>
 
-        <div className="relative sm:ml-auto w-full sm:w-56">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+        <div className="relative w-full sm:ml-auto sm:w-56">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="İçerik ara..."
-            className="w-full pl-9 pr-3 py-2 rounded-full bg-slate-900/50 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#7B2FFF]/40 focus:ring-2 focus:ring-[#7B2FFF]/20"
+            className="w-full rounded-full border border-white/10 bg-slate-900/50 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 transition-all duration-200 focus:border-[#7B2FFF]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25 focus-visible:ring-offset-0"
           />
         </div>
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center">
-          <p className="text-white/60 font-semibold">Eşleşen içerik yok</p>
-          <p className="text-white/40 text-sm mt-1">
-            Filtreyi değiştir veya aramayı temizle.
+        <div className="rounded-2xl border border-dashed border-[#7B2FFF]/20 bg-gradient-to-br from-slate-900/40 to-[#0d0d2b]/30 p-12 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/10">
+            <Sparkles className="h-5 w-5 text-[#A78BFF]" />
+          </div>
+          <p className="font-semibold text-white/70">Eşleşen içerik yok</p>
+          <p className="mt-1.5 text-sm text-white/40">
+            Farklı bir kategori dene veya aramayı temizle — tüm içerikler burada
+            keşfedilmeyi bekliyor.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((item) => (
-            <GuidanceCard
-              key={item.id}
-              item={item}
-              onVideoOpen={setVideoItem}
-            />
-          ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((item, index) => {
+            const shouldAnimate = !seenCardIds.current.has(item.id);
+            seenCardIds.current.add(item.id);
+
+            return (
+              <div
+                key={item.id}
+                className={
+                  shouldAnimate
+                    ? "animate-in fade-in fill-mode-both duration-300"
+                    : undefined
+                }
+                style={
+                  shouldAnimate
+                    ? { animationDelay: `${Math.min(index * 30, 240)}ms` }
+                    : undefined
+                }
+              >
+                <GuidanceCard item={item} onVideoOpen={setVideoItem} />
+              </div>
+            );
+          })}
         </div>
       )}
     </>

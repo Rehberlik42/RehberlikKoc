@@ -37,48 +37,58 @@ export default function VideoModal({ item, onClose }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5"
     >
       <button
         type="button"
         aria-label="Kapat"
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 animate-in fade-in duration-300 bg-black/90 backdrop-blur-md"
       />
 
-      <div className="relative w-full max-w-4xl rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-          <div className="flex items-center gap-2 min-w-0">
-            <PlayCircle className="w-5 h-5 text-red-400 shrink-0" />
-            <p className="text-white font-bold text-sm truncate">{item.title}</p>
+      <div className="relative w-full max-w-5xl animate-in fade-in zoom-in-95 fill-mode-both overflow-hidden rounded-2xl border border-[#7B2FFF]/20 bg-[#07070f] shadow-2xl shadow-[#7B2FFF]/25 duration-300">
+        {/* Minimal başlık */}
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#0d0d2b]/80 px-3 py-2.5 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <PlayCircle className="h-4 w-4 shrink-0 text-red-400" />
+            <p className="truncate text-sm font-semibold text-white/90">
+              {item.title}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-white/40 hover:text-white p-1 transition-colors"
+            aria-label="Videoyu kapat"
+            className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="relative aspect-video bg-black">
-          {embed ? (
-            <iframe
-              src={embed}
-              title={item.title}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm">
-              Video bağlantısı bulunamadı.
-            </div>
-          )}
+        {/* Sinema alanı */}
+        <div className="bg-black p-1 sm:p-2">
+          <div className="relative aspect-video overflow-hidden rounded-lg bg-black ring-1 ring-white/10">
+            {embed ? (
+              <iframe
+                src={embed}
+                title={item.title}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+                <PlayCircle className="h-10 w-10 text-white/20" />
+                <p className="text-sm text-white/45">
+                  Video bağlantısı bulunamadı.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {item.description && (
-          <p className="px-4 py-3 text-white/50 text-sm border-t border-white/5">
+          <p className="border-t border-white/[0.06] px-4 py-2.5 text-xs leading-relaxed text-white/45 sm:text-sm">
             {item.description}
           </p>
         )}

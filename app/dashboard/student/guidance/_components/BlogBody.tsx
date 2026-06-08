@@ -5,7 +5,7 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="text-white font-semibold">
+        <strong key={i} className="font-semibold text-white">
           {part.slice(2, -2)}
         </strong>
       );
@@ -14,21 +14,33 @@ function renderInline(text: string): React.ReactNode {
   });
 }
 
+const BLOCK_ANIM =
+  "animate-in fade-in fill-mode-both duration-300 motion-reduce:animate-none";
+
+function blockDelay(index: number) {
+  return { animationDelay: `${Math.min(index * 40, 320)}ms` };
+}
+
 export default function BlogBody({ body }: { body: string }) {
   const lines = body.split("\n");
   const blocks: React.ReactNode[] = [];
   let listItems: string[] = [];
   let key = 0;
+  let blockIndex = 0;
 
   const flushList = () => {
     if (listItems.length === 0) return;
+    const idx = blockIndex++;
     blocks.push(
       <ul
         key={key++}
-        className="list-disc list-inside space-y-2 text-white/75 text-base leading-relaxed my-4 pl-1"
+        className={`my-5 list-outside list-disc space-y-2.5 pl-5 text-base leading-loose text-white/80 marker:text-[#A78BFF]/70 ${BLOCK_ANIM}`}
+        style={blockDelay(idx)}
       >
         {listItems.map((li, i) => (
-          <li key={i}>{renderInline(li)}</li>
+          <li key={i} className="pl-1">
+            {renderInline(li)}
+          </li>
         ))}
       </ul>
     );
@@ -43,10 +55,12 @@ export default function BlogBody({ body }: { body: string }) {
     }
     if (trimmed.startsWith("### ")) {
       flushList();
+      const idx = blockIndex++;
       blocks.push(
         <h3
           key={key++}
-          className="text-white text-lg font-bold mt-8 mb-3 first:mt-0"
+          className={`mb-3 mt-9 text-lg font-bold tracking-tight text-white first:mt-0 ${BLOCK_ANIM}`}
+          style={blockDelay(idx)}
         >
           {trimmed.slice(4)}
         </h3>
@@ -55,10 +69,12 @@ export default function BlogBody({ body }: { body: string }) {
     }
     if (trimmed.startsWith("## ")) {
       flushList();
+      const idx = blockIndex++;
       blocks.push(
         <h2
           key={key++}
-          className="text-white text-xl sm:text-2xl font-black mt-10 mb-4 first:mt-0 pb-2 border-b border-white/10"
+          className={`mb-4 mt-11 border-b border-white/10 pb-2.5 text-xl font-black tracking-tight text-white first:mt-0 sm:text-2xl ${BLOCK_ANIM}`}
+          style={blockDelay(idx)}
         >
           {trimmed.slice(3)}
         </h2>
@@ -67,12 +83,14 @@ export default function BlogBody({ body }: { body: string }) {
     }
     if (trimmed.startsWith("> ")) {
       flushList();
+      const idx = blockIndex++;
       blocks.push(
         <blockquote
           key={key++}
-          className="border-l-2 border-[#7B2FFF]/50 pl-4 py-2 my-4 text-[#A78BFF]/90 italic text-base bg-[#7B2FFF]/5 rounded-r-lg"
+          className={`my-6 rounded-r-xl border-l-[3px] border-[#7B2FFF]/55 bg-[#7B2FFF]/[0.06] py-3 pl-5 pr-4 text-base leading-relaxed text-[#A78BFF]/95 ${BLOCK_ANIM}`}
+          style={blockDelay(idx)}
         >
-          {renderInline(trimmed.slice(2))}
+          <span className="italic">{renderInline(trimmed.slice(2))}</span>
         </blockquote>
       );
       continue;
@@ -82,10 +100,12 @@ export default function BlogBody({ body }: { body: string }) {
       continue;
     }
     flushList();
+    const idx = blockIndex++;
     blocks.push(
       <p
         key={key++}
-        className="text-white/75 text-base leading-relaxed my-4"
+        className={`my-4 text-base leading-loose text-white/80 ${BLOCK_ANIM}`}
+        style={blockDelay(idx)}
       >
         {renderInline(trimmed)}
       </p>
@@ -94,6 +114,8 @@ export default function BlogBody({ body }: { body: string }) {
   flushList();
 
   return (
-    <div className="max-w-none prose-invert">{blocks}</div>
+    <div className="mx-auto max-w-[68ch] text-[17px] leading-relaxed sm:text-base">
+      {blocks}
+    </div>
   );
 }

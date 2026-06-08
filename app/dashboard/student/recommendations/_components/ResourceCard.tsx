@@ -78,10 +78,8 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
-      className="group relative flex flex-col rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md overflow-hidden
-        hover:-translate-y-1 hover:border-transparent transition-all duration-300 ease-out"
+      className="group relative flex animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex-col overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:border-transparent motion-reduce:animate-none"
       style={{
-        // hover'da neon glow yaratan box-shadow CSS-in-JS olarak gruba bagliyor
         boxShadow: undefined,
       }}
       onMouseEnter={(e) => {
@@ -93,7 +91,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
     >
       {/* Thumbnail / Icon area */}
       <div
-        className="relative h-32 overflow-hidden flex items-center justify-center"
+        className="relative flex h-32 items-center justify-center overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${meta.accent}25, ${meta.accent}08)`,
         }}
@@ -104,12 +102,12 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
             alt={resource.title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.05] transition-all duration-500"
+            className="object-cover opacity-90 transition-all duration-500 group-hover:scale-[1.05] group-hover:opacity-100"
             unoptimized
           />
         ) : (
           <div
-            className="w-16 h-16 rounded-2xl border flex items-center justify-center"
+            className="flex h-16 w-16 items-center justify-center rounded-2xl border"
             style={{
               background: `linear-gradient(135deg, ${meta.accent}40, ${meta.accent}10)`,
               borderColor: `${meta.accent}40`,
@@ -123,15 +121,15 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
 
         {/* Dark overlay for readable badge */}
         {resource.thumbnail_url && (
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07071a]/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07071a]/90 via-[#07071a]/20 to-transparent" />
         )}
 
         {/* Type badge top-left */}
         <div
-          className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest backdrop-blur-md"
+          className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest shadow-sm backdrop-blur-md"
           style={{
-            background: `${meta.accent}25`,
-            border: `1px solid ${meta.accent}55`,
+            background: `${meta.accent}30`,
+            border: `1px solid ${meta.accent}60`,
             color: meta.accent,
           }}
         >
@@ -141,21 +139,21 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
 
         {/* Play overlay for youtube */}
         {resource.type === "youtube" && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-14 h-14 rounded-full bg-red-500/30 backdrop-blur-md border border-red-500/50 flex items-center justify-center">
-              <PlayCircle className="w-7 h-7 text-white" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-500/50 bg-red-500/30 shadow-lg shadow-red-500/20 backdrop-blur-md">
+              <PlayCircle className="h-7 w-7 text-white" />
             </div>
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col p-4 gap-3">
+      <div className="flex flex-1 flex-col gap-3 p-4">
         {/* Subject & Topic badges */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex flex-wrap items-center gap-1.5">
           {resource.subject && (
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border"
+              className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
               style={{
                 background: `${resource.subject.color ?? "#4F7CFF"}15`,
                 borderColor: `${resource.subject.color ?? "#4F7CFF"}40`,
@@ -163,7 +161,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
               }}
             >
               <span
-                className="w-1 h-1 rounded-full"
+                className="h-1 w-1 rounded-full"
                 style={{ background: resource.subject.color ?? "#4F7CFF" }}
               />
               {resource.subject.name}
@@ -175,32 +173,32 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
             </span>
           )}
           {resource.topic && (
-            <span className="text-[10px] text-white/40 font-semibold truncate max-w-[120px]">
+            <span className="max-w-[120px] truncate text-[10px] font-semibold text-white/40">
               · {resource.topic.name}
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h3 className="text-white font-bold text-sm leading-snug line-clamp-2 group-hover:text-white transition-colors">
+        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-white">
           {resource.title}
         </h3>
 
         {/* Description */}
         {resource.description && (
-          <p className="text-white/40 text-xs leading-relaxed line-clamp-2 flex-1">
+          <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-white/45">
             {resource.description}
           </p>
         )}
 
         {/* Footer: viewCount + CTA */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
-          <div className="flex items-center gap-1 text-white/30 text-[10px] font-semibold">
-            <Eye className="w-3 h-3" />
+        <div className="flex items-center justify-between gap-2 border-t border-white/5 pt-2.5">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-white/30">
+            <Eye className="h-3 w-3" />
             {resource.view_count > 0 ? resource.view_count : "yeni"}
           </div>
           <div
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-200 group-hover:gap-2"
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-300 group-hover:gap-2"
             style={{
               background: `linear-gradient(135deg, ${meta.accent}25, ${meta.accent}10)`,
               border: `1px solid ${meta.accent}55`,
@@ -208,13 +206,13 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
             }}
           >
             {meta.cta}
-            <ArrowUpRight className="w-3 h-3 transition-transform duration-200 group-hover:rotate-45" />
+            <ArrowUpRight className="h-3 w-3 transition-transform duration-300 group-hover:rotate-45" />
           </div>
         </div>
       </div>
 
       {/* External link icon top-right (always visible, subtle) */}
-      <ExternalLink className="absolute top-3 right-3 w-3.5 h-3.5 text-white/40 group-hover:text-white transition-colors pointer-events-none" />
+      <ExternalLink className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-white/40 transition-colors group-hover:text-white" />
     </a>
   );
 }

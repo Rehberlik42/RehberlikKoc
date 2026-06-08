@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, X } from "lucide-react";
-import { addStudent } from "../actions";
+import { addStudent } from "@/app/dashboard/teacher/actions";
 
 export interface TeacherStudentRow {
   id: string;
