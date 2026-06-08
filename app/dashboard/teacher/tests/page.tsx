@@ -10,6 +10,7 @@ import type { PsychologicalTest } from "@/lib/tests";
 import TeacherTestsClient, {
   type TeacherTestResult,
 } from "./_components/TeacherTestsClient";
+import StatCard from "./_components/StatCard";
 
 export const dynamic = "force-dynamic";
 
@@ -112,25 +113,40 @@ export default async function TeacherTestsPage() {
       </div>
 
       {/* Özet kartlar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          icon={<HeartPulse className="w-5 h-5" />}
-          label="Toplam çözülen test"
-          value={totalResults}
-          glow="rgba(123,47,255,0.3)"
-        />
-        <StatCard
-          icon={<Users className="w-5 h-5" />}
-          label="Test çözen öğrenci"
-          value={uniqueStudents}
-          glow="rgba(79,124,255,0.3)"
-        />
-        <StatCard
-          icon={<Brain className="w-5 h-5" />}
-          label="Son 7 günde"
-          value={lastSevenDays}
-          glow="rgba(0,212,255,0.3)"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          {
+            icon: <HeartPulse className="h-5 w-5" />,
+            label: "Toplam çözülen test",
+            value: totalResults,
+            glow: "rgba(123,47,255,0.3)",
+          },
+          {
+            icon: <Users className="h-5 w-5" />,
+            label: "Test çözen öğrenci",
+            value: uniqueStudents,
+            glow: "rgba(79,124,255,0.3)",
+          },
+          {
+            icon: <Brain className="h-5 w-5" />,
+            label: "Son 7 günde",
+            value: lastSevenDays,
+            glow: "rgba(0,212,255,0.3)",
+          },
+        ].map((card, index) => (
+          <div
+            key={card.label}
+            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            style={{ animationDelay: `${index * 70}ms` }}
+          >
+            <StatCard
+              icon={card.icon}
+              label={card.label}
+              value={card.value}
+              glow={card.glow}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Sonuç tablosu / akordeon */}
@@ -142,36 +158,3 @@ export default async function TeacherTestsPage() {
   );
 }
 
-// ─── StatCard ─────────────────────────────────────────────────────────────────
-function StatCard({
-  icon,
-  label,
-  value,
-  glow,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  glow: string;
-}) {
-  return (
-    <div className="relative rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md p-5 overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-[50px] pointer-events-none opacity-60"
-        style={{ background: glow }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-white/40 text-[11px] font-semibold uppercase tracking-wider mb-2">
-            {label}
-          </p>
-          <p className="text-white text-3xl font-black tabular-nums">{value}</p>
-        </div>
-        <div className="w-10 h-10 rounded-xl border border-white/10 bg-white/4 flex items-center justify-center text-white/70">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}

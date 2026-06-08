@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import {
   Eye,
   X,
@@ -64,7 +65,7 @@ function riskLevel(result: TeacherTestResult): {
     return {
       label: "—",
       className: "bg-white/5 text-white/40 border-white/10",
-      icon: <Minus className="w-3 h-3" />,
+      icon: <Minus className="h-3 w-3" />,
     };
 
   const interp = interpretScore(test.questions, result.score);
@@ -79,27 +80,119 @@ function riskLevel(result: TeacherTestResult): {
     return {
       label: "Dikkat",
       className: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-      icon: <AlertTriangle className="w-3 h-3" />,
+      icon: <AlertTriangle className="h-3 w-3" />,
     };
   }
   if (isMedium) {
     return {
       label: "Orta",
       className: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-      icon: <Minus className="w-3 h-3" />,
+      icon: <Minus className="h-3 w-3" />,
     };
   }
   return {
     label: "İyi",
     className: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    icon: <CheckCircle2 className="w-3 h-3" />,
+    icon: <CheckCircle2 className="h-3 w-3" />,
   };
+}
+
+function getEntryAnimation(
+  seenIds: Set<number>,
+  id: number,
+  index: number
+): { className: string; style?: React.CSSProperties } {
+  const isNew = !seenIds.has(id);
+  if (isNew) seenIds.add(id);
+
+  return isNew
+    ? {
+        className:
+          "animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300",
+        style: { animationDelay: `${Math.min(index * 40, 280)}ms` },
+      }
+    : { className: "" };
+}
+
+function StudentAvatar({
+  student,
+  size = "md",
+}: {
+  student: TeacherTestResult["student"];
+  size?: "sm" | "md";
+}) {
+  const dim = size === "sm" ? "h-8 w-8 text-[10px]" : "h-9 w-9 text-xs";
+  if (student?.avatar_url) {
+    return (
+      <img
+        src={student.avatar_url}
+        alt=""
+        loading="lazy"
+        className={`${dim} shrink-0 rounded-full border border-white/10 object-cover`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] font-bold text-white`}
+    >
+      {initialsFromName(student?.full_name)}
+    </div>
+  );
+}
+
+function StudentIdentity({
+  student,
+  size = "md",
+}: {
+  student: TeacherTestResult["student"];
+  size?: "sm" | "md";
+}) {
+  const inner = (
+    <>
+      <StudentAvatar student={student} size={size} />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-white">
+          {student?.full_name ?? "İsimsiz Öğrenci"}
+        </p>
+        {student?.grade && (
+          <p className="text-[10px] text-white/40">{student.grade}. sınıf</p>
+        )}
+      </div>
+    </>
+  );
+
+  if (student?.id) {
+    return (
+      <Link
+        href={`/dashboard/teacher/students/${student.id}`}
+        className="group/student flex min-w-0 items-center gap-2.5 rounded-lg transition-colors hover:text-[#A78BFF]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className="flex min-w-0 items-center gap-2.5">{inner}</div>;
+}
+
+function RiskBadge({ risk }: { risk: ReturnType<typeof riskLevel> }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${risk.className}`}
+    >
+      {risk.icon}
+      {risk.label}
+    </span>
+  );
 }
 
 export default function TeacherTestsClient({ results, hasStudents }: Props) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [selected, setSelected] = useState<TeacherTestResult | null>(null);
+  const seenRowIdsRef = useRef(new Set<number>());
 
   const types: TypeFilter[] = useMemo(() => {
     const set = new Set<string>();
@@ -120,12 +213,17 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
     });
   }, [results, typeFilter, query]);
 
+  const attentionCount = useMemo(
+    () => filtered.filter((r) => riskLevel(r).label === "Dikkat").length,
+    [filtered]
+  );
+
   if (!hasStudents) {
     return (
       <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-10 text-center">
-        <HeartPulse className="w-10 h-10 mx-auto text-white/30 mb-2" />
-        <p className="text-white/60 font-semibold">Henüz öğrencin yok</p>
-        <p className="text-white/40 text-sm mt-1">
+        <HeartPulse className="mx-auto mb-2 h-10 w-10 text-white/30" />
+        <p className="font-semibold text-white/60">Henüz öğrencin yok</p>
+        <p className="mt-1 text-sm text-white/40">
           Sana öğrenci atandığında ve testleri çözdüklerinde sonuçlar burada
           listelenecek.
         </p>
@@ -136,170 +234,254 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
   return (
     <>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Öğrenci veya test ara..."
-            className="pl-9 pr-3 py-2 rounded-lg bg-white/3 border border-white/8 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#7B2FFF]/40 focus:ring-2 focus:ring-[#7B2FFF]/20 w-64"
-          />
-        </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          <Filter className="w-3.5 h-3.5 text-white/30" />
-          {types.map((t) => {
-            const meta = t === "all" ? null : typeMeta(t);
-            const active = typeFilter === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTypeFilter(t)}
-                className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
-                  active
-                    ? "bg-[#7B2FFF]/15 border-[#7B2FFF]/40 text-[#A78BFF]"
-                    : "bg-white/3 border-white/8 text-white/40 hover:text-white hover:border-white/15"
-                }`}
-                style={
-                  meta && active
-                    ? {
-                        background: `${meta.color}1a`,
-                        borderColor: `${meta.color}50`,
-                        color: meta.color,
-                      }
-                    : undefined
-                }
-              >
-                {t === "all" ? "Tümü" : meta?.label}
-              </button>
-            );
-          })}
+      <div className="space-y-3">
+        {attentionCount > 0 && (
+          <div className="flex items-center gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
+            <p className="text-xs font-semibold text-rose-200">
+              {attentionCount} sonuç dikkat gerektiriyor
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Öğrenci veya test ara..."
+              className="w-64 rounded-lg border border-white/8 bg-white/[0.03] py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 focus:border-[#7B2FFF]/40 focus:outline-none focus:ring-2 focus:ring-[#7B2FFF]/20"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <Filter className="h-3.5 w-3.5 text-white/30" />
+            {types.map((t) => {
+              const meta = t === "all" ? null : typeMeta(t);
+              const active = typeFilter === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTypeFilter(t)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                    active
+                      ? "border-[#7B2FFF]/40 bg-[#7B2FFF]/15 text-[#A78BFF]"
+                      : "border-white/8 bg-white/[0.03] text-white/40 hover:border-white/15 hover:text-white"
+                  }`}
+                  style={
+                    meta && active
+                      ? {
+                          background: `${meta.color}1a`,
+                          borderColor: `${meta.color}50`,
+                          color: meta.color,
+                        }
+                      : undefined
+                  }
+                >
+                  {t === "all" ? "Tümü" : meta?.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Tablo */}
-      <div className="rounded-2xl border border-white/8 bg-slate-900/40 backdrop-blur-md overflow-hidden">
+      {/* Sonuç listesi */}
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900/40 backdrop-blur-md">
         {filtered.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-white/60 text-sm font-semibold">
+            <p className="text-sm font-semibold text-white/60">
               Eşleşen sonuç bulunamadı
             </p>
-            <p className="text-white/30 text-xs mt-1">
+            <p className="mt-1 text-xs text-white/30">
               Filtreleri temizleyip tekrar dene.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-white/40 border-b border-white/5 bg-white/2">
-                  <th className="px-4 py-3 font-bold">Öğrenci</th>
-                  <th className="px-4 py-3 font-bold">Test</th>
-                  <th className="px-4 py-3 font-bold">Tarih</th>
-                  <th className="px-4 py-3 font-bold text-right">Skor</th>
-                  <th className="px-4 py-3 font-bold">Durum</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  const meta = r.test
-                    ? typeMeta(r.test.type as TestType)
-                    : typeMeta("general");
-                  const risk = riskLevel(r);
-                  const date = new Date(r.takenAt);
-                  return (
-                    <tr
-                      key={r.id}
-                      className="border-b border-white/5 hover:bg-white/3 transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                            {initialsFromName(r.student?.full_name)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-white text-sm font-semibold truncate">
-                              {r.student?.full_name ?? "İsimsiz Öğrenci"}
-                            </p>
-                            {r.student?.grade && (
-                              <p className="text-white/40 text-[10px]">
-                                {r.student.grade}. sınıf
+          <>
+            {/* Masaüstü tablo */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5 bg-white/[0.02] text-left text-[10px] font-bold uppercase tracking-wider text-white/40">
+                    <th className="px-4 py-3">Öğrenci</th>
+                    <th className="px-4 py-3">Test</th>
+                    <th className="px-4 py-3">Tarih</th>
+                    <th className="px-4 py-3 text-right">Skor</th>
+                    <th className="px-4 py-3">Durum</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r, index) => {
+                    const meta = r.test
+                      ? typeMeta(r.test.type as TestType)
+                      : typeMeta("general");
+                    const risk = riskLevel(r);
+                    const isAttention = risk.label === "Dikkat";
+                    const date = new Date(r.takenAt);
+                    const anim = getEntryAnimation(
+                      seenRowIdsRef.current,
+                      r.id,
+                      index
+                    );
+
+                    return (
+                      <tr
+                        key={r.id}
+                        className={`border-b border-white/5 transition-colors hover:bg-white/[0.03] ${
+                          isAttention
+                            ? "border-l-2 border-l-rose-500/50 bg-rose-500/[0.03]"
+                            : ""
+                        } ${anim.className}`}
+                        style={anim.style}
+                      >
+                        <td className="px-4 py-3">
+                          <StudentIdentity student={r.student} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="h-6 w-1.5 shrink-0 rounded-full"
+                              style={{ background: meta.color }}
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white">
+                                {r.test?.title ?? "—"}
                               </p>
-                            )}
+                              <p
+                                className="text-[10px] font-bold uppercase tracking-wider"
+                                style={{ color: meta.color }}
+                              >
+                                {meta.label}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span
-                            className="w-1.5 h-6 rounded-full shrink-0"
-                            style={{ background: meta.color }}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-white text-sm font-medium truncate">
-                              {r.test?.title ?? "—"}
-                            </p>
-                            <p
-                              className="text-[10px] font-bold uppercase tracking-wider"
-                              style={{ color: meta.color }}
-                            >
-                              {meta.label}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-white/50 text-xs whitespace-nowrap">
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-white/50">
+                          {date.toLocaleDateString("tr-TR", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-black tabular-nums text-white">
+                            {r.score ?? "—"}
+                          </span>
+                          {r.test && r.score !== null && (
+                            <span className="ml-1 text-[10px] text-white/30">
+                              /{scoreRange(r.test.questions).max}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <RiskBadge risk={risk} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setSelected(r)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/70 transition-all hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/15 hover:text-white"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Detay
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobil kartlar */}
+            <div className="divide-y divide-white/5 md:hidden">
+              {filtered.map((r, index) => {
+                const meta = r.test
+                  ? typeMeta(r.test.type as TestType)
+                  : typeMeta("general");
+                const risk = riskLevel(r);
+                const isAttention = risk.label === "Dikkat";
+                const date = new Date(r.takenAt);
+                const anim = getEntryAnimation(
+                  seenRowIdsRef.current,
+                  r.id,
+                  index
+                );
+
+                return (
+                  <div
+                    key={r.id}
+                    className={`space-y-3 p-4 ${
+                      isAttention
+                        ? "border-l-2 border-l-rose-500/50 bg-rose-500/[0.03]"
+                        : ""
+                    } ${anim.className}`}
+                    style={anim.style}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <StudentIdentity student={r.student} size="sm" />
+                      <RiskBadge risk={risk} />
+                    </div>
+
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-5 w-1 shrink-0 rounded-full"
+                        style={{ background: meta.color }}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-white">
+                          {r.test?.title ?? "—"}
+                        </p>
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: meta.color }}
+                        >
+                          {meta.label}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-white/45">
                         {date.toLocaleDateString("tr-TR", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
                         })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-white font-black tabular-nums">
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-black tabular-nums text-white">
                           {r.score ?? "—"}
                         </span>
                         {r.test && r.score !== null && (
-                          <span className="text-white/30 text-[10px] ml-1">
+                          <span className="ml-1 text-[10px] text-white/30">
                             /{scoreRange(r.test.questions).max}
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${risk.className}`}
-                        >
-                          {risk.icon}
-                          {risk.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelected(r)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-[#7B2FFF]/15 hover:border-[#7B2FFF]/30 text-xs font-semibold transition-all"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Detay
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelected(r)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-white/70 transition-all hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/15 hover:text-white"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Detay
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Detail modal */}
-      <DetailModal
-        result={selected}
-        onClose={() => setSelected(null)}
-      />
+      <DetailModal result={selected} onClose={() => setSelected(null)} />
     </>
   );
 }
@@ -346,7 +528,6 @@ function DetailModal({
       )
     : 0;
 
-  // Re-calculate score from raw answers (sanity check)
   const recalculated = test
     ? calculateScore(
         test.questions,
@@ -366,28 +547,36 @@ function DetailModal({
         type="button"
         aria-label="Modalı kapat"
         onClick={onClose}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
       />
 
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 animate-in fade-in-0 zoom-in-95 duration-200">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
+      <div className="relative max-h-[90vh] w-full max-w-2xl animate-in fade-in zoom-in-95 overflow-y-auto rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/25 duration-300 slide-in-from-bottom-2">
+        <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-40 blur-[80px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(123,47,255,0.45) 0%, transparent 70%)",
+          }}
+          aria-hidden
+        />
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 py-4 border-b border-white/8 sticky top-0 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] z-10">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-white/8 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] px-5 py-4">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div
-              className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
               style={{
                 background: `${meta.color}1a`,
                 borderColor: `${meta.color}50`,
                 color: meta.color,
               }}
             >
-              <HeartPulse className="w-5 h-5" />
+              <HeartPulse className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <span
-                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-block"
+                className="inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                 style={{
                   background: `${meta.color}14`,
                   borderColor: `${meta.color}40`,
@@ -396,10 +585,10 @@ function DetailModal({
               >
                 {meta.label}
               </span>
-              <p className="text-white text-base font-bold mt-1 truncate">
+              <p className="mt-1 truncate text-base font-bold text-white">
                 {test?.title ?? "Test"}
               </p>
-              <p className="text-white/40 text-[11px]">
+              <p className="text-[11px] text-white/40">
                 {result.student?.full_name ?? "Öğrenci"} ·{" "}
                 {new Date(result.takenAt).toLocaleString("tr-TR")}
               </p>
@@ -408,17 +597,16 @@ function DetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-white/30 hover:text-white p-1 transition-colors shrink-0"
+            className="shrink-0 p-1 text-white/30 transition-colors hover:text-white"
             aria-label="Kapat"
           >
-            <X className="w-4.5 h-4.5" />
+            <X className="h-4.5 w-4.5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-5 space-y-5">
-          {/* Skor + risk */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="space-y-5 px-5 py-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MiniMetric
               label="Toplam skor"
               value={`${result.score ?? "—"} / ${range.max}`}
@@ -436,20 +624,19 @@ function DetailModal({
                 risk.label === "Dikkat"
                   ? "#F43F5E"
                   : risk.label === "Orta"
-                  ? "#F59E0B"
-                  : "#10B981"
+                    ? "#F59E0B"
+                    : "#10B981"
               }
             />
           </div>
 
-          {/* Skor barı */}
           <div>
-            <div className="flex justify-between text-[10px] text-white/30 mb-1.5">
+            <div className="mb-1.5 flex justify-between text-[10px] text-white/30">
               <span>{range.min}</span>
               <span className="tabular-nums">{pct}%</span>
               <span>{range.max}</span>
             </div>
-            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+            <div className="h-2 overflow-hidden rounded-full bg-white/5">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -461,31 +648,29 @@ function DetailModal({
             </div>
           </div>
 
-          {/* Yorum */}
           {interp && (
-            <div className="rounded-xl border border-white/8 bg-white/3 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1.5">
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
                 Yorum
               </p>
-              <p className="text-white text-sm leading-relaxed">
+              <p className="text-sm leading-relaxed text-white">
                 {interp.summary}
               </p>
             </div>
           )}
 
-          {/* DORA önerisi */}
           {interp?.doraSuggestion && (
             <div className="relative rounded-xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#7B2FFF]/10 to-transparent p-4">
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#7B2FFF]/20 border border-[#7B2FFF]/30 flex items-center justify-center text-[#A78BFF] shrink-0">
-                  <Brain className="w-4 h-4" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#7B2FFF]/30 bg-[#7B2FFF]/20 text-[#A78BFF]">
+                  <Brain className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#A78BFF] mb-1 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
+                  <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#A78BFF]">
+                    <Sparkles className="h-3 w-3" />
                     DORA önerisi (öğrenciye gösterilen)
                   </p>
-                  <p className="text-white text-sm leading-relaxed">
+                  <p className="text-sm leading-relaxed text-white">
                     {interp.doraSuggestion}
                   </p>
                 </div>
@@ -493,18 +678,17 @@ function DetailModal({
             </div>
           )}
 
-          {/* Soru bazında cevaplar */}
           {test && (
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
                   Soru bazında cevaplar
                 </p>
                 {recalculated !== null &&
                   result.score !== null &&
                   recalculated === result.score && (
-                    <span className="text-[10px] text-emerald-300 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3" />
                       Skor doğrulandı
                     </span>
                   )}
@@ -521,13 +705,13 @@ function DetailModal({
                   return (
                     <li
                       key={item.id}
-                      className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/2 px-3 py-2"
+                      className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <span className="text-white/40 text-[11px] font-bold tabular-nums mr-2">
+                        <span className="mr-2 text-[11px] font-bold tabular-nums text-white/40">
                           {idx + 1}.
                         </span>
-                        <span className="text-white/70 text-xs">
+                        <span className="text-xs text-white/70">
                           {item.text}
                         </span>
                         {item.reverse && (
@@ -537,10 +721,10 @@ function DetailModal({
                         )}
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-white text-xs font-bold tabular-nums">
+                        <p className="text-xs font-bold tabular-nums text-white">
                           {raw ?? "—"}
                         </p>
-                        <p className="text-white/30 text-[10px]">
+                        <p className="text-[10px] text-white/30">
                           {scaledLabel}
                         </p>
                       </div>
@@ -567,14 +751,11 @@ function MiniMetric({
   accent: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+    <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
         {label}
       </p>
-      <p
-        className="text-base font-black truncate"
-        style={{ color: accent }}
-      >
+      <p className="truncate text-base font-black" style={{ color: accent }}>
         {value}
       </p>
     </div>
