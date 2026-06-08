@@ -8,9 +8,6 @@ import {
   BarChart2,
   BookOpen,
   Sparkles,
-  MessageCircle,
-  StickyNote,
-  TrendingUp,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -21,6 +18,16 @@ import {
   timeAgo,
 } from "@/lib/student-helpers";
 import MetricCard from "./_components/MetricCard";
+import StudentNetChart, {
+  type NetChartPoint,
+} from "./_components/StudentNetChart";
+import StudentSessionsList, {
+  type StudentSessionRow,
+} from "./_components/StudentSessionsList";
+import TeacherTopicProgress, {
+  type TeacherTopicProgressSubject,
+} from "./_components/TeacherTopicProgress";
+import type { ProgressStatus } from "@/app/dashboard/student/progress/_components/TopicRow";
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +41,6 @@ interface StudentDetail {
   bio: string | null;
   created_at: string | null;
 }
-
-const COMING_SOON_FEATURES = [
-  { icon: BarChart2, label: "Deneme grafikleri" },
-  { icon: TrendingUp, label: "Konu ilerlemesi" },
-  { icon: StickyNote, label: "Seans notları" },
-  { icon: MessageCircle, label: "Birebir mesajlaşma" },
-] as const;
 
 export default async function StudentDetailPage({
   params,
@@ -67,11 +67,15 @@ export default async function StudentDetailPage({
   if (!rawStudent) notFound();
   const student = rawStudent as unknown as StudentDetail;
 
-  // ─── Hızlı metrikler (paralel) ──────────────────────────────────────────
+  // ─── Hızlı metrikler + performans verileri (paralel) ───────────────────
   const [
     { count: mockCount },
     { count: sessionCount },
     { count: appointmentCount },
+    { data: rawMockExams },
+    { data: rawSessions },
+    { data: rawSubjects },
+    { data: progressRecords },
   ] = await Promise.all([
     supabase
       .from("mock_exams")
@@ -86,7 +90,113 @@ export default async function StudentDetailPage({
       .select("*", { count: "exact", head: true })
       .eq("teacher_id", user.id)
       .eq("student_id", id),
+    supabase
+      .from("mock_exams")
+      .select(
+        "id, exam_date, title, exam:exams(name), results:mock_exam_results(net)"
+      )
+      .eq("student_id", id)
+      .order("exam_date", { ascending: true })
+      .limit(30),
+    supabase
+      .from("study_sessions")
+      .select(
+        "id, study_date, correct_count, wrong_count, duration_minutes, subject:subjects(name, color)"
+      )
+      .eq("student_id", id)
+      .order("study_date", { ascending: false })
+      .limit(10),
+    supabase
+      .from("subjects")
+      .select("id, name, color, order_index, topics(id, name, order_index)")
+      .order("order_index"),
+    supabase
+      .from("topic_progress")
+      .select("topic_id, status, completion_percentage")
+      .eq("student_id", id),
   ]);
+
+  const chartData: NetChartPoint[] = (rawMockExams ?? []).map((m) => {
+    const results = Array.isArray(m.results) ? m.results : [];
+    const net = results.reduce(
+      (sum: number, r: { net?: number | null }) => sum + Number(r.net ?? 0),
+      0
+    );
+    const examVal = Array.isArray(m.exam) ? m.exam[0] : m.exam;
+    return {
+      date: new Date(m.exam_date).toLocaleDateString("tr-TR", {
+        day: "2-digit",
+        month: "short",
+      }),
+      net: Number(net.toFixed(2)),
+      title: m.title ?? undefined,
+      examName:
+        examVal && typeof examVal === "object" && "name" in examVal
+          ? (examVal.name as string)
+          : undefined,
+      fullDate: m.exam_date,
+    };
+  });
+
+  const sessions: StudentSessionRow[] = (rawSessions ?? []).map((row) => {
+    const subjectRaw = row.subject;
+    const subject = Array.isArray(subjectRaw)
+      ? subjectRaw[0] ?? null
+      : subjectRaw;
+    return {
+      id: row.id,
+      study_date: row.study_date,
+      correct_count: row.correct_count,
+      wrong_count: row.wrong_count,
+      duration_minutes: row.duration_minutes,
+      subject: subject
+        ? {
+            name: subject.name,
+            color: subject.color ?? null,
+          }
+        : null,
+    };
+  });
+
+  const progressByTopic = new Map<
+    number,
+    { status: ProgressStatus; completion_percentage: number }
+  >();
+  (progressRecords ?? []).forEach((p) => {
+    progressByTopic.set(p.topic_id, {
+      status: p.status as ProgressStatus,
+      completion_percentage: p.completion_percentage,
+    });
+  });
+
+  const subjects: TeacherTopicProgressSubject[] = (rawSubjects ?? []).map(
+    (s) => {
+      const topicsArr = Array.isArray(s.topics) ? s.topics : [];
+      return {
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        topics: topicsArr
+          .sort(
+            (a: { order_index: number }, b: { order_index: number }) =>
+              a.order_index - b.order_index
+          )
+          .map((t: { id: number; name: string }) => {
+            const prog = progressByTopic.get(t.id);
+            return {
+              id: t.id,
+              name: t.name,
+              progress: prog
+                ? {
+                    status: prog.status,
+                    completion_percentage: prog.completion_percentage,
+                  }
+                : null,
+            };
+          }),
+      };
+    }
+  );
 
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
@@ -209,37 +319,11 @@ export default async function StudentDetailPage({
         ))}
       </div>
 
-      {/* Geliştirilecek alanlar */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#4F7CFF]/25 bg-gradient-to-br from-[#4F7CFF]/12 via-[#0d0d2b]/40 to-transparent p-5 md:p-6">
-        <div
-          className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#7B2FFF]/15 blur-[50px]"
-          aria-hidden
-        />
-        <div className="relative flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#4F7CFF]/30 bg-[#4F7CFF]/15">
-            <Sparkles className="h-5 w-5 text-[#7AB3FF]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">
-              Detaylı analiz yakında geliyor
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-white/40">
-              Bu sayfada ileride öğrencinin deneme grafikleri, konu ilerlemesi,
-              seans notları ve birebir mesajlaşma yer alacak.
-            </p>
-            <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {COMING_SOON_FEATURES.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs text-white/55"
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0 text-[#7AB3FF]" />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+      {/* Performans panelleri */}
+      <div className="space-y-6">
+        <StudentNetChart data={chartData} />
+        <TeacherTopicProgress studentId={id} subjects={subjects} />
+        <StudentSessionsList sessions={sessions} />
       </div>
     </div>
   );
