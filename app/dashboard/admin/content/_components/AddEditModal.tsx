@@ -13,7 +13,12 @@ interface AddEditModalProps {
 }
 
 const CONTENT_TYPES: GuidanceContentType[] = ["blog", "video", "pdf"];
-const TARGET_EXAMS: TargetExam[] = ["YKS", "LGS", "KPSS", "ARA_SINIF"];
+const TARGET_EXAMS: Exclude<TargetExam, null>[] = [
+  "YKS",
+  "LGS",
+  "KPSS",
+  "ARA_SINIF",
+];
 
 export default function AddEditModal({
   isOpen,
