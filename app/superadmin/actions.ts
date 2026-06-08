@@ -108,6 +108,7 @@ function parseOnboardingForm(formData: FormData): OnboardingFormData | { error: 
     ...base,
     email,
     password,
+    phone: base.phone ?? null,
   };
 }
 

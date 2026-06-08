@@ -25,7 +25,7 @@ export default function DeleteClientModal({
     setError(null);
     startTransition(async () => {
       const result = await deleteClientRecord(client.id);
-      if (result?.error) {
+      if ("error" in result) {
         setError(result.error);
         return;
       }
