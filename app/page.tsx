@@ -617,7 +617,8 @@ function LogoLongPressFlip({
               alt="MINDORA — Rehber Öğretmen ve Öğrenci Koçluğu Yazılımı"
               width={LOGO_W}
               height={LOGO_H}
-              priority={priority}
+              priority={variant === "hero" || priority}
+              fetchPriority={variant === "hero" ? "high" : undefined}
               quality={100}
               unoptimized
               sizes={
