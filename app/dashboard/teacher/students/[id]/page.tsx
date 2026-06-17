@@ -110,7 +110,7 @@ export default async function StudentDetailPage({
       .limit(10),
     supabase
       .from("subjects")
-      .select("id, name, color, order_index, topics(id, name, order_index)")
+      .select("id, name, color, order_index, exam:exams(name), topics(id, name, order_index)")
       .order("order_index"),
     supabase
       .from("topic_progress")
@@ -202,9 +202,14 @@ export default async function StudentDetailPage({
 
   const programSubjects = (rawSubjects ?? []).map((s) => {
     const topicsArr = Array.isArray(s.topics) ? s.topics : [];
+    const examRaw = s.exam as { name: string } | { name: string }[] | null;
+    const examName = Array.isArray(examRaw)
+      ? (examRaw[0]?.name ?? null)
+      : examRaw?.name ?? null;
     return {
       id: s.id,
       name: s.name,
+      exam: examName,
       topics: topicsArr
         .sort(
           (a: { order_index: number }, b: { order_index: number }) =>
