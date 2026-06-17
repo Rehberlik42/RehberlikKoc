@@ -6,12 +6,18 @@ import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import SessionEntryForm, { type Subject } from "./SessionEntryForm";
 import SessionsList from "./SessionsList";
 import WeeklySummary from "./WeeklySummary";
+import StudentWeeklyPlan from "./StudentWeeklyPlan";
 
 export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6 items-start">
+    <div className="space-y-6">
+      <div className="pdf-export-hide print-hidden">
+        <StudentWeeklyPlan />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6 items-start">
       {/* Sol: Form — PDF disinda */}
       <div className="xl:sticky xl:top-4 pdf-export-hide print-hidden">
         <SessionEntryForm
@@ -32,6 +38,7 @@ export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
           <SessionsList refreshKey={refreshKey} embedded />
         </div>
       </div>
+    </div>
     </div>
   );
 }
