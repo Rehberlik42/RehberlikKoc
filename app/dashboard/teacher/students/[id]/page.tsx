@@ -27,6 +27,8 @@ import StudentSessionsList, {
 import TeacherTopicProgress, {
   type TeacherTopicProgressSubject,
 } from "./_components/TeacherTopicProgress";
+import StudentDetailTabs from "./_components/StudentDetailTabs";
+import TeacherWeeklyPlan from "./_components/TeacherWeeklyPlan";
 import type { ProgressStatus } from "@/app/dashboard/student/progress/_components/TopicRow";
 
 export const dynamic = "force-dynamic";
@@ -198,6 +200,23 @@ export default async function StudentDetailPage({
     }
   );
 
+  const programSubjects = (rawSubjects ?? []).map((s) => {
+    const topicsArr = Array.isArray(s.topics) ? s.topics : [];
+    return {
+      id: s.id,
+      name: s.name,
+      topics: topicsArr
+        .sort(
+          (a: { order_index: number }, b: { order_index: number }) =>
+            a.order_index - b.order_index
+        )
+        .map((t: { id: number; name: string }) => ({
+          id: t.id,
+          name: t.name,
+        })),
+    };
+  });
+
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
 
@@ -282,49 +301,56 @@ export default async function StudentDetailPage({
         </div>
       </div>
 
-      {/* Hızlı metrikler */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {[
-          {
-            icon: <BarChart2 className="h-5 w-5" />,
-            label: "Toplam Deneme",
-            value: mockCount ?? 0,
-            accent: "text-[#A78BFF]",
-          },
-          {
-            icon: <Sparkles className="h-5 w-5" />,
-            label: "Çalışma Oturumu",
-            value: sessionCount ?? 0,
-            accent: "text-[#7AB3FF]",
-          },
-          {
-            icon: <Calendar className="h-5 w-5" />,
-            label: "Ortak Randevu",
-            value: appointmentCount ?? 0,
-            accent: "text-[#70E6FF]",
-          },
-        ].map((card, index) => (
-          <div
-            key={card.label}
-            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
-            style={{ animationDelay: `${index * 80}ms` }}
-          >
-            <MetricCard
-              icon={card.icon}
-              label={card.label}
-              value={card.value}
-              accent={card.accent}
-            />
-          </div>
-        ))}
-      </div>
+      <StudentDetailTabs
+        overview={
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[
+                {
+                  icon: <BarChart2 className="h-5 w-5" />,
+                  label: "Toplam Deneme",
+                  value: mockCount ?? 0,
+                  accent: "text-[#A78BFF]",
+                },
+                {
+                  icon: <Sparkles className="h-5 w-5" />,
+                  label: "Çalışma Oturumu",
+                  value: sessionCount ?? 0,
+                  accent: "text-[#7AB3FF]",
+                },
+                {
+                  icon: <Calendar className="h-5 w-5" />,
+                  label: "Ortak Randevu",
+                  value: appointmentCount ?? 0,
+                  accent: "text-[#70E6FF]",
+                },
+              ].map((card, index) => (
+                <div
+                  key={card.label}
+                  className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+                  style={{ animationDelay: `${index * 80}ms` }}
+                >
+                  <MetricCard
+                    icon={card.icon}
+                    label={card.label}
+                    value={card.value}
+                    accent={card.accent}
+                  />
+                </div>
+              ))}
+            </div>
 
-      {/* Performans panelleri */}
-      <div className="space-y-6">
-        <StudentNetChart data={chartData} />
-        <TeacherTopicProgress studentId={id} subjects={subjects} />
-        <StudentSessionsList sessions={sessions} />
-      </div>
+            <div className="mt-6 space-y-6">
+              <StudentNetChart data={chartData} />
+              <TeacherTopicProgress studentId={id} subjects={subjects} />
+              <StudentSessionsList sessions={sessions} />
+            </div>
+          </>
+        }
+        program={
+          <TeacherWeeklyPlan studentId={id} subjects={programSubjects} />
+        }
+      />
     </div>
   );
 }
