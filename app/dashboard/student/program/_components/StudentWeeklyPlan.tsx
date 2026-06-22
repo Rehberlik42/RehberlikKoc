@@ -1,81 +1,21 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import toast, { Toaster } from "react-hot-toast";
+import { Loader2, ChevronLeft, ChevronRight, ListTodo } from "lucide-react";
+import TaskCard from "./TaskCard";
 import {
-  Clock,
-  Calendar,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  ListTodo,
-} from "lucide-react";
-
-type TaskType = "ders" | "deneme" | "bras_deneme";
-
-interface PlanTask {
-  id: string;
-  plan_date: string;
-  task_type: TaskType;
-  title: string;
-  start_time: string | null;
-  end_time: string | null;
-  break_minutes: number | null;
-  order_index: number;
-  is_completed: boolean;
-  subject: { name: string } | null;
-  topic: { name: string } | null;
-}
-
-const DAY_LABELS_FULL = [
-  "Pazartesi",
-  "Salı",
-  "Çarşamba",
-  "Perşembe",
-  "Cuma",
-  "Cumartesi",
-  "Pazar",
-] as const;
-
-const TASK_TYPE_BADGE: Record<TaskType, { label: string; color: string }> = {
-  ders: { label: "Ders", color: "#4F7CFF" },
-  deneme: { label: "Deneme", color: "#A78BFF" },
-  bras_deneme: { label: "Branş Denemesi", color: "#00D4FF" },
-};
-
-function startOfWeek(d: Date): Date {
-  const copy = new Date(d);
-  const day = copy.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  copy.setDate(copy.getDate() + diff);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function addDays(d: Date, n: number): Date {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() + n);
-  return copy;
-}
-
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function isToday(d: Date): boolean {
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
-
+  DAY_LABELS_FULL,
+  TASK_TYPE_BADGE,
+  STUDY_PLAN_TASK_SELECT,
+  addDays,
+  isToday,
+  mapStudyPlanTaskRow,
+  startOfWeek,
+  toISODate,
+  type PlanTask,
+  type TaskType,
+} from "./plan-shared";
 function formatWeekRange(weekStart: Date): string {
   const weekEnd = addDays(weekStart, 6);
   const startDay = weekStart.getDate();
@@ -83,158 +23,27 @@ function formatWeekRange(weekStart: Date): string {
   const startMonth = weekStart.toLocaleDateString("tr-TR", { month: "long" });
   const endMonth = weekEnd.toLocaleDateString("tr-TR", { month: "long" });
   const year = weekEnd.getFullYear();
-
   if (startMonth === endMonth) {
     return `${startDay} - ${endDay} ${startMonth} ${year}`;
   }
   return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
 }
-
 function formatColumnDate(d: Date): string {
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
-
-function formatTimeTR(time: string) {
-  return time.slice(0, 5);
-}
-
-function calcDurationMinutes(start: string, end: string): number | null {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  const startMin = sh * 60 + sm;
-  const endMin = eh * 60 + em;
-  if (endMin <= startMin) return null;
-  return endMin - startMin;
-}
-
-function TaskCard({
-  task,
-  animate,
-  toggling,
-  onToggleComplete,
-}: {
-  task: PlanTask;
-  animate: boolean;
-  toggling: boolean;
-  onToggleComplete: (taskId: string, current: boolean) => void;
-}) {
-  const badge = TASK_TYPE_BADGE[task.task_type];
-  const hasTime = Boolean(task.start_time && task.end_time);
-  const duration =
-    hasTime && task.start_time && task.end_time
-      ? calcDurationMinutes(task.start_time, task.end_time)
-      : null;
-
-  const metaParts: string[] = [];
-  if (task.subject?.name) metaParts.push(task.subject.name);
-  if (task.topic?.name) metaParts.push(task.topic.name);
-
-  return (
-    <div
-      className={`relative overflow-hidden rounded-xl border p-3 transition-all duration-300 ${
-        task.is_completed
-          ? "border-green-500/25 bg-green-500/[0.06] opacity-75"
-          : "border-white/8 bg-[#0d0d2b]/80 hover:border-white/12"
-      } ${animate ? "animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300" : ""}`}
-    >
-      <div
-        aria-hidden
-        className="absolute bottom-0 left-0 top-0 w-1 rounded-l-xl transition-colors duration-300"
-        style={{
-          background: task.is_completed ? "#22c55e" : badge.color,
-        }}
-      />
-
-      <div className="flex gap-2.5 pl-1">
-        <button
-          type="button"
-          onClick={() => onToggleComplete(task.id, task.is_completed)}
-          disabled={toggling}
-          aria-label={task.is_completed ? "Tamamlanmadı olarak işaretle" : "Görevi tamamla"}
-          className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
-            task.is_completed
-              ? "border-green-500 bg-green-500 text-white shadow-[0_0_12px_rgba(34,197,94,0.35)]"
-              : "border-white/25 bg-white/[0.04] text-transparent hover:border-[#7B2FFF] hover:bg-[#7B2FFF]/15"
-          } disabled:opacity-50`}
-        >
-          {toggling ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-white/60" />
-          ) : (
-            <Check className={`h-3.5 w-3.5 ${task.is_completed ? "text-white" : ""}`} />
-          )}
-        </button>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-              style={{
-                color: badge.color,
-                backgroundColor: `${badge.color}18`,
-                border: `1px solid ${badge.color}33`,
-              }}
-            >
-              {badge.label}
-            </span>
-          </div>
-
-          <p
-            className={`mt-1.5 text-sm font-semibold leading-snug transition-all duration-300 ${
-              task.is_completed
-                ? "text-white/55 line-through decoration-green-500/40"
-                : "text-white"
-            }`}
-          >
-            {task.title}
-          </p>
-
-          {metaParts.length > 0 && (
-            <p
-              className={`mt-1 text-[11px] ${
-                task.is_completed ? "text-white/30" : "text-white/40"
-              }`}
-            >
-              {metaParts.join(" · ")}
-            </p>
-          )}
-
-          {hasTime && task.start_time && task.end_time && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-white/45">
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3 shrink-0 text-[#7AB3FF]" />
-                {formatTimeTR(task.start_time)} – {formatTimeTR(task.end_time)}
-                {duration != null && (
-                  <span className="text-white/30">· {duration} dk</span>
-                )}
-              </span>
-              {task.break_minutes != null && task.break_minutes > 0 && (
-                <span className="rounded-full border border-[#70E6FF]/25 bg-[#70E6FF]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#70E6FF]">
-                  {task.break_minutes} dk mola
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function StudentWeeklyPlan() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [tasks, setTasks] = useState<PlanTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const seenTaskIds = useRef(new Set<string>());
-
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
   const weekStartStr = useMemo(() => toISODate(weekStart), [weekStart]);
   const weekEndStr = useMemo(() => toISODate(weekEnd), [weekEnd]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
+    [weekStart],
   );
-
   const tasksByDate = useMemo(() => {
     const map = new Map<string, PlanTask[]>();
     for (const task of tasks) {
@@ -244,112 +53,71 @@ export default function StudentWeeklyPlan() {
     }
     return map;
   }, [tasks]);
-
   const fetchTasks = useCallback(async () => {
     const client = createClient();
     setTasksLoading(true);
-
     const {
       data: { user },
     } = await client.auth.getUser();
-
     if (!user) {
       setTasks([]);
       setTasksLoading(false);
       return;
     }
-
     const { data, error } = await client
       .from("study_plan_tasks")
-      .select(
-        "id, plan_date, task_type, title, start_time, end_time, break_minutes, order_index, is_completed, subject:subjects(name), topic:topics(name)"
-      )
+      .select(STUDY_PLAN_TASK_SELECT)
       .eq("student_id", user.id)
       .gte("plan_date", weekStartStr)
       .lte("plan_date", weekEndStr)
       .order("plan_date", { ascending: true })
       .order("order_index", { ascending: true })
       .order("start_time", { ascending: true });
-
     if (error) {
       toast.error("Görevler yüklenemedi: " + error.message);
       setTasksLoading(false);
       return;
     }
-
     if (data) {
-      setTasks(
-        data.map((row) => {
-          const subjectRaw = row.subject;
-          const subject = Array.isArray(subjectRaw)
-            ? subjectRaw[0] ?? null
-            : subjectRaw;
-          const topicRaw = row.topic;
-          const topic = Array.isArray(topicRaw)
-            ? topicRaw[0] ?? null
-            : topicRaw;
-          return {
-            id: row.id,
-            plan_date: row.plan_date,
-            task_type: row.task_type as TaskType,
-            title: row.title,
-            start_time: row.start_time,
-            end_time: row.end_time,
-            break_minutes: row.break_minutes,
-            order_index: row.order_index,
-            is_completed: row.is_completed,
-            subject: subject as { name: string } | null,
-            topic: topic as { name: string } | null,
-          };
-        })
-      );
+      setTasks(data.map(mapStudyPlanTaskRow));
     }
     setTasksLoading(false);
   }, [weekStartStr, weekEndStr]);
-
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-
   const handleToggleComplete = async (taskId: string, current: boolean) => {
     const next = !current;
     const supabase = createClient();
-
     setTogglingId(taskId);
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, is_completed: next } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, is_completed: next } : t)),
     );
-
     const { error } = await supabase
       .from("study_plan_tasks")
       .update({ is_completed: next })
       .eq("id", taskId);
-
     setTogglingId(null);
-
     if (error) {
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, is_completed: current } : t))
+        prev.map((t) =>
+          t.id === taskId ? { ...t, is_completed: current } : t,
+        ),
       );
       toast.error("Görev güncellenemedi: " + error.message);
       return;
     }
-
     toast.success(next ? "Görev tamamlandı!" : "Görev tekrar aktif");
   };
-
   const shouldAnimate = (id: string) => {
     if (seenTaskIds.current.has(id)) return false;
     seenTaskIds.current.add(id);
     return true;
   };
-
   const goToThisWeek = () => setWeekStart(startOfWeek(new Date()));
   const goToPrevWeek = () => setWeekStart((prev) => addDays(prev, -7));
   const goToNextWeek = () => setWeekStart((prev) => addDays(prev, 7));
-
   const completedCount = tasks.filter((t) => t.is_completed).length;
-
   return (
     <>
       <Toaster
@@ -371,7 +139,6 @@ export default function StudentWeeklyPlan() {
           },
         }}
       />
-
       <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/50">
         <div className="border-b border-white/5 px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -380,7 +147,9 @@ export default function StudentWeeklyPlan() {
                 <ListTodo className="h-4 w-4 text-[#A78BFF]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Öğretmenimden Görevler</h3>
+                <h3 className="text-sm font-bold text-white">
+                  Öğretmenimden Görevler
+                </h3>
                 <p className="text-[11px] text-white/30">
                   {tasks.length > 0
                     ? `${completedCount}/${tasks.length} tamamlandı bu hafta`
@@ -388,7 +157,6 @@ export default function StudentWeeklyPlan() {
                 </p>
               </div>
             </div>
-
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -419,7 +187,6 @@ export default function StudentWeeklyPlan() {
             </div>
           </div>
         </div>
-
         <div className="p-4">
           {tasksLoading ? (
             <div className="flex items-center justify-center py-16 text-white/30">
@@ -431,7 +198,6 @@ export default function StudentWeeklyPlan() {
                 const dateStr = toISODate(day);
                 const dayTasks = tasksByDate.get(dateStr) ?? [];
                 const todayCol = isToday(day);
-
                 return (
                   <div
                     key={dateStr}
@@ -456,11 +222,12 @@ export default function StudentWeeklyPlan() {
                         )}
                       </p>
                     </div>
-
                     <div className="flex flex-1 flex-col gap-2">
                       {dayTasks.length === 0 ? (
                         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-white/8 px-2 py-6">
-                          <p className="text-center text-[10px] text-white/25">görev yok</p>
+                          <p className="text-center text-[10px] text-white/25">
+                            görev yok
+                          </p>
                         </div>
                       ) : (
                         dayTasks.map((task) => (
@@ -479,19 +246,21 @@ export default function StudentWeeklyPlan() {
               })}
             </div>
           )}
-
           <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-white/5 pt-4 text-[10px] text-white/40">
-            {(Object.entries(TASK_TYPE_BADGE) as [TaskType, { label: string; color: string }][]).map(
-              ([type, { label, color }]) => (
-                <span key={type} className="inline-flex items-center gap-1.5">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  {label}
-                </span>
-              )
-            )}
+            {(
+              Object.entries(TASK_TYPE_BADGE) as [
+                TaskType,
+                { label: string; color: string },
+              ][]
+            ).map(([type, { label, color }]) => (
+              <span key={type} className="inline-flex items-center gap-1.5">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                {label}
+              </span>
+            ))}
           </div>
         </div>
       </div>
