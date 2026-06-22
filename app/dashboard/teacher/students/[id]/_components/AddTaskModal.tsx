@@ -12,9 +12,48 @@ import {
   Loader2,
   X,
   FileText,
+  BookMarked,
 } from "lucide-react";
 
 type TaskType = "ders" | "deneme" | "bras_deneme";
+
+interface StudyResourceTopicOption {
+  id: number;
+  name: string;
+  target_count: number;
+  order_index: number;
+}
+
+interface StudyResourceOption {
+  id: number;
+  name: string;
+  exam: { name: string } | null;
+  subject: { name: string } | null;
+  topics: StudyResourceTopicOption[];
+}
+
+function mapStudyResource(row: {
+  id: number;
+  name: string;
+  exam: { name: string } | { name: string }[] | null;
+  subject: { name: string } | { name: string }[] | null;
+  topics: StudyResourceTopicOption[] | null;
+}): StudyResourceOption {
+  const examRaw = row.exam;
+  const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
+  const subjectRaw = row.subject;
+  const subject = Array.isArray(subjectRaw) ? subjectRaw[0] ?? null : subjectRaw;
+  const topics = [...(row.topics ?? [])].sort(
+    (a, b) => a.order_index - b.order_index
+  );
+  return {
+    id: row.id,
+    name: row.name,
+    exam: exam as { name: string } | null,
+    subject: subject as { name: string } | null,
+    topics,
+  };
+}
 
 const TASK_TYPE_OPTIONS: { value: TaskType; label: string }[] = [
   { value: "ders", label: "Ders" },
@@ -70,11 +109,17 @@ export default function AddTaskModal({
   const [topicId, setTopicId] = useState("");
   const [title, setTitle] = useState("Ders");
   const [titleEdited, setTitleEdited] = useState(false);
+  const [resourceId, setResourceId] = useState("");
+  const [resourceTopicId, setResourceTopicId] = useState("");
+  const [resources, setResources] = useState<StudyResourceOption[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const selectedSubject = subjects.find((s) => String(s.id) === subjectId);
   const topics = selectedSubject?.topics ?? [];
+  const selectedResource = resources.find((r) => String(r.id) === resourceId);
+  const resourceTopics = selectedResource?.topics ?? [];
   const showSubject = taskType !== "deneme";
 
   useEffect(() => {
@@ -87,7 +132,38 @@ export default function AddTaskModal({
     setTopicId("");
     setTitle("Ders");
     setTitleEdited(false);
+    setResourceId("");
+    setResourceTopicId("");
   }, [planDate]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setResourcesLoading(true);
+      const { data } = await supabase
+        .from("study_resources")
+        .select(
+          "id, name, exam:exams(name), subject:subjects(name), topics:study_resource_topics(id, name, target_count, order_index)"
+        )
+        .order("order_index");
+
+      if (!cancelled) {
+        setResources(
+          (data ?? []).map((row) =>
+            mapStudyResource(row as Parameters<typeof mapStudyResource>[0])
+          )
+        );
+        setResourcesLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, supabase]);
 
   useEffect(() => {
     if (titleEdited) return;
@@ -123,6 +199,11 @@ export default function AddTaskModal({
   const handleSubjectChange = useCallback((id: string) => {
     setSubjectId(id);
     setTopicId("");
+  }, []);
+
+  const handleResourceChange = useCallback((id: string) => {
+    setResourceId(id);
+    setResourceTopicId("");
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,6 +250,8 @@ export default function AddTaskModal({
       break_minutes: null,
       order_index: orderIndex,
       is_completed: false,
+      study_resource_id: resourceId ? parseInt(resourceId, 10) : null,
+      study_resource_topic_id: resourceTopicId ? parseInt(resourceTopicId, 10) : null,
     });
 
     setLoading(false);
@@ -198,7 +281,7 @@ export default function AddTaskModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-task-modal-title"
-          className="relative w-full max-w-lg animate-in fade-in zoom-in-95 fill-mode-both rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 duration-200"
+          className="relative max-h-[90vh] w-full max-w-lg animate-in fade-in zoom-in-95 fill-mode-both overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 duration-200"
         >
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
 
@@ -273,6 +356,60 @@ export default function AddTaskModal({
                 />
               </div>
             )}
+
+            <div className="space-y-4 border-t border-white/8 pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                  Kaynak (opsiyonel)
+                </p>
+                {resourcesLoading && (
+                  <span className="text-[10px] text-white/30">Kaynaklar yükleniyor…</span>
+                )}
+              </div>
+
+              <SearchableSelect
+                label="Kaynak"
+                icon={<BookMarked className="h-3.5 w-3.5" />}
+                value={resourceId}
+                onChange={handleResourceChange}
+                disabled={resourcesLoading}
+                options={[
+                  { value: "", label: "— Kaynak seçin (opsiyonel) —" },
+                  ...resources.map((r) => {
+                    const hintParts: string[] = [];
+                    if (r.exam?.name) hintParts.push(r.exam.name);
+                    if (r.subject?.name) hintParts.push(r.subject.name);
+                    return {
+                      value: String(r.id),
+                      label: r.name,
+                      hint: hintParts.length > 0 ? hintParts.join(" · ") : undefined,
+                    };
+                  }),
+                ]}
+                placeholder="— Kaynak seçin (opsiyonel) —"
+                emptyText="Henüz kaynak yok"
+              />
+
+              <SearchableSelect
+                label="Kaynak Konusu"
+                icon={<Tag className="h-3.5 w-3.5" />}
+                value={resourceTopicId}
+                onChange={setResourceTopicId}
+                disabled={!resourceId || resourceTopics.length === 0}
+                options={[
+                  { value: "", label: "— Konu seçin —" },
+                  ...resourceTopics.map((t) => ({
+                    value: String(t.id),
+                    label:
+                      t.target_count > 0
+                        ? `${t.name} (${t.target_count} soru)`
+                        : t.name,
+                  })),
+                ]}
+                placeholder="— Konu seçin —"
+                emptyText="Bu kaynakta konu yok"
+              />
+            </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">

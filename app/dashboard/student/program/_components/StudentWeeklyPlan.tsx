@@ -13,7 +13,10 @@ import {
   mapStudyPlanTaskRow,
   startOfWeek,
   toISODate,
+  applyTaskToggleOptimistic,
+  buildTaskUpdatePayload,
   type PlanTask,
+  type TaskSolutionData,
   type TaskType,
 } from "./plan-shared";
 function formatWeekRange(weekStart: Date): string {
@@ -86,27 +89,39 @@ export default function StudentWeeklyPlan() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-  const handleToggleComplete = async (taskId: string, current: boolean) => {
+  const handleToggleComplete = async (
+    taskId: string,
+    current: boolean,
+    data?: TaskSolutionData
+  ) => {
     const next = !current;
     const supabase = createClient();
+    const prevTask = tasks.find((t) => t.id === taskId);
+
     setTogglingId(taskId);
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, is_completed: next } : t)),
+      prev.map((t) =>
+        t.id === taskId ? applyTaskToggleOptimistic(t, next, data) : t
+      )
     );
+
     const { error } = await supabase
       .from("study_plan_tasks")
-      .update({ is_completed: next })
+      .update(buildTaskUpdatePayload(next, data))
       .eq("id", taskId);
+
     setTogglingId(null);
+
     if (error) {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, is_completed: current } : t,
-        ),
-      );
+      if (prevTask) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? prevTask : t))
+        );
+      }
       toast.error("Görev güncellenemedi: " + error.message);
       return;
     }
+
     toast.success(next ? "Görev tamamlandı!" : "Görev tekrar aktif");
   };
   const shouldAnimate = (id: string) => {

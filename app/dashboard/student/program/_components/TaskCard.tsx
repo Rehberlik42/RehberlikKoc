@@ -1,11 +1,15 @@
 "use client";
 
-import { Check, Clock, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookMarked, Check, Clock, Loader2 } from "lucide-react";
 import {
   TASK_TYPE_BADGE,
   calcDurationMinutes,
+  calcTaskNet,
   formatTimeTR,
+  isResourceLinked,
   type PlanTask,
+  type TaskSolutionData,
 } from "./plan-shared";
 
 export default function TaskCard({
@@ -17,18 +21,75 @@ export default function TaskCard({
   task: PlanTask;
   animate: boolean;
   toggling: boolean;
-  onToggleComplete: (taskId: string, current: boolean) => void;
+  onToggleComplete: (
+    taskId: string,
+    current: boolean,
+    data?: TaskSolutionData
+  ) => void;
 }) {
   const badge = TASK_TYPE_BADGE[task.task_type];
+  const linked = isResourceLinked(task);
   const hasTime = Boolean(task.start_time && task.end_time);
   const duration =
     hasTime && task.start_time && task.end_time
       ? calcDurationMinutes(task.start_time, task.end_time)
       : null;
 
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [solved, setSolved] = useState("");
+  const [correct, setCorrect] = useState("");
+  const [wrong, setWrong] = useState("");
+
+  useEffect(() => {
+    if (!entryOpen) return;
+    setSolved(task.solved_count != null ? String(task.solved_count) : "");
+    setCorrect(task.correct_count != null ? String(task.correct_count) : "");
+    setWrong(task.wrong_count != null ? String(task.wrong_count) : "");
+  }, [entryOpen, task.solved_count, task.correct_count, task.wrong_count]);
+
+  useEffect(() => {
+    if (task.is_completed) setEntryOpen(false);
+  }, [task.is_completed]);
+
   const metaParts: string[] = [];
   if (task.subject?.name) metaParts.push(task.subject.name);
   if (task.topic?.name) metaParts.push(task.topic.name);
+
+  const solvedNum = parseInt(solved, 10) || 0;
+  const correctNum = parseInt(correct, 10) || 0;
+  const wrongNum = parseInt(wrong, 10) || 0;
+  const countWarning = correctNum + wrongNum > solvedNum && solvedNum > 0;
+  const netPreview =
+    correct !== "" || wrong !== ""
+      ? calcTaskNet(correctNum, wrongNum)
+      : null;
+
+  const handleCompleteClick = () => {
+    if (toggling) return;
+    if (task.is_completed) {
+      onToggleComplete(task.id, true);
+      return;
+    }
+    if (linked) {
+      setEntryOpen(true);
+      return;
+    }
+    onToggleComplete(task.id, false);
+  };
+
+  const handleSubmitEntry = () => {
+    onToggleComplete(task.id, false, {
+      solved_count: solvedNum,
+      correct_count: correctNum,
+      wrong_count: wrongNum,
+    });
+    setEntryOpen(false);
+  };
+
+  const showSolutionSummary =
+    task.is_completed &&
+    task.solved_count != null &&
+    task.solved_count > 0;
 
   return (
     <div
@@ -49,7 +110,7 @@ export default function TaskCard({
       <div className="flex gap-2.5 pl-1">
         <button
           type="button"
-          onClick={() => onToggleComplete(task.id, task.is_completed)}
+          onClick={handleCompleteClick}
           disabled={toggling}
           aria-label={task.is_completed ? "Tamamlanmadı olarak işaretle" : "Görevi tamamla"}
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
@@ -77,6 +138,12 @@ export default function TaskCard({
             >
               {badge.label}
             </span>
+            {linked && task.resource?.name && (
+              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#A78BFF]">
+                <BookMarked className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{task.resource.name}</span>
+              </span>
+            )}
           </div>
 
           <p
@@ -89,6 +156,12 @@ export default function TaskCard({
             {task.title}
           </p>
 
+          {linked && task.resourceTopic?.name && (
+            <p className="mt-1 text-[10px] text-[#A78BFF]/70">
+              {task.resourceTopic.name}
+            </p>
+          )}
+
           {metaParts.length > 0 && (
             <p
               className={`mt-1 text-[11px] ${
@@ -96,6 +169,18 @@ export default function TaskCard({
               }`}
             >
               {metaParts.join(" · ")}
+            </p>
+          )}
+
+          {showSolutionSummary && (
+            <p className="mt-1.5 text-[10px] font-medium text-white/45">
+              {task.solved_count} soru · {task.correct_count ?? 0}D {task.wrong_count ?? 0}Y
+              {task.correct_count != null && task.wrong_count != null && (
+                <span className="text-white/30">
+                  {" "}
+                  · Net {calcTaskNet(task.correct_count, task.wrong_count).toFixed(2)}
+                </span>
+              )}
             </p>
           )}
 
@@ -117,6 +202,84 @@ export default function TaskCard({
           )}
         </div>
       </div>
+
+      {entryOpen && !task.is_completed && (
+        <div className="mt-3 border-t border-white/8 pt-3 pl-8 animate-in fade-in slide-in-from-top-1 duration-200">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+            Çözüm girişi
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-[9px] text-white/35">Çözülen</span>
+              <input
+                type="number"
+                min={0}
+                value={solved}
+                onChange={(e) => setSolved(e.target.value)}
+                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[9px] text-white/35">Doğru</span>
+              <input
+                type="number"
+                min={0}
+                value={correct}
+                onChange={(e) => setCorrect(e.target.value)}
+                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[9px] text-white/35">Yanlış</span>
+              <input
+                type="number"
+                min={0}
+                value={wrong}
+                onChange={(e) => setWrong(e.target.value)}
+                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              />
+            </label>
+          </div>
+
+          {countWarning && (
+            <p className="mt-2 text-[10px] text-amber-400/90">
+              Doğru + yanlış, çözülen sayısından fazla görünüyor.
+            </p>
+          )}
+
+          {netPreview != null && (
+            <p className="mt-2 text-[10px] text-white/40">
+              Net önizleme:{" "}
+              <span
+                className={`font-semibold ${
+                  netPreview >= 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {netPreview >= 0 ? "+" : ""}
+                {netPreview.toFixed(2)}
+              </span>
+            </p>
+          )}
+
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEntryOpen(false)}
+              className="flex-1 rounded-lg border border-white/10 bg-white/[0.04] py-1.5 text-xs font-semibold text-white/50 transition-colors hover:text-white"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitEntry}
+              disabled={toggling}
+              className="flex-1 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Tamamla
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

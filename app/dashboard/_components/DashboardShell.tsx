@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   Users,
   FileBarChart,
+  Library,
   Bell,
   LogOut,
   Menu,
@@ -54,6 +55,7 @@ const teacherNav: NavItem[] = [
   { label: "Dashboard",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Öğrencilerim",   href: "/dashboard/teacher/students",         icon: <Users className="w-4.5 h-4.5" /> },
   { label: "Randevular",     href: "/dashboard/teacher/appointments",     icon: <CalendarCheck className="w-4.5 h-4.5" /> },
+  { label: "Kaynak Takibi",  href: "/dashboard/teacher/resources",        icon: <Library className="w-4.5 h-4.5" /> },
   { label: "Test Sonuçları", href: "/dashboard/teacher/tests",            icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
 ];
@@ -234,6 +236,7 @@ function Topbar({
       ogrenciler:     "Öğrencilerim",
       students:       "Öğrencilerim",
       appointments:   "Randevular",
+      resources:      "Kaynak Takibi",
       reports:        "Raporlar",
       raporlar:       "Raporlar",
     };
