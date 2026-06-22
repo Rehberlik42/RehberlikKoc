@@ -41,7 +41,7 @@ interface NavItem {
 
 // ─── Navigation config ────────────────────────────────────────────────────────
 const studentNav: NavItem[] = [
-  { label: "Dashboard",    href: "/dashboard/student",             icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
+  { label: "Ana Sayfa",    href: "/dashboard/student",             icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Programım",    href: "/dashboard/student/program",     icon: <CalendarDays className="w-4.5 h-4.5" /> },
   { label: "Denemelerim",  href: "/dashboard/student/mock-exams",  icon: <BarChart2 className="w-4.5 h-4.5" /> },
   { label: "Önerilerim",   href: "/dashboard/student/recommendations", icon: <BookOpen className="w-4.5 h-4.5" /> },
@@ -52,7 +52,7 @@ const studentNav: NavItem[] = [
 ];
 
 const teacherNav: NavItem[] = [
-  { label: "Dashboard",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
+  { label: "Ana Sayfa",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Öğrencilerim",   href: "/dashboard/teacher/students",         icon: <Users className="w-4.5 h-4.5" /> },
   { label: "Randevular",     href: "/dashboard/teacher/appointments",     icon: <CalendarCheck className="w-4.5 h-4.5" /> },
   { label: "Kaynak Takibi",  href: "/dashboard/teacher/resources",        icon: <Library className="w-4.5 h-4.5" /> },
