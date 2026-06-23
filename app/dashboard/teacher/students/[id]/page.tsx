@@ -29,6 +29,11 @@ import TeacherTopicProgress, {
 } from "./_components/TeacherTopicProgress";
 import StudentDetailTabs from "./_components/StudentDetailTabs";
 import TeacherWeeklyPlan from "./_components/TeacherWeeklyPlan";
+import ExamAnalysis from "./_components/ExamAnalysis";
+import {
+  normalizeAnalysisExams,
+  type NormalizedExam,
+} from "./_components/exam-analysis-utils";
 import type { ProgressStatus } from "@/app/dashboard/student/progress/_components/TopicRow";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +80,7 @@ export default async function StudentDetailPage({
     { count: sessionCount },
     { count: appointmentCount },
     { data: rawMockExams },
+    { data: rawAnalysisExams },
     { data: rawSessions },
     { data: rawSubjects },
     { data: progressRecords },
@@ -100,6 +106,14 @@ export default async function StudentDetailPage({
       .eq("student_id", id)
       .order("exam_date", { ascending: true })
       .limit(30),
+    supabase
+      .from("mock_exams")
+      .select(
+        "id, exam_date, title, exam:exams(id, name), results:mock_exam_results(subject_id, correct_count, wrong_count, empty_count, net, subject:subjects(id, name, color))"
+      )
+      .eq("student_id", id)
+      .order("exam_date", { ascending: false })
+      .limit(50),
     supabase
       .from("study_sessions")
       .select(
@@ -221,6 +235,25 @@ export default async function StudentDetailPage({
         })),
     };
   });
+
+  const analysisExams: NormalizedExam[] = normalizeAnalysisExams(
+    (rawAnalysisExams ?? []) as Parameters<typeof normalizeAnalysisExams>[0]
+  );
+
+  const analysisExamOptions = Array.from(
+    new Map(
+      analysisExams
+        .filter((e) => e.examId > 0)
+        .map((e) => [e.examId, { id: e.examId, name: e.examName }])
+    ).values()
+  );
+
+  const topicCountBySubjectId = Object.fromEntries(
+    (rawSubjects ?? []).map((s) => [
+      s.id,
+      (Array.isArray(s.topics) ? s.topics : []).length,
+    ])
+  );
 
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
@@ -354,6 +387,13 @@ export default async function StudentDetailPage({
         }
         program={
           <TeacherWeeklyPlan studentId={id} subjects={programSubjects} />
+        }
+        analysis={
+          <ExamAnalysis
+            exams={analysisExamOptions}
+            analysisExams={analysisExams}
+            topicCountBySubjectId={topicCountBySubjectId}
+          />
         }
       />
     </div>

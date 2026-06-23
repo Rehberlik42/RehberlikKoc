@@ -11,11 +11,26 @@ import {
   CheckCircle2,
   XCircle,
   Circle,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import SearchableSelect from "@/app/dashboard/teacher/students/[id]/_components/SearchableSelect";
 import type { ExamOption, SubjectOption } from "./MockExamsClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+interface TopicOption {
+  id: number;
+  name: string;
+  subject_id: number;
+  order_index: number;
+}
+
+interface TopicErrorInput {
+  topicId: number;
+  wrong: string;
+}
+
 interface SubjectInput {
   subjectId: number;
   subjectName: string;
@@ -23,6 +38,7 @@ interface SubjectInput {
   correct: string;
   wrong: string;
   empty: string;
+  errors: TopicErrorInput[];
 }
 
 interface Props {
@@ -37,6 +53,27 @@ function calcNet(correct: string, wrong: string): number {
   const c = parseInt(correct) || 0;
   const w = parseInt(wrong) || 0;
   return c - w / 4;
+}
+
+function sumDistributedErrors(errors: TopicErrorInput[]): number {
+  return errors.reduce((sum, e) => {
+    if (!e.topicId) return sum;
+    const w = parseInt(e.wrong);
+    if (!w || w <= 0) return sum;
+    return sum + w;
+  }, 0);
+}
+
+function getValidTopicErrors(
+  errors: TopicErrorInput[]
+): { topicId: number; wrong: number }[] {
+  return errors
+    .filter((e) => e.topicId > 0 && (parseInt(e.wrong) || 0) > 0)
+    .map((e) => ({ topicId: e.topicId, wrong: parseInt(e.wrong) || 0 }));
+}
+
+function rowHasData(row: SubjectInput): boolean {
+  return row.correct !== "" || row.wrong !== "" || row.empty !== "";
 }
 
 function useAnimatedNumber(target: number, active: boolean, duration = 500) {
@@ -69,13 +106,40 @@ function useAnimatedNumber(target: number, active: boolean, duration = 500) {
 // ─── Small subject row ────────────────────────────────────────────────────────
 function SubjectInputRow({
   row,
+  topics,
   onChange,
 }: {
   row: SubjectInput;
+  topics: TopicOption[];
   onChange: (next: SubjectInput) => void;
 }) {
   const net = calcNet(row.correct, row.wrong);
-  const hasData = row.correct !== "" || row.wrong !== "" || row.empty !== "";
+  const hasData = rowHasData(row);
+  const totalWrong = parseInt(row.wrong) || 0;
+  const distributedWrong = sumDistributedErrors(row.errors);
+  const distributionOverflow = distributedWrong > totalWrong;
+
+  const updateError = (index: number, patch: Partial<TopicErrorInput>) => {
+    const nextErrors = row.errors.map((err, i) =>
+      i === index ? { ...err, ...patch } : err
+    );
+    onChange({ ...row, errors: nextErrors });
+  };
+
+  const removeError = (index: number) => {
+    onChange({ ...row, errors: row.errors.filter((_, i) => i !== index) });
+  };
+
+  const addError = () => {
+    onChange({
+      ...row,
+      errors: [...row.errors, { topicId: 0, wrong: "1" }],
+    });
+  };
+
+  const selectedTopicIds = new Set(
+    row.errors.map((e) => e.topicId).filter((id) => id > 0)
+  );
 
   return (
     <div
@@ -127,6 +191,110 @@ function SubjectInputRow({
           color="#64748b"
         />
       </div>
+
+      {hasData && (
+        <div className="mt-3 space-y-2 border-t border-white/8 pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+              Zayıf konular
+            </p>
+            {(row.errors.length > 0 || totalWrong > 0) && (
+              <p
+                className={`text-[10px] tabular-nums ${
+                  distributionOverflow ? "font-semibold text-red-400" : "text-white/35"
+                }`}
+              >
+                Konulara dağıtılan: {distributedWrong} / {totalWrong} yanlış
+              </p>
+            )}
+          </div>
+
+          {row.errors.length > 0 && (
+            <div className="space-y-2">
+              {row.errors.map((err, errIdx) => {
+                const topicOptions = [
+                  { value: "", label: "Konu seçin" },
+                  ...topics
+                    .filter(
+                      (t) =>
+                        !selectedTopicIds.has(t.id) || t.id === err.topicId
+                    )
+                    .map((t) => ({
+                      value: String(t.id),
+                      label: t.name,
+                    })),
+                ];
+
+                return (
+                  <div
+                    key={`${row.subjectId}-err-${errIdx}`}
+                    className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <SearchableSelect
+                        label="Konu"
+                        value={err.topicId ? String(err.topicId) : ""}
+                        onChange={(v) =>
+                          updateError(errIdx, {
+                            topicId: v ? parseInt(v, 10) : 0,
+                          })
+                        }
+                        options={topicOptions}
+                        placeholder="Konu seçin"
+                        emptyText={
+                          topics.length === 0
+                            ? "Bu ders için konu tanımlı değil"
+                            : "Konu bulunamadı"
+                        }
+                      />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <div className="w-20 shrink-0">
+                        <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                          Yanlış
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={err.wrong}
+                          onChange={(e) =>
+                            updateError(errIdx, { wrong: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2 text-center text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeError(errIdx)}
+                        aria-label="Konu satırını sil"
+                        className="mb-0.5 rounded-lg border border-white/10 bg-white/[0.04] p-2 text-white/40 transition-colors hover:border-red-400/30 hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {distributionOverflow && (
+            <p className="text-[11px] text-red-400">
+              Konulara dağıttığınız yanlış sayısı ders toplamını aşıyor.
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={addError}
+            disabled={topics.length === 0}
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#A78BFF] transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus className="h-3 w-3" />
+            Yanlış yapılan konu ekle
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -179,6 +347,9 @@ export default function MockExamForm({
   const [publisher, setPublisher] = useState("");
   const [rows, setRows] = useState<SubjectInput[]>([]);
   const [loading, setLoading] = useState(false);
+  const [topicsBySubjectId, setTopicsBySubjectId] = useState<
+    Map<number, TopicOption[]>
+  >(new Map());
 
   // Sinav degistiginde dersleri o sinava gore yenile
   useEffect(() => {
@@ -197,8 +368,57 @@ export default function MockExamForm({
         correct: "",
         wrong: "",
         empty: "",
+        errors: [],
       }));
     setRows(filtered);
+  }, [examId, subjects]);
+
+  // Secili sinavin derslerine ait konulari yukle
+  useEffect(() => {
+    if (!examId) {
+      setTopicsBySubjectId(new Map());
+      return;
+    }
+
+    const examNumericId = parseInt(examId);
+    const subjectIds = subjects
+      .filter((s) => s.exam_id === examNumericId)
+      .map((s) => s.id);
+
+    if (subjectIds.length === 0) {
+      setTopicsBySubjectId(new Map());
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("topics")
+        .select("id, name, subject_id, order_index")
+        .in("subject_id", subjectIds)
+        .order("order_index", { ascending: true });
+
+      if (cancelled) return;
+
+      if (error) {
+        setTopicsBySubjectId(new Map());
+        return;
+      }
+
+      const map = new Map<number, TopicOption[]>();
+      for (const topic of data ?? []) {
+        const list = map.get(topic.subject_id) ?? [];
+        list.push(topic as TopicOption);
+        map.set(topic.subject_id, list);
+      }
+      setTopicsBySubjectId(map);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [examId, subjects]);
 
   // ─── Canli toplam ─────────────────────────────────────────────────────────
@@ -219,6 +439,14 @@ export default function MockExamForm({
 
   const animatedTotalNet = useAnimatedNumber(totalNet, hasAnyData);
 
+  const hasDistributionOverflow = useMemo(() => {
+    return rows.some((r) => {
+      if (!rowHasData(r)) return false;
+      const totalWrong = parseInt(r.wrong) || 0;
+      return sumDistributedErrors(r.errors) > totalWrong;
+    });
+  }, [rows]);
+
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,6 +458,17 @@ export default function MockExamForm({
     if (!hasAnyData) {
       onError("En az bir derse veri girmelisiniz.");
       return;
+    }
+
+    for (const r of rows) {
+      if (!rowHasData(r)) continue;
+      const totalWrong = parseInt(r.wrong) || 0;
+      if (sumDistributedErrors(r.errors) > totalWrong) {
+        onError(
+          `'${r.subjectName}' dersinde konulara dağıttığınız yanlış sayısı ders toplamını aşıyor.`
+        );
+        return;
+      }
     }
 
     setLoading(true);
@@ -277,16 +516,57 @@ export default function MockExamForm({
       }));
 
     if (resultsPayload.length > 0) {
-      const { error: resultsError } = await supabase
+      const { data: insertedResults, error: resultsError } = await supabase
         .from("mock_exam_results")
-        .insert(resultsPayload);
+        .insert(resultsPayload)
+        .select("id, subject_id");
 
-      if (resultsError) {
-        // Rollback: ana kaydi sil
+      if (resultsError || !insertedResults) {
         await supabase.from("mock_exams").delete().eq("id", mockExam.id);
         setLoading(false);
-        onError("Sonuçlar kaydedilemedi: " + resultsError.message);
+        onError("Sonuçlar kaydedilemedi: " + resultsError?.message);
         return;
+      }
+
+      const resultIdBySubjectId = new Map(
+        insertedResults.map((r) => [r.subject_id as number, r.id as number])
+      );
+
+      const errorsPayload: {
+        mock_exam_result_id: number;
+        topic_id: number;
+        wrong_count: number;
+      }[] = [];
+
+      for (const r of rows) {
+        const resultId = resultIdBySubjectId.get(r.subjectId);
+        if (!resultId) continue;
+        for (const err of getValidTopicErrors(r.errors)) {
+          errorsPayload.push({
+            mock_exam_result_id: resultId,
+            topic_id: err.topicId,
+            wrong_count: err.wrong,
+          });
+        }
+      }
+
+      if (errorsPayload.length > 0) {
+        const { error: topicErrorsError } = await supabase
+          .from("mock_exam_topic_errors")
+          .insert(errorsPayload);
+
+        if (topicErrorsError) {
+          await supabase
+            .from("mock_exam_results")
+            .delete()
+            .eq("mock_exam_id", mockExam.id);
+          await supabase.from("mock_exams").delete().eq("id", mockExam.id);
+          setLoading(false);
+          onError(
+            "Konu hataları kaydedilemedi: " + topicErrorsError.message
+          );
+          return;
+        }
       }
     }
 
@@ -296,7 +576,13 @@ export default function MockExamForm({
     setTitle("");
     setPublisher("");
     setRows((prev) =>
-      prev.map((r) => ({ ...r, correct: "", wrong: "", empty: "" }))
+      prev.map((r) => ({
+        ...r,
+        correct: "",
+        wrong: "",
+        empty: "",
+        errors: [],
+      }))
     );
 
     onSuccess(`Deneme kaydedildi! Toplam net: ${totalNet.toFixed(2)}`);
@@ -409,6 +695,7 @@ export default function MockExamForm({
                 >
                   <SubjectInputRow
                     row={row}
+                    topics={topicsBySubjectId.get(row.subjectId) ?? []}
                     onChange={(next) => {
                       setRows((prev) => {
                         const copy = [...prev];
@@ -445,7 +732,7 @@ export default function MockExamForm({
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading || !hasAnyData}
+          disabled={loading || !hasAnyData || hasDistributionOverflow}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[#7B2FFF]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (

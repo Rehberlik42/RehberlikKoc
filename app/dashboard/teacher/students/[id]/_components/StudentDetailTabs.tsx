@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 
-type TabId = "overview" | "program";
+type TabId = "overview" | "program" | "analysis";
 
 interface Props {
   overview: React.ReactNode;
   program: React.ReactNode;
+  analysis: React.ReactNode;
 }
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Genel Bakış" },
   { id: "program", label: "Haftalık Program" },
+  { id: "analysis", label: "Deneme Analizi" },
 ];
 
-export default function StudentDetailTabs({ overview, program }: Props) {
+export default function StudentDetailTabs({ overview, program, analysis }: Props) {
   const [active, setActive] = useState<TabId>("overview");
 
   return (
@@ -53,7 +55,11 @@ export default function StudentDetailTabs({ overview, program }: Props) {
         key={active}
         className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
       >
-        {active === "overview" ? overview : program}
+        {active === "overview"
+          ? overview
+          : active === "program"
+            ? program
+            : analysis}
       </div>
     </div>
   );
