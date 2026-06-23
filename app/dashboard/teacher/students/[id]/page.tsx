@@ -390,6 +390,7 @@ export default async function StudentDetailPage({
         }
         analysis={
           <ExamAnalysis
+            studentId={id}
             exams={analysisExamOptions}
             analysisExams={analysisExams}
             topicCountBySubjectId={topicCountBySubjectId}

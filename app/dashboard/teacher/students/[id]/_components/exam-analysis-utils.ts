@@ -1,3 +1,205 @@
+export type TopicSeverity = "good" | "medium" | "bad";
+export type TopicTrend = "improving" | "worsening" | "stable";
+
+export interface ExamColumnDef {
+  mockExamId: number;
+  label: string;
+  shortDate: string;
+}
+
+export interface TopicErrorAnalysisRow {
+  topicId: number;
+  topicName: string;
+  wrongByExamId: Record<number, number>;
+  wrongsChronological: number[];
+  avgWrong: number;
+  severity: TopicSeverity;
+  trend: TopicTrend;
+}
+
+export interface TopicErrorAnalysis {
+  examColumns: ExamColumnDef[];
+  rows: TopicErrorAnalysisRow[];
+  topicCount: number;
+  avgWrongPerExam: number;
+  worstTopic: TopicErrorAnalysisRow | null;
+  bestTopic: TopicErrorAnalysisRow | null;
+}
+
+export function topicSeverity(avgWrong: number): TopicSeverity {
+  if (avgWrong <= 0.5) return "good";
+  if (avgWrong <= 1.5) return "medium";
+  return "bad";
+}
+
+export function topicSeverityColor(severity: TopicSeverity): string {
+  switch (severity) {
+    case "good":
+      return "#22c55e";
+    case "medium":
+      return "#eab308";
+    case "bad":
+      return "#ef4444";
+  }
+}
+
+export function topicSeverityBg(severity: TopicSeverity): string {
+  switch (severity) {
+    case "good":
+      return "rgba(34,197,94,0.12)";
+    case "medium":
+      return "rgba(234,179,8,0.12)";
+    case "bad":
+      return "rgba(239,68,68,0.12)";
+  }
+}
+
+export function computeTopicTrend(wrongs: number[]): TopicTrend {
+  if (wrongs.length < 2) return "stable";
+  const mid = Math.floor(wrongs.length / 2);
+  const early =
+    wrongs.slice(0, mid).reduce((s, n) => s + n, 0) / Math.max(mid, 1);
+  const late =
+    wrongs.slice(mid).reduce((s, n) => s + n, 0) /
+    Math.max(wrongs.length - mid, 1);
+  if (late < early - 0.2) return "improving";
+  if (late > early + 0.2) return "worsening";
+  return "stable";
+}
+
+export function formatExamShortDate(examDate: string): string {
+  return new Date(examDate).toLocaleDateString("tr-TR", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+export interface RawTopicErrorRecord {
+  topic_id: number;
+  wrong_count: number;
+  topic:
+    | { id: number; name: string; order_index?: number }
+    | { id: number; name: string; order_index?: number }[]
+    | null;
+  result:
+    | {
+        id: number;
+        subject_id: number;
+        mock_exam_id: number;
+        mock_exam:
+          | { id: number; exam_date: string; student_id: string }
+          | { id: number; exam_date: string; student_id: string }[];
+      }
+    | {
+        id: number;
+        subject_id: number;
+        mock_exam_id: number;
+        mock_exam:
+          | { id: number; exam_date: string; student_id: string }
+          | { id: number; exam_date: string; student_id: string }[];
+      }[];
+}
+
+export function buildTopicErrorAnalysis(
+  rawErrors: RawTopicErrorRecord[],
+  filteredExams: NormalizedExam[]
+): TopicErrorAnalysis {
+  const examColumns: ExamColumnDef[] = [...filteredExams]
+    .sort(
+      (a, b) =>
+        new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+    )
+    .map((exam, idx) => ({
+      mockExamId: exam.id,
+      label: exam.title?.trim() ? exam.title : `Deneme ${idx + 1}`,
+      shortDate: formatExamShortDate(exam.exam_date),
+    }));
+
+  const allowedExamIds = new Set(examColumns.map((c) => c.mockExamId));
+  const byTopic = new Map<
+    number,
+    { topicName: string; wrongs: Map<number, number> }
+  >();
+
+  for (const row of rawErrors) {
+    const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+    if (!resultRaw) continue;
+
+    const mockExamRaw = Array.isArray(resultRaw.mock_exam)
+      ? resultRaw.mock_exam[0]
+      : resultRaw.mock_exam;
+    const mockExamId = mockExamRaw?.id ?? resultRaw.mock_exam_id;
+    if (!allowedExamIds.has(mockExamId)) continue;
+
+    const topicRaw = Array.isArray(row.topic) ? row.topic[0] : row.topic;
+    const topicName = topicRaw?.name ?? `Konu #${row.topic_id}`;
+
+    const acc = byTopic.get(row.topic_id) ?? {
+      topicName,
+      wrongs: new Map<number, number>(),
+    };
+    acc.wrongs.set(
+      mockExamId,
+      (acc.wrongs.get(mockExamId) ?? 0) + (row.wrong_count ?? 0)
+    );
+    byTopic.set(row.topic_id, acc);
+  }
+
+  const rows: TopicErrorAnalysisRow[] = [];
+
+  for (const [topicId, acc] of byTopic) {
+    const wrongByExamId: Record<number, number> = {};
+    const wrongsChronological: number[] = [];
+
+    for (const col of examColumns) {
+      const w = acc.wrongs.get(col.mockExamId) ?? 0;
+      wrongByExamId[col.mockExamId] = w;
+      wrongsChronological.push(w);
+    }
+
+    const avgWrong =
+      examColumns.length > 0
+        ? wrongsChronological.reduce((s, n) => s + n, 0) / examColumns.length
+        : 0;
+
+    rows.push({
+      topicId,
+      topicName: acc.topicName,
+      wrongByExamId,
+      wrongsChronological,
+      avgWrong,
+      severity: topicSeverity(avgWrong),
+      trend: computeTopicTrend(wrongsChronological),
+    });
+  }
+
+  rows.sort((a, b) => b.avgWrong - a.avgWrong || a.topicName.localeCompare(b.topicName, "tr-TR"));
+
+  const totalWrongs = rows.reduce(
+    (sum, row) =>
+      sum + Object.values(row.wrongByExamId).reduce((s, n) => s + n, 0),
+    0
+  );
+  const avgWrongPerExam =
+    examColumns.length > 0 ? totalWrongs / examColumns.length : 0;
+
+  const withErrors = rows.filter((r) =>
+    Object.values(r.wrongByExamId).some((w) => w > 0)
+  );
+
+  return {
+    examColumns,
+    rows: withErrors,
+    topicCount: withErrors.length,
+    avgWrongPerExam,
+    worstTopic: withErrors[0] ?? null,
+    bestTopic:
+      withErrors.length > 0
+        ? [...withErrors].sort((a, b) => a.avgWrong - b.avgWrong)[0]
+        : null,
+  };
+}
+
 export interface NormalizedExamResult {
   subjectId: number;
   subjectName: string;
@@ -21,6 +223,7 @@ export interface SubjectAnalysisRow {
   subjectId: number;
   subjectName: string;
   color: string | null;
+  examGroup: string | null;
   topicCount: number;
   examCount: number;
   avgNet: number;
@@ -30,6 +233,14 @@ export interface SubjectAnalysisRow {
 
 export type ExamTypeFilter = "TYT" | "AYT" | "TYT+AYT";
 export type LastNFilter = 3 | 5 | 10 | "all";
+
+export function examGroupFromName(name: string): string | null {
+  const upper = name.toUpperCase();
+  if (upper.includes("TYT")) return "TYT";
+  if (upper.includes("AYT")) return "AYT";
+  if (upper.includes("LGS")) return "LGS";
+  return null;
+}
 
 export function examMatchesFilter(
   examName: string,
@@ -135,16 +346,21 @@ export function computeSubjectAnalysis(
     {
       subjectName: string;
       color: string | null;
+      examGroup: string | null;
       nets: number[];
       totals: number[];
     }
   >();
 
   for (const exam of exams) {
+    const examGroup =
+      examGroupFromName(exam.examName) ?? exam.examName ?? null;
+
     for (const r of exam.results) {
       const acc = bySubject.get(r.subjectId) ?? {
         subjectName: r.subjectName,
         color: r.color,
+        examGroup,
         nets: [],
         totals: [],
       };
@@ -175,6 +391,7 @@ export function computeSubjectAnalysis(
       subjectId,
       subjectName: acc.subjectName,
       color: acc.color,
+      examGroup: acc.examGroup,
       topicCount: topicCountBySubjectId[subjectId] ?? 0,
       examCount,
       avgNet,
@@ -183,7 +400,16 @@ export function computeSubjectAnalysis(
     });
   }
 
-  return rows.sort((a, b) =>
-    a.subjectName.localeCompare(b.subjectName, "tr-TR")
-  );
+  const groupOrder = (g: string | null) => {
+    if (g === "TYT") return 0;
+    if (g === "AYT") return 1;
+    if (g === "LGS") return 2;
+    return 3;
+  };
+
+  return rows.sort((a, b) => {
+    const byGroup = groupOrder(a.examGroup) - groupOrder(b.examGroup);
+    if (byGroup !== 0) return byGroup;
+    return a.subjectName.localeCompare(b.subjectName, "tr-TR");
+  });
 }

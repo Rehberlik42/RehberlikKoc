@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BarChart3, ChevronRight } from "lucide-react";
+import ExamTopicDetail from "./ExamTopicDetail";
 import {
   computeSubjectAnalysis,
   filterExamsForAnalysis,
@@ -10,7 +11,15 @@ import {
   type NormalizedExam,
 } from "./exam-analysis-utils";
 
+interface SelectedSubject {
+  id: number;
+  name: string;
+  color: string | null;
+  examGroup: string | null;
+}
+
 interface Props {
+  studentId: string;
   exams: { id: number; name: string }[];
   analysisExams: NormalizedExam[];
   topicCountBySubjectId: Record<number, number>;
@@ -123,13 +132,36 @@ function FilterButtonGroup<T extends string | number>({
   );
 }
 
+function ExamGroupBadge({ group }: { group: string }) {
+  const styles =
+    group === "TYT"
+      ? "border-[#4F7CFF]/30 bg-[#4F7CFF]/15 text-[#7AB3FF]"
+      : group === "AYT"
+        ? "border-[#7B2FFF]/30 bg-[#7B2FFF]/15 text-[#A78BFF]"
+        : group === "LGS"
+          ? "border-green-500/30 bg-green-500/15 text-green-400"
+          : "border-white/10 bg-white/5 text-white/50";
+
+  return (
+    <span
+      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles}`}
+    >
+      {group}
+    </span>
+  );
+}
+
 export default function ExamAnalysis({
+  studentId,
   exams,
   analysisExams,
   topicCountBySubjectId,
 }: Props) {
   const [examTypeFilter, setExamTypeFilter] = useState<ExamTypeFilter>("TYT+AYT");
   const [lastN, setLastN] = useState<LastNFilter>(5);
+  const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(
+    null
+  );
 
   const filteredExams = useMemo(
     () => filterExamsForAnalysis(analysisExams, examTypeFilter, lastN),
@@ -158,8 +190,41 @@ export default function ExamAnalysis({
   const lastNLabel =
     LAST_N_OPTIONS.find((o) => o.id === lastN)?.label ?? `Son ${lastN}`;
 
+  const openSubjectDetail = (row: {
+    subjectId: number;
+    subjectName: string;
+    color: string | null;
+    examGroup: string | null;
+  }) => {
+    setSelectedSubject({
+      id: row.subjectId,
+      name: row.subjectName,
+      color: row.color,
+      examGroup: row.examGroup,
+    });
+  };
+
   return (
     <div className="space-y-5">
+      {selectedSubject && (
+        <nav className="flex flex-wrap items-center gap-1 text-sm">
+          <button
+            type="button"
+            onClick={() => setSelectedSubject(null)}
+            className="font-semibold text-[#A78BFF] transition-colors hover:text-white"
+          >
+            ← Deneme Analizi
+          </button>
+          <span className="text-white/25">/</span>
+          <span className="font-semibold text-white">{selectedSubject.name}</span>
+          {selectedSubject.examGroup && (
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/50">
+              {selectedSubject.examGroup}
+            </span>
+          )}
+        </nav>
+      )}
+
       <div className="rounded-2xl border border-white/8 bg-[#0d0d2b]/60 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -169,11 +234,13 @@ export default function ExamAnalysis({
             <div>
               <h3 className="text-sm font-bold text-white">Deneme Analizi</h3>
               <p className="text-[11px] text-white/35">
-                Ders bazlı net ortalaması ve başarı oranı
+                {selectedSubject
+                  ? "Konu bazlı hata performansı"
+                  : "Ders bazlı net ortalaması ve başarı oranı"}
               </p>
             </div>
           </div>
-          {exams.length > 0 && (
+          {!selectedSubject && exams.length > 0 && (
             <p className="text-[10px] text-white/30">
               {exams.length} sınav türü kayıtlı
             </p>
@@ -204,143 +271,162 @@ export default function ExamAnalysis({
         </div>
       </div>
 
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Deneme", value: summary.examCount },
-            { label: "Ders", value: summary.subjectCount },
-            {
-              label: "Ort. Net",
-              value: summary.avgNet.toFixed(1),
-            },
-            { label: "Ort. Başarı", value: `%${summary.avgSuccess}` },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
-                {item.label}
-              </p>
-              <p className="mt-1 text-lg font-black text-white">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {filteredExams.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
-          <BarChart3 className="mx-auto h-10 w-10 text-white/15" />
-          <p className="mt-4 text-sm text-white/40">
-            Bu kriterlerde deneme yok
-          </p>
-          <p className="mt-1 text-xs text-white/25">
-            Farklı sınav türü veya deneme aralığı seçmeyi deneyin
-          </p>
-        </div>
-      ) : subjectRows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
-          <p className="text-sm text-white/40">
-            Seçili denemelerde ders sonucu bulunamadı
-          </p>
-        </div>
+      {selectedSubject ? (
+        <ExamTopicDetail
+          studentId={studentId}
+          subject={selectedSubject}
+          filteredExams={filteredExams}
+          lastN={lastN}
+        />
       ) : (
-        <div className="space-y-2">
-          {subjectRows.map((row, idx) => {
-            const barColor = row.color ?? "#4F7CFF";
-            const barWidth = Math.max(row.successPct, row.successPct > 0 ? 2 : 0);
-
-            return (
-              <div
-                key={row.subjectId}
-                className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both rounded-2xl border border-white/8 bg-[#0d0d2b]/60 px-4 py-3.5 duration-300"
-                style={{ animationDelay: `${Math.min(idx * 40, 240)}ms` }}
-              >
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-4 w-1 shrink-0 rounded-full"
-                        style={{ background: barColor }}
-                      />
-                      <p className="truncate text-sm font-semibold text-white">
-                        {row.subjectName}
-                      </p>
-                    </div>
-                    {row.topicCount > 0 && (
-                      <p className="mt-0.5 pl-3 text-[11px] text-white/35">
-                        {row.topicCount} konu
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="hidden min-w-0 flex-[1.4] sm:block">
-                    <p className="text-[11px] text-white/45">
-                      Net Ortalaması{" "}
-                      <span className="font-bold text-white">
-                        {row.avgNet.toFixed(1)}
-                      </span>
-                      <span className="text-white/25"> / </span>
-                      <span className="text-white/60">
-                        {row.avgTotalQuestions.toFixed(0)}
-                      </span>
-                    </p>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${barWidth}%`,
-                          background: barColor,
-                        }}
-                      />
-                    </div>
-                    <p className="mt-1 text-[10px] text-white/30">
-                      {row.examCount} deneme ortalaması
-                    </p>
-                  </div>
-
-                  <SuccessRing
-                    pct={row.successPct}
-                    color={barColor}
-                    ringId={String(row.subjectId)}
-                  />
-
-                  <ChevronRight
-                    className="hidden h-4 w-4 shrink-0 text-white/15 sm:block"
-                    aria-hidden
-                  />
-                </div>
-
-                <div className="mt-3 sm:hidden">
-                  <p className="text-[11px] text-white/45">
-                    Net Ortalaması{" "}
-                    <span className="font-bold text-white">
-                      {row.avgNet.toFixed(1)}
-                    </span>
-                    <span className="text-white/25"> / </span>
-                    <span className="text-white/60">
-                      {row.avgTotalQuestions.toFixed(0)}
-                    </span>
+        <>
+          {summary && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Deneme", value: summary.examCount },
+                { label: "Ders", value: summary.subjectCount },
+                {
+                  label: "Ort. Net",
+                  value: summary.avgNet.toFixed(1),
+                },
+                { label: "Ort. Başarı", value: `%${summary.avgSuccess}` },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                    {item.label}
                   </p>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${barWidth}%`,
-                        background: barColor,
-                      }}
-                    />
-                  </div>
+                  <p className="mt-1 text-lg font-black text-white">
+                    {item.value}
+                  </p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
 
-      <p className="text-center text-[11px] text-white/25">
-        Net ortalamaları {lastNLabel.toLowerCase()} denemeye göre hesaplanmıştır.
-      </p>
+          {filteredExams.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
+              <BarChart3 className="mx-auto h-10 w-10 text-white/15" />
+              <p className="mt-4 text-sm text-white/40">
+                Bu kriterlerde deneme yok
+              </p>
+              <p className="mt-1 text-xs text-white/25">
+                Farklı sınav türü veya deneme aralığı seçmeyi deneyin
+              </p>
+            </div>
+          ) : subjectRows.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
+              <p className="text-sm text-white/40">
+                Seçili denemelerde ders sonucu bulunamadı
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {subjectRows.map((row, idx) => {
+                const barColor = row.color ?? "#4F7CFF";
+                const barWidth = Math.max(
+                  row.successPct,
+                  row.successPct > 0 ? 2 : 0
+                );
+
+                return (
+                  <button
+                    key={row.subjectId}
+                    type="button"
+                    onClick={() => openSubjectDetail(row)}
+                    className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both w-full rounded-2xl border border-white/8 bg-[#0d0d2b]/60 px-4 py-3.5 text-left transition-all duration-300 hover:border-[#7B2FFF]/35 hover:shadow-[0_0_20px_rgba(123,47,255,0.12)]"
+                    style={{ animationDelay: `${Math.min(idx * 40, 240)}ms` }}
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span
+                            className="h-4 w-1 shrink-0 rounded-full"
+                            style={{ background: barColor }}
+                          />
+                          <p className="truncate text-sm font-semibold text-white">
+                            {row.subjectName}
+                          </p>
+                          {row.examGroup && (
+                            <ExamGroupBadge group={row.examGroup} />
+                          )}
+                        </div>
+                        {row.topicCount > 0 && (
+                          <p className="mt-0.5 pl-3 text-[11px] text-white/35">
+                            {row.topicCount} konu
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="hidden min-w-0 flex-[1.4] sm:block">
+                        <p className="text-[11px] text-white/45">
+                          Net Ortalaması{" "}
+                          <span className="font-bold text-white">
+                            {row.avgNet.toFixed(1)}
+                          </span>
+                          <span className="text-white/25"> / </span>
+                          <span className="text-white/60">
+                            {row.avgTotalQuestions.toFixed(0)}
+                          </span>
+                        </p>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${barWidth}%`,
+                              background: barColor,
+                            }}
+                          />
+                        </div>
+                        <p className="mt-1 text-[10px] text-white/30">
+                          {row.examCount} deneme ortalaması
+                        </p>
+                      </div>
+
+                      <SuccessRing
+                        pct={row.successPct}
+                        color={barColor}
+                        ringId={String(row.subjectId)}
+                      />
+
+                      <ChevronRight className="hidden h-4 w-4 shrink-0 text-white/30 sm:block" />
+                    </div>
+
+                    <div className="mt-3 sm:hidden">
+                      <p className="text-[11px] text-white/45">
+                        Net Ortalaması{" "}
+                        <span className="font-bold text-white">
+                          {row.avgNet.toFixed(1)}
+                        </span>
+                        <span className="text-white/25"> / </span>
+                        <span className="text-white/60">
+                          {row.avgTotalQuestions.toFixed(0)}
+                        </span>
+                      </p>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: barColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="text-center text-[11px] text-white/25">
+            Net ortalamaları {lastNLabel.toLowerCase()} denemeye göre
+            hesaplanmıştır.
+          </p>
+        </>
+      )}
     </div>
   );
 }
