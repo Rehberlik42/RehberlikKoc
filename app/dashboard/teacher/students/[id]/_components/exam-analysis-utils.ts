@@ -54,6 +54,17 @@ export function topicSeverityBg(severity: TopicSeverity): string {
   }
 }
 
+export function topicTrendColor(trend: TopicTrend): string {
+  switch (trend) {
+    case "improving":
+      return "#22c55e";
+    case "worsening":
+      return "#ef4444";
+    case "stable":
+      return "#9ca3af";
+  }
+}
+
 export function computeTopicTrend(wrongs: number[]): TopicTrend {
   if (wrongs.length < 2) return "stable";
   const mid = Math.floor(wrongs.length / 2);
@@ -62,8 +73,9 @@ export function computeTopicTrend(wrongs: number[]): TopicTrend {
   const late =
     wrongs.slice(mid).reduce((s, n) => s + n, 0) /
     Math.max(wrongs.length - mid, 1);
-  if (late < early - 0.2) return "improving";
-  if (late > early + 0.2) return "worsening";
+  const diff = late - early;
+  if (diff < -0.3) return "improving";
+  if (diff > 0.3) return "worsening";
   return "stable";
 }
 

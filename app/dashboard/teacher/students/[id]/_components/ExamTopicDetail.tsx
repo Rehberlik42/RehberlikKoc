@@ -6,7 +6,6 @@ import {
   BookOpen,
   Loader2,
   Minus,
-  TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -14,6 +13,7 @@ import {
   buildTopicErrorAnalysis,
   topicSeverityBg,
   topicSeverityColor,
+  topicTrendColor,
   type LastNFilter,
   type NormalizedExam,
   type RawTopicErrorRecord,
@@ -36,24 +36,35 @@ interface Props {
 }
 
 function TrendBadge({ trend }: { trend: TopicTrend }) {
+  const color = topicTrendColor(trend);
+
   if (trend === "improving") {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-400">
-        <TrendingDown className="h-3 w-3" />
+      <span
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
+        style={{ color }}
+      >
+        <TrendingUp className="h-3 w-3" />
         İyileşiyor
       </span>
     );
   }
   if (trend === "worsening") {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-400">
+      <span
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
+        style={{ color }}
+      >
         <TrendingUp className="h-3 w-3" />
-        Artıyor
+        Kötüleşiyor
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-white/35">
+    <span
+      className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
+      style={{ color }}
+    >
       <Minus className="h-3 w-3" />
       Sabit
     </span>
@@ -336,6 +347,7 @@ function TopicTableRow({
   examColumns: { mockExamId: number }[];
 }) {
   const severityColor = topicSeverityColor(row.severity);
+  const trendColor = topicTrendColor(row.trend);
 
   return (
     <tr
@@ -379,7 +391,7 @@ function TopicTableRow({
           <TrendBadge trend={row.trend} />
           <MiniSparkline
             values={row.wrongsChronological}
-            color={severityColor}
+            color={trendColor}
           />
         </div>
       </td>
