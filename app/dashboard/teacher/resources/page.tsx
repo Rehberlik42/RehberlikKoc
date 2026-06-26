@@ -97,7 +97,7 @@ export default async function TeacherResourcesPage() {
 
   if (profile?.role === "student") redirect("/dashboard/student");
 
-  const [resourcesRes, examsRes, subjectsRes, progressRes] = await Promise.all([
+  const [resourcesRes, examsRes, subjectsRes, progressRes, studentsRes] = await Promise.all([
     supabase
       .from("study_resources")
       .select(
@@ -116,6 +116,12 @@ export default async function TeacherResourcesPage() {
       .eq("is_completed", true)
       .not("study_resource_id", "is", null)
       .not("solved_count", "is", null),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("teacher_id", user.id)
+      .eq("role", "student")
+      .order("full_name"),
   ]);
 
   const progressByResource = groupProgressByResource(progressRes.data ?? []);
@@ -152,6 +158,10 @@ export default async function TeacherResourcesPage() {
       initialResources={initialResources}
       examOptions={examOptions}
       subjectOptions={subjectOptions}
+      students={(studentsRes.data ?? []).map((s) => ({
+        id: s.id,
+        full_name: s.full_name,
+      }))}
     />
   );
 }

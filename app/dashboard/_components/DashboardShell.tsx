@@ -47,6 +47,7 @@ const studentNav: NavItem[] = [
   { label: "Programım",    href: "/dashboard/student/program",     icon: <CalendarDays className="w-4.5 h-4.5" /> },
   { label: "Denemelerim",  href: "/dashboard/student/mock-exams",  icon: <BarChart2 className="w-4.5 h-4.5" /> },
   { label: "Önerilerim",   href: "/dashboard/student/recommendations", icon: <BookOpen className="w-4.5 h-4.5" /> },
+  { label: "Kaynaklarım",  href: "/dashboard/student/resources",       icon: <Library className="w-4.5 h-4.5" /> },
   { label: "DORA",         href: "/dashboard/student/dora",        icon: <Bot className="w-4.5 h-4.5" /> },
   { label: "Testler",      href: "/dashboard/student/tests",       icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Rehberlik",    href: "/dashboard/student/guidance",    icon: <Compass className="w-4.5 h-4.5" /> },

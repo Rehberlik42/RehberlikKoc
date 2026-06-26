@@ -91,6 +91,11 @@ export interface SubjectOption {
   examName: string | null;
 }
 
+export interface StudentLite {
+  id: string;
+  full_name: string | null;
+}
+
 export const COVER_COLOR_PALETTE = [
   { value: "#2B4C8C", label: "Koyu Lacivert" },
   { value: "#1B6B3A", label: "Yeşil" },

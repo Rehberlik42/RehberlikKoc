@@ -33,6 +33,7 @@ import {
   type ResourceTopicRow,
   type StudyResource,
   type StudyResourceWithTopics,
+  type StudentLite,
   type SubjectOption,
 } from "./resource-types";
 
@@ -41,6 +42,7 @@ interface Props {
   initialResources: StudyResource[];
   examOptions: ExamOption[];
   subjectOptions: SubjectOption[];
+  students: StudentLite[];
 }
 
 function StatCard({
@@ -253,6 +255,7 @@ export default function ResourcesClient({
   initialResources,
   examOptions,
   subjectOptions,
+  students,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
@@ -560,6 +563,7 @@ export default function ResourcesClient({
       {detailResource && (
         <ResourceDetailModal
           resource={detailResource}
+          students={students}
           onClose={() => setDetailResource(null)}
         />
       )}
