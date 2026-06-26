@@ -44,6 +44,7 @@ interface SubjectInput {
 interface Props {
   exams: ExamOption[];
   subjects: SubjectOption[];
+  studentId?: string;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 }
@@ -332,6 +333,7 @@ function MiniInput({
 export default function MockExamForm({
   exams,
   subjects,
+  studentId,
   onSuccess,
   onError,
 }: Props) {
@@ -486,7 +488,7 @@ export default function MockExamForm({
     const { data: mockExam, error: mockExamError } = await supabase
       .from("mock_exams")
       .insert({
-        student_id: user.id,
+        student_id: studentId ?? user.id,
         exam_id: parseInt(examId),
         exam_date: examDate,
         title: title.trim() || null,

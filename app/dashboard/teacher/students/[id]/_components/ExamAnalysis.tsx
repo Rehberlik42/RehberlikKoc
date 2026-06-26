@@ -1,8 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+import { BarChart3, ChevronRight, Plus } from "lucide-react";
+import AddExamModal from "./AddExamModal";
 import ExamTopicDetail from "./ExamTopicDetail";
+import type {
+  ExamOption,
+  SubjectOption,
+} from "@/app/dashboard/student/mock-exams/_components/MockExamsClient";
 import {
   computeSubjectAnalysis,
   filterExamsForAnalysis,
@@ -23,6 +30,8 @@ interface Props {
   exams: { id: number; name: string }[];
   analysisExams: NormalizedExam[];
   topicCountBySubjectId: Record<number, number>;
+  examFormOptions: ExamOption[];
+  subjectFormOptions: SubjectOption[];
 }
 
 const EXAM_TYPE_OPTIONS: { id: ExamTypeFilter; label: string }[] = [
@@ -156,12 +165,16 @@ export default function ExamAnalysis({
   exams,
   analysisExams,
   topicCountBySubjectId,
+  examFormOptions,
+  subjectFormOptions,
 }: Props) {
+  const router = useRouter();
   const [examTypeFilter, setExamTypeFilter] = useState<ExamTypeFilter>("TYT+AYT");
   const [lastN, setLastN] = useState<LastNFilter>(5);
   const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(
     null
   );
+  const [addExamOpen, setAddExamOpen] = useState(false);
 
   const filteredExams = useMemo(
     () => filterExamsForAnalysis(analysisExams, examTypeFilter, lastN),
@@ -206,6 +219,31 @@ export default function ExamAnalysis({
 
   return (
     <div className="space-y-5">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: "#0d0d2b",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.1)",
+          },
+        }}
+      />
+
+      <AddExamModal
+        open={addExamOpen}
+        onClose={() => setAddExamOpen(false)}
+        studentId={studentId}
+        exams={examFormOptions}
+        subjects={subjectFormOptions}
+        onSuccess={(message) => {
+          setAddExamOpen(false);
+          toast.success(message);
+          router.refresh();
+        }}
+        onError={(message) => toast.error(message)}
+      />
+
       {selectedSubject && (
         <nav className="flex flex-wrap items-center gap-1 text-sm">
           <button
@@ -240,10 +278,15 @@ export default function ExamAnalysis({
               </p>
             </div>
           </div>
-          {!selectedSubject && exams.length > 0 && (
-            <p className="text-[10px] text-white/30">
-              {exams.length} sınav türü kayıtlı
-            </p>
+          {!selectedSubject && (
+            <button
+              type="button"
+              onClick={() => setAddExamOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all hover:scale-[1.02] hover:shadow-[#7B2FFF]/40"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Deneme Ekle
+            </button>
           )}
         </div>
 

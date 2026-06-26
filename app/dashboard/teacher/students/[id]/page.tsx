@@ -83,6 +83,7 @@ export default async function StudentDetailPage({
     { data: rawAnalysisExams },
     { data: rawSessions },
     { data: rawSubjects },
+    { data: rawExams },
     { data: progressRecords },
   ] = await Promise.all([
     supabase
@@ -124,8 +125,15 @@ export default async function StudentDetailPage({
       .limit(10),
     supabase
       .from("subjects")
-      .select("id, name, color, order_index, exam:exams(name), topics(id, name, order_index)")
+      .select(
+        "id, name, color, order_index, exam_id, exam:exams(name), topics(id, name, order_index)"
+      )
       .order("order_index"),
+    supabase
+      .from("exams")
+      .select("id, name, description")
+      .eq("is_active", true)
+      .order("id"),
     supabase
       .from("topic_progress")
       .select("topic_id, status, completion_percentage")
@@ -254,6 +262,27 @@ export default async function StudentDetailPage({
       (Array.isArray(s.topics) ? s.topics : []).length,
     ])
   );
+
+  const examFormOptions = (rawExams ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    description: e.description ?? null,
+  }));
+
+  const subjectFormOptions = (rawSubjects ?? []).map((s) => {
+    const examRaw = s.exam as { name: string } | { name: string }[] | null;
+    const examName = Array.isArray(examRaw)
+      ? (examRaw[0]?.name ?? null)
+      : (examRaw?.name ?? null);
+    return {
+      id: s.id,
+      name: s.name,
+      exam_id: s.exam_id as number | null,
+      order_index: s.order_index,
+      color: s.color,
+      exam: examName ? { name: examName } : null,
+    };
+  });
 
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
@@ -394,6 +423,8 @@ export default async function StudentDetailPage({
             exams={analysisExamOptions}
             analysisExams={analysisExams}
             topicCountBySubjectId={topicCountBySubjectId}
+            examFormOptions={examFormOptions}
+            subjectFormOptions={subjectFormOptions}
           />
         }
       />
