@@ -184,7 +184,7 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="resource-detail-title"
-          className="relative flex max-h-[90vh] w-full max-w-2xl flex-col animate-in fade-in zoom-in-95 rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 duration-200"
+          className="relative flex max-h-[90vh] w-full max-w-2xl flex-col animate-in fade-in zoom-in-95 rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/20 duration-200"
         >
           <div
             className="relative shrink-0 overflow-hidden rounded-t-3xl px-6 py-5"
@@ -195,15 +195,15 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
               <div className="min-w-0">
                 <h2
                   id="resource-detail-title"
-                  className="text-xl font-bold leading-snug text-white"
+                  className="text-xl font-bold leading-snug text-[var(--text-primary)]"
                 >
                   {resource.name}
                 </h2>
                 {resource.publisher && (
-                  <p className="mt-1 text-sm text-white/75">{resource.publisher}</p>
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">{resource.publisher}</p>
                 )}
                 {badge && (
-                  <span className="mt-3 inline-flex rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-sm">
+                  <span className="mt-3 inline-flex rounded-full border border-[var(--border)] bg-black/20 px-2.5 py-1 text-[10px] font-semibold text-[var(--text-secondary)] backdrop-blur-sm">
                     {badge}
                   </span>
                 )}
@@ -211,7 +211,7 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
               <button
                 type="button"
                 onClick={onClose}
-                className="shrink-0 rounded-lg border border-white/20 bg-black/30 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
+                className="shrink-0 rounded-lg border border-[var(--border)] bg-black/30 p-2 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:text-[var(--text-primary)]"
                 aria-label="Kapat"
               >
                 <X className="h-4 w-4" />
@@ -221,8 +221,8 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5 sm:p-6">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-white/40">
-                <Loader2 className="h-6 w-6 animate-spin text-[#A78BFF]" />
+              <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
+                <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
                 <p className="mt-3 text-sm">Konu ilerlemesi yükleniyor…</p>
               </div>
             ) : error ? (
@@ -232,29 +232,29 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/60 hover:text-white"
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 >
                   Kapat
                 </button>
               </div>
             ) : (
               <>
-                <div className="mb-5 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                <div className="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                     Genel İlerleme
                   </p>
                   <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                     <div>
-                      <p className="text-2xl font-black text-white">
+                      <p className="text-2xl font-black text-[var(--text-primary)]">
                         {summary.solved}
-                        <span className="text-lg font-semibold text-white/40">
+                        <span className="text-lg font-semibold text-[var(--text-muted)]">
                           {" "}
                           / {resource.totalQuestions}
                         </span>
                       </p>
-                      <p className="text-xs text-white/40">soru çözüldü</p>
+                      <p className="text-xs text-[var(--text-muted)]">soru çözüldü</p>
                     </div>
-                    <p className="text-lg font-bold text-[#A78BFF]">
+                    <p className="text-lg font-bold text-[var(--accent)]">
                       %{summary.completionPct}
                     </p>
                   </div>
@@ -263,7 +263,7 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                       className={`h-full rounded-full transition-all ${
                         summary.completionPct >= 100
                           ? "bg-green-500"
-                          : "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF]"
+                          : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
                       }`}
                       style={{
                         width: `${
@@ -278,11 +278,11 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                     />
                   </div>
                   {summary.solved > 0 && (
-                    <p className="mt-2 text-[11px] text-white/40">
+                    <p className="mt-2 text-[11px] text-[var(--text-muted)]">
                       <span className="text-green-400/90">{summary.correct}D</span>
-                      <span className="mx-1 text-white/20">·</span>
+                      <span className="mx-1 text-[var(--text-muted)]">·</span>
                       <span className="text-red-400/90">{summary.wrong}Y</span>
-                      <span className="mx-1 text-white/20">·</span>
+                      <span className="mx-1 text-[var(--text-muted)]">·</span>
                       <span>
                         net {summary.net >= 0 ? "+" : ""}
                         {summary.net.toFixed(2)}
@@ -292,16 +292,16 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                 </div>
 
                 <div className="mb-3 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-[#A78BFF]" />
-                  <h3 className="text-sm font-bold text-white">Konu Bazlı İlerleme</h3>
+                  <BookOpen className="h-4 w-4 text-[var(--accent)]" />
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Konu Bazlı İlerleme</h3>
                 </div>
 
                 {topics.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center">
-                    <p className="text-sm text-white/40">
+                  <div className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-10 text-center">
+                    <p className="text-sm text-[var(--text-muted)]">
                       Bu kaynağa henüz konu eklenmemiş
                     </p>
-                    <p className="mt-2 text-xs text-white/25">
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
                       Konu eklemek için karttaki düzenle ikonunu kullanabilirsiniz
                     </p>
                   </div>
@@ -320,26 +320,26 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                       return (
                         <div
                           key={topic.id ?? "uncategorized"}
-                          className="rounded-xl border border-white/8 bg-white/[0.03] p-4"
+                          className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white">{topic.name}</p>
-                              <p className="mt-0.5 text-[11px] text-white/40">
+                              <p className="text-sm font-semibold text-[var(--text-primary)]">{topic.name}</p>
+                              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
                                 {hasProgress ? (
                                   <>
-                                    <span className="font-semibold text-white/60">
+                                    <span className="font-semibold text-[var(--text-secondary)]">
                                       {topic.solved}
                                     </span>
                                     {topic.target_count > 0 && (
                                       <>
-                                        <span className="text-white/25"> / </span>
+                                        <span className="text-[var(--text-muted)]"> / </span>
                                         {topic.target_count} soru
                                       </>
                                     )}
                                   </>
                                 ) : (
-                                  <span className="text-white/30">
+                                  <span className="text-[var(--text-muted)]">
                                     {topic.target_count > 0
                                       ? `0 / ${topic.target_count} soru`
                                       : "Henüz çözüm yok"}
@@ -350,7 +350,7 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                             {topic.target_count > 0 && (
                               <span
                                 className={`text-xs font-bold ${
-                                  allDone ? "text-green-400" : "text-[#A78BFF]"
+                                  allDone ? "text-green-400" : "text-[var(--accent)]"
                                 }`}
                               >
                                 %{topic.completionPct}
@@ -364,7 +364,7 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                                 className={`h-full rounded-full transition-all ${
                                   allDone
                                     ? "bg-green-500"
-                                    : "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF]"
+                                    : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
                                 }`}
                                 style={{
                                   width: `${hasProgress ? Math.max(barWidth, 2) : 0}%`,
@@ -374,11 +374,11 @@ export default function ResourceDetailModal({ resource, onClose }: Props) {
                           )}
 
                           {hasProgress && (
-                            <p className="mt-2 text-[10px] text-white/40">
+                            <p className="mt-2 text-[10px] text-[var(--text-muted)]">
                               <span className="text-green-400/90">D{topic.correct}</span>
-                              <span className="mx-1 text-white/20">·</span>
+                              <span className="mx-1 text-[var(--text-muted)]">·</span>
                               <span className="text-red-400/90">Y{topic.wrong}</span>
-                              <span className="mx-1 text-white/20">·</span>
+                              <span className="mx-1 text-[var(--text-muted)]">·</span>
                               <span>
                                 net {topic.net >= 0 ? "+" : ""}
                                 {topic.net.toFixed(2)}

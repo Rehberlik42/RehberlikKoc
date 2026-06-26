@@ -107,7 +107,7 @@ function MiniSparkline({
 }
 
 function cellTone(wrong: number): string {
-  if (wrong <= 0) return "text-white/20";
+  if (wrong <= 0) return "text-[var(--text-muted)]";
   if (wrong === 1) return "text-yellow-400";
   return "text-red-400";
 }
@@ -176,9 +176,9 @@ export default function ExamTopicDetail({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-white/8 bg-[#0d0d2b]/60 px-6 py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-[#A78BFF]" />
-        <p className="mt-3 text-sm text-white/40">Konu analizi yükleniyor…</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 px-6 py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
+        <p className="mt-3 text-sm text-[var(--text-muted)]">Konu analizi yükleniyor…</p>
       </div>
     );
   }
@@ -197,29 +197,29 @@ export default function ExamTopicDetail({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)]"
             style={{ background: `${subjectColor}22` }}
           >
             <BookOpen className="h-5 w-5" style={{ color: subjectColor }} />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-bold text-white">{subject.name}</h3>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{subject.name}</h3>
               {subject.examGroup && (
                 <span
                   className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                     subject.examGroup === "TYT"
-                      ? "border-[#4F7CFF]/30 bg-[#4F7CFF]/15 text-[#7AB3FF]"
+                      ? "border-[var(--primary-2)]/30 bg-[var(--primary-2)]/15 text-[var(--accent)]"
                       : subject.examGroup === "AYT"
-                        ? "border-[#7B2FFF]/30 bg-[#7B2FFF]/15 text-[#A78BFF]"
-                        : "border-white/10 bg-white/5 text-white/50"
+                        ? "border-[var(--primary)]/30 bg-[var(--primary)]/15 text-[var(--accent)]"
+                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]"
                   }`}
                 >
                   {subject.examGroup}
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-white/35">
+            <p className="text-[11px] text-[var(--text-muted)]">
               {subject.name} dersi konu bazlı deneme performansı
             </p>
           </div>
@@ -247,13 +247,13 @@ export default function ExamTopicDetail({
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+              className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 {item.label}
               </p>
               <p
-                className={`mt-1 font-black text-white ${
+                className={`mt-1 font-black text-[var(--text-primary)] ${
                   item.small ? "text-sm leading-snug" : "text-lg"
                 }`}
               >
@@ -265,44 +265,44 @@ export default function ExamTopicDetail({
       )}
 
       {analysis.rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
-          <BookOpen className="mx-auto h-10 w-10 text-white/15" />
-          <p className="mt-4 text-sm text-white/40">
+        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-14 text-center">
+          <BookOpen className="mx-auto h-10 w-10 text-[var(--text-primary)]/15" />
+          <p className="mt-4 text-sm text-[var(--text-muted)]">
             Bu derste henüz konu bazlı hata verisi yok.
           </p>
-          <p className="mt-2 text-xs text-white/25">
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
             Deneme girişinde zayıf konuları işaretleyince burada analiz görünür.
           </p>
         </div>
       ) : (
         <>
-          <p className="text-xs text-white/35">
+          <p className="text-xs text-[var(--text-muted)]">
             {analysis.topicCount} konuda hata tespit edildi
             {lastN !== "all" ? ` (son ${lastN} deneme)` : ""}
           </p>
 
-          <div className="overflow-x-auto rounded-2xl border border-white/8 bg-[#0d0d2b]/60">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60">
             <table className="min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/8">
-                  <th className="sticky left-0 z-10 min-w-[9rem] bg-[#0d0d2b] px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                <tr className="border-b border-[var(--border)]">
+                  <th className="sticky left-0 z-10 min-w-[9rem] bg-[var(--surface)] px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     Konu
                   </th>
                   {analysis.examColumns.map((col) => (
                     <th
                       key={col.mockExamId}
-                      className="min-w-[4.5rem] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-white/35"
+                      className="min-w-[4.5rem] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
                     >
                       <span className="block truncate">{col.label}</span>
-                      <span className="mt-0.5 block font-normal normal-case text-white/25">
+                      <span className="mt-0.5 block font-normal normal-case text-[var(--text-muted)]">
                         {col.shortDate}
                       </span>
                     </th>
                   ))}
-                  <th className="min-w-[4rem] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  <th className="min-w-[4rem] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     Ort.
                   </th>
-                  <th className="min-w-[5rem] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  <th className="min-w-[5rem] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     Trend
                   </th>
                 </tr>
@@ -321,7 +321,7 @@ export default function ExamTopicDetail({
         </>
       )}
 
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-white/30">
+      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-[var(--text-muted)]">
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-green-500" />
           Yeşil: az hata (≤0.5 ort.)
@@ -351,7 +351,7 @@ function TopicTableRow({
 
   return (
     <tr
-      className="border-b border-white/5 last:border-0"
+      className="border-b border-[var(--border)] last:border-0"
       style={{ background: topicSeverityBg(row.severity) }}
     >
       <td className="sticky left-0 z-10 bg-inherit px-4 py-3">
@@ -360,9 +360,9 @@ function TopicTableRow({
             className="h-3 w-1 shrink-0 rounded-full"
             style={{ background: severityColor }}
           />
-          <span className="font-semibold text-white">{row.topicName}</span>
+          <span className="font-semibold text-[var(--text-primary)]">{row.topicName}</span>
         </div>
-        <p className="mt-0.5 pl-3 text-[10px] text-white/35">
+        <p className="mt-0.5 pl-3 text-[10px] text-[var(--text-muted)]">
           ort. {row.avgWrong.toFixed(1)} yanlış
         </p>
       </td>

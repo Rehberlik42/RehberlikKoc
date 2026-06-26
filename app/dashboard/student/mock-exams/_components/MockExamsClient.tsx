@@ -99,7 +99,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="relative rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md p-5 overflow-hidden group hover:border-white/15 transition-all duration-300"
+      className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md p-5 overflow-hidden group hover:border-[var(--border)] transition-all duration-300"
     >
       <div
         className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-[50px] pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity duration-500"
@@ -107,11 +107,11 @@ function StatCard({
       />
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-white/40 text-[11px] font-semibold uppercase tracking-wider mb-2">
+          <p className="text-[var(--text-muted)] text-[11px] font-semibold uppercase tracking-wider mb-2">
             {label}
           </p>
           <div className="flex items-baseline gap-2">
-            <p className="text-white text-3xl font-black tabular-nums">{value}</p>
+            <p className="text-[var(--text-primary)] text-3xl font-black tabular-nums">{value}</p>
             {trend && (
               <span
                 className={`flex items-center gap-0.5 text-xs font-bold ${
@@ -119,7 +119,7 @@ function StatCard({
                     ? "text-green-400"
                     : trend === "down"
                     ? "text-red-400"
-                    : "text-white/30"
+                    : "text-[var(--text-muted)]"
                 }`}
               >
                 {trend === "up" ? (
@@ -132,10 +132,10 @@ function StatCard({
               </span>
             )}
           </div>
-          <p className="text-white/30 text-xs mt-1">{sub}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">{sub}</p>
         </div>
         <div
-          className="w-10 h-10 rounded-xl border border-white/10 bg-white/4 flex items-center justify-center shrink-0 text-white/70"
+          className="w-10 h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center shrink-0 text-[var(--text-secondary)]"
         >
           {icon}
         </div>

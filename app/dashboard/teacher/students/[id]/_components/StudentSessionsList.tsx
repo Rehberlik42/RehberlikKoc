@@ -36,13 +36,13 @@ function formatDate(dateStr: string) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#4F7CFF]/25 bg-gradient-to-br from-[#4F7CFF]/20 to-[#00D4FF]/10">
-        <ListChecks className="h-5 w-5 text-[#7AB3FF]" />
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--primary-2)]/25 bg-gradient-to-br from-[var(--primary-2)]/20 to-[var(--primary-3)]/10">
+        <ListChecks className="h-5 w-5 text-[var(--accent)]" />
       </div>
-      <p className="text-sm font-semibold text-white/60">
+      <p className="text-sm font-semibold text-[var(--text-secondary)]">
         Henüz çalışma oturumu yok
       </p>
-      <p className="mt-1 max-w-xs text-xs text-white/30">
+      <p className="mt-1 max-w-xs text-xs text-[var(--text-muted)]">
         Öğrenci programına kayıt ekledikçe son oturumlar burada listelenecek.
       </p>
     </div>
@@ -51,14 +51,14 @@ function EmptyState() {
 
 export default function StudentSessionsList({ sessions }: Props) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md">
-      <div className="flex items-center gap-3 border-b border-white/5 px-5 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#4F7CFF]/20 bg-gradient-to-br from-[#4F7CFF]/30 to-[#00D4FF]/20">
-          <ListChecks className="h-4 w-4 text-[#7AB3FF]" />
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary-2)]/20 bg-gradient-to-br from-[var(--primary-2)]/30 to-[var(--primary-3)]/20">
+          <ListChecks className="h-4 w-4 text-[var(--accent)]" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-white">Son Çalışma Oturumları</h3>
-          <p className="text-[11px] text-white/30">
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">Son Çalışma Oturumları</h3>
+          <p className="text-[11px] text-[var(--text-muted)]">
             En son {sessions.length > 0 ? sessions.length : 10} kayıt
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function StudentSessionsList({ sessions }: Props) {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                <tr className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   <th className="px-5 py-3 text-left">Tarih</th>
                   <th className="px-4 py-3 text-left">Ders</th>
                   <th className="px-4 py-3 text-center">
@@ -89,7 +89,7 @@ export default function StudentSessionsList({ sessions }: Props) {
                   <th className="px-4 py-3 text-center">Net</th>
                   <th className="px-4 py-3 text-center">
                     <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-[#7AB3FF]/60" />
+                      <Clock className="h-3 w-3 text-[var(--accent)]/60" />
                       Süre
                     </span>
                   </th>
@@ -101,14 +101,14 @@ export default function StudentSessionsList({ sessions }: Props) {
                   return (
                     <tr
                       key={s.id}
-                      className={`border-t border-white/4 transition-colors hover:bg-white/[0.02] ${
+                      className={`border-t border-[var(--border)] transition-colors hover:bg-white/[0.02] ${
                         i === 0 ? "border-t-0" : ""
                       }`}
                     >
-                      <td className="whitespace-nowrap px-5 py-3 text-xs text-white/50">
+                      <td className="whitespace-nowrap px-5 py-3 text-xs text-[var(--text-secondary)]">
                         {formatDate(s.study_date)}
                       </td>
-                      <td className="max-w-[160px] truncate px-4 py-3 text-xs font-medium text-white">
+                      <td className="max-w-[160px] truncate px-4 py-3 text-xs font-medium text-[var(--text-primary)]">
                         <span className="inline-flex items-center gap-2">
                           <span
                             className="h-2 w-2 shrink-0 rounded-full"
@@ -137,7 +137,7 @@ export default function StudentSessionsList({ sessions }: Props) {
                           {net.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-xs text-white/40">
+                      <td className="px-4 py-3 text-center text-xs text-[var(--text-muted)]">
                         {s.duration_minutes > 0 ? `${s.duration_minutes} dk` : "—"}
                       </td>
                     </tr>
@@ -154,7 +154,7 @@ export default function StudentSessionsList({ sessions }: Props) {
                 <div key={s.id} className="space-y-2 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
                         <span
                           className="h-2 w-2 shrink-0 rounded-full"
                           style={{
@@ -166,7 +166,7 @@ export default function StudentSessionsList({ sessions }: Props) {
                         </span>
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-white/30">
+                    <span className="shrink-0 text-xs text-[var(--text-muted)]">
                       {formatDate(s.study_date)}
                     </span>
                   </div>
@@ -188,7 +188,7 @@ export default function StudentSessionsList({ sessions }: Props) {
                       {net.toFixed(2)}
                     </span>
                     {s.duration_minutes > 0 && (
-                      <span className="flex items-center gap-1 text-white/30">
+                      <span className="flex items-center gap-1 text-[var(--text-muted)]">
                         <Clock className="h-3 w-3" />
                         {s.duration_minutes} dk
                       </span>

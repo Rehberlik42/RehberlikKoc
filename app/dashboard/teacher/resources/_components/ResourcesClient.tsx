@@ -53,12 +53,12 @@ function StatCard({
   icon: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/60 p-4">
-      <div className="mb-2 text-white/35">{icon}</div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-4">
+      <div className="mb-2 text-[var(--text-muted)]">{icon}</div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-black text-white">{value}</p>
+      <p className="mt-1 text-2xl font-black text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }
@@ -100,7 +100,7 @@ function ResourceGridCard({
           onOpen();
         }
       }}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/60 text-left transition-all duration-300 hover:-translate-y-1 hover:border-white/12 hover:shadow-lg hover:shadow-[#7B2FFF]/10"
+      className="group cursor-pointer overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[var(--border)] hover:shadow-lg hover:shadow-[var(--primary)]/10"
     >
       <div
         className="relative min-h-[6.5rem] p-5"
@@ -116,7 +116,7 @@ function ResourceGridCard({
             }}
             disabled={actionLoading}
             aria-label="Kaynağı düzenle"
-            className="rounded-lg border border-white/20 bg-black/30 p-1.5 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-white disabled:opacity-50"
+            className="rounded-lg border border-[var(--border)] bg-black/30 p-1.5 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-[var(--text-primary)] disabled:opacity-50"
           >
             {actionLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -132,37 +132,37 @@ function ResourceGridCard({
             }}
             disabled={actionLoading}
             aria-label="Kaynağı sil"
-            className="rounded-lg border border-white/20 bg-black/30 p-1.5 text-white/80 backdrop-blur-sm transition-colors hover:bg-red-500/40 hover:text-white disabled:opacity-50"
+            className="rounded-lg border border-[var(--border)] bg-black/30 p-1.5 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:bg-red-500/40 hover:text-[var(--text-primary)] disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="relative pr-16">
-          <h3 className="text-base font-bold leading-snug text-white">{resource.name}</h3>
+          <h3 className="text-base font-bold leading-snug text-[var(--text-primary)]">{resource.name}</h3>
           {resource.publisher && (
-            <p className="mt-1 text-sm text-white/75">{resource.publisher}</p>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{resource.publisher}</p>
           )}
         </div>
       </div>
       <div className="space-y-3 p-4">
         {badge && (
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-white/55">
+          <span className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[10px] font-semibold text-[var(--text-secondary)]">
             {badge}
           </span>
         )}
-        <p className="text-xs text-white/40">
-          <span className="font-semibold text-white/60">{resource.topicCount}</span> konu
-          <span className="mx-1.5 text-white/20">·</span>
-          <span className="font-semibold text-white/60">{resource.totalQuestions}</span> soru hedef
+        <p className="text-xs text-[var(--text-muted)]">
+          <span className="font-semibold text-[var(--text-secondary)]">{resource.topicCount}</span> konu
+          <span className="mx-1.5 text-[var(--text-muted)]">·</span>
+          <span className="font-semibold text-[var(--text-secondary)]">{resource.totalQuestions}</span> soru hedef
         </p>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-[11px]">
-            <span className={hasProgress ? "text-white/55" : "text-white/30"}>
+            <span className={hasProgress ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}>
               {hasProgress ? (
                 <>
-                  <span className="font-semibold text-white">{resource.solvedTotal}</span>
-                  <span className="text-white/30"> / </span>
+                  <span className="font-semibold text-[var(--text-primary)]">{resource.solvedTotal}</span>
+                  <span className="text-[var(--text-muted)]"> / </span>
                   <span>{resource.totalQuestions}</span> soru
                 </>
               ) : (
@@ -170,7 +170,7 @@ function ResourceGridCard({
               )}
             </span>
             {hasProgress && (
-              <span className="font-semibold text-[#A78BFF]">%{resource.completionPct}</span>
+              <span className="font-semibold text-[var(--accent)]">%{resource.completionPct}</span>
             )}
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
@@ -178,7 +178,7 @@ function ResourceGridCard({
               className={`h-full rounded-full transition-all duration-500 ${
                 allDone
                   ? "bg-green-500"
-                  : "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF]"
+                  : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
               }`}
               style={{ width: `${hasProgress ? Math.max(barWidth, 2) : 0}%` }}
             />
@@ -186,12 +186,12 @@ function ResourceGridCard({
         </div>
 
         {hasProgress && (
-          <p className="text-[10px] text-white/40">
+          <p className="text-[10px] text-[var(--text-muted)]">
             <span className="text-green-400/90">{resource.correctTotal}D</span>
-            <span className="mx-1 text-white/20">·</span>
+            <span className="mx-1 text-[var(--text-muted)]">·</span>
             <span className="text-red-400/90">{resource.wrongTotal}Y</span>
-            <span className="mx-1 text-white/20">·</span>
-            <span className="text-white/50">
+            <span className="mx-1 text-[var(--text-muted)]">·</span>
+            <span className="text-[var(--text-secondary)]">
               net {net >= 0 ? "+" : ""}
               {net.toFixed(2)}
             </span>
@@ -392,22 +392,22 @@ export default function ResourcesClient({
       <div className="mx-auto max-w-[1400px] space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[#A78BFF]">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
               <BookMarked className="h-3 w-3" />
               Kaynak Yönetimi
             </div>
-            <h2 className="flex items-center gap-2 text-2xl font-black text-white sm:text-3xl">
-              <Library className="h-7 w-7 text-[#A78BFF]" />
+            <h2 className="flex items-center gap-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
+              <Library className="h-7 w-7 text-[var(--accent)]" />
               Kaynak Takibi
             </h2>
-            <p className="text-sm text-white/40">
+            <p className="text-sm text-[var(--text-muted)]">
               Kaynaklarınızı yönetin, ilerlemenizi takip edin
             </p>
           </div>
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] px-4 py-2.5 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-opacity hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             Kaynak Ekle
@@ -447,15 +447,15 @@ export default function ResourcesClient({
           />
         </div>
 
-        <div className="flex flex-col gap-3 overflow-visible rounded-2xl border border-white/8 bg-[#0d0d2b]/40 p-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 overflow-visible rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 p-4 sm:flex-row sm:items-end">
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Kaynak ara..."
-              className="w-full rounded-xl border border-white/8 bg-white/[0.04] py-2.5 pl-10 pr-3 text-sm text-white placeholder-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 pl-10 pr-3 text-sm text-[var(--text-primary)] placeholder-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
             />
           </div>
           <div className="min-w-[10rem] shrink-0 sm:w-44">
@@ -502,9 +502,9 @@ export default function ResourcesClient({
         </div>
 
         {filteredResources.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-16 text-center">
-            <Library className="mx-auto h-10 w-10 text-white/20" />
-            <p className="mt-4 text-sm text-white/40">
+          <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-16 text-center">
+            <Library className="mx-auto h-10 w-10 text-[var(--text-muted)]" />
+            <p className="mt-4 text-sm text-[var(--text-muted)]">
               {resources.length === 0
                 ? "Henüz kaynak yok, ilk kaynağını ekle"
                 : "Arama kriterlerine uygun kaynak bulunamadı"}
@@ -513,7 +513,7 @@ export default function ResourcesClient({
               <button
                 type="button"
                 onClick={openAddModal}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-4 py-2.5 text-sm font-semibold text-[#A78BFF] transition-colors hover:bg-[#7B2FFF]/20"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
               >
                 <Plus className="h-4 w-4" />
                 İlk Kaynağını Ekle

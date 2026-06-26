@@ -64,7 +64,7 @@ function riskLevel(result: TeacherTestResult): {
   if (!test || result.score === null)
     return {
       label: "—",
-      className: "bg-white/5 text-white/40 border-white/10",
+      className: "bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border)]",
       icon: <Minus className="h-3 w-3" />,
     };
 
@@ -128,13 +128,13 @@ function StudentAvatar({
         src={student.avatar_url}
         alt=""
         loading="lazy"
-        className={`${dim} shrink-0 rounded-full border border-white/10 object-cover`}
+        className={`${dim} shrink-0 rounded-full border border-[var(--border)] object-cover`}
       />
     );
   }
   return (
     <div
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] font-bold text-white`}
+      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] font-bold text-[var(--text-primary)]`}
     >
       {initialsFromName(student?.full_name)}
     </div>
@@ -152,11 +152,11 @@ function StudentIdentity({
     <>
       <StudentAvatar student={student} size={size} />
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-white">
+        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
           {student?.full_name ?? "İsimsiz Öğrenci"}
         </p>
         {student?.grade && (
-          <p className="text-[10px] text-white/40">{student.grade}. sınıf</p>
+          <p className="text-[10px] text-[var(--text-muted)]">{student.grade}. sınıf</p>
         )}
       </div>
     </>
@@ -166,7 +166,7 @@ function StudentIdentity({
     return (
       <Link
         href={`/dashboard/teacher/students/${student.id}`}
-        className="group/student flex min-w-0 items-center gap-2.5 rounded-lg transition-colors hover:text-[#A78BFF]"
+        className="group/student flex min-w-0 items-center gap-2.5 rounded-lg transition-colors hover:text-[var(--accent)]"
         onClick={(e) => e.stopPropagation()}
       >
         {inner}
@@ -220,10 +220,10 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
 
   if (!hasStudents) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-10 text-center">
-        <HeartPulse className="mx-auto mb-2 h-10 w-10 text-white/30" />
-        <p className="font-semibold text-white/60">Henüz öğrencin yok</p>
-        <p className="mt-1 text-sm text-white/40">
+      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/30 p-10 text-center">
+        <HeartPulse className="mx-auto mb-2 h-10 w-10 text-[var(--text-muted)]" />
+        <p className="font-semibold text-[var(--text-secondary)]">Henüz öğrencin yok</p>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Sana öğrenci atandığında ve testleri çözdüklerinde sonuçlar burada
           listelenecek.
         </p>
@@ -246,17 +246,17 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Öğrenci veya test ara..."
-              className="w-64 rounded-lg border border-white/8 bg-white/[0.03] py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 focus:border-[#7B2FFF]/40 focus:outline-none focus:ring-2 focus:ring-[#7B2FFF]/20"
+              className="w-64 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1">
-            <Filter className="h-3.5 w-3.5 text-white/30" />
+            <Filter className="h-3.5 w-3.5 text-[var(--text-muted)]" />
             {types.map((t) => {
               const meta = t === "all" ? null : typeMeta(t);
               const active = typeFilter === t;
@@ -267,8 +267,8 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                   onClick={() => setTypeFilter(t)}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all ${
                     active
-                      ? "border-[#7B2FFF]/40 bg-[#7B2FFF]/15 text-[#A78BFF]"
-                      : "border-white/8 bg-white/[0.03] text-white/40 hover:border-white/15 hover:text-white"
+                      ? "border-[var(--primary)]/40 bg-[var(--primary)]/15 text-[var(--accent)]"
+                      : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--border)] hover:text-[var(--text-primary)]"
                   }`}
                   style={
                     meta && active
@@ -289,13 +289,13 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
       </div>
 
       {/* Sonuç listesi */}
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900/40 backdrop-blur-md">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 backdrop-blur-md">
         {filtered.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm font-semibold text-white/60">
+            <p className="text-sm font-semibold text-[var(--text-secondary)]">
               Eşleşen sonuç bulunamadı
             </p>
-            <p className="mt-1 text-xs text-white/30">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               Filtreleri temizleyip tekrar dene.
             </p>
           </div>
@@ -305,7 +305,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 bg-white/[0.02] text-left text-[10px] font-bold uppercase tracking-wider text-white/40">
+                  <tr className="border-b border-[var(--border)] bg-white/[0.02] text-left text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     <th className="px-4 py-3">Öğrenci</th>
                     <th className="px-4 py-3">Test</th>
                     <th className="px-4 py-3">Tarih</th>
@@ -331,7 +331,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                     return (
                       <tr
                         key={r.id}
-                        className={`border-b border-white/5 transition-colors hover:bg-white/[0.03] ${
+                        className={`border-b border-[var(--border)] transition-colors hover:bg-[var(--surface-2)] ${
                           isAttention
                             ? "border-l-2 border-l-rose-500/50 bg-rose-500/[0.03]"
                             : ""
@@ -348,7 +348,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                               style={{ background: meta.color }}
                             />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-white">
+                              <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                                 {r.test?.title ?? "—"}
                               </p>
                               <p
@@ -360,7 +360,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                             </div>
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-xs text-white/50">
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--text-secondary)]">
                           {date.toLocaleDateString("tr-TR", {
                             day: "2-digit",
                             month: "short",
@@ -368,11 +368,11 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                           })}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="font-black tabular-nums text-white">
+                          <span className="font-black tabular-nums text-[var(--text-primary)]">
                             {r.score ?? "—"}
                           </span>
                           {r.test && r.score !== null && (
-                            <span className="ml-1 text-[10px] text-white/30">
+                            <span className="ml-1 text-[10px] text-[var(--text-muted)]">
                               /{scoreRange(r.test.questions).max}
                             </span>
                           )}
@@ -384,7 +384,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                           <button
                             type="button"
                             onClick={() => setSelected(r)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/70 transition-all hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/15 hover:text-white"
+                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] transition-all hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/15 hover:text-[var(--text-primary)]"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             Detay
@@ -433,7 +433,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                         style={{ background: meta.color }}
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-white">
+                        <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                           {r.test?.title ?? "—"}
                         </p>
                         <p
@@ -446,7 +446,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-xs text-white/45">
+                      <div className="text-xs text-[var(--text-muted)]">
                         {date.toLocaleDateString("tr-TR", {
                           day: "2-digit",
                           month: "short",
@@ -454,11 +454,11 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                         })}
                       </div>
                       <div className="text-sm">
-                        <span className="font-black tabular-nums text-white">
+                        <span className="font-black tabular-nums text-[var(--text-primary)]">
                           {r.score ?? "—"}
                         </span>
                         {r.test && r.score !== null && (
-                          <span className="ml-1 text-[10px] text-white/30">
+                          <span className="ml-1 text-[10px] text-[var(--text-muted)]">
                             /{scoreRange(r.test.questions).max}
                           </span>
                         )}
@@ -468,7 +468,7 @@ export default function TeacherTestsClient({ results, hasStudents }: Props) {
                     <button
                       type="button"
                       onClick={() => setSelected(r)}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-white/70 transition-all hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/15 hover:text-white"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] py-2 text-xs font-semibold text-[var(--text-secondary)] transition-all hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/15 hover:text-[var(--text-primary)]"
                     >
                       <Eye className="h-3.5 w-3.5" />
                       Detay
@@ -550,8 +550,8 @@ function DetailModal({
         className="absolute inset-0 bg-black/75 backdrop-blur-sm"
       />
 
-      <div className="relative max-h-[90vh] w-full max-w-2xl animate-in fade-in zoom-in-95 overflow-y-auto rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/25 duration-300 slide-in-from-bottom-2">
-        <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
+      <div className="relative max-h-[90vh] w-full max-w-2xl animate-in fade-in zoom-in-95 overflow-y-auto rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/25 duration-300 slide-in-from-bottom-2">
+        <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-40 blur-[80px]"
           style={{
@@ -562,7 +562,7 @@ function DetailModal({
         />
 
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-white/8 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] px-5 py-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] px-5 py-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
@@ -585,10 +585,10 @@ function DetailModal({
               >
                 {meta.label}
               </span>
-              <p className="mt-1 truncate text-base font-bold text-white">
+              <p className="mt-1 truncate text-base font-bold text-[var(--text-primary)]">
                 {test?.title ?? "Test"}
               </p>
-              <p className="text-[11px] text-white/40">
+              <p className="text-[11px] text-[var(--text-muted)]">
                 {result.student?.full_name ?? "Öğrenci"} ·{" "}
                 {new Date(result.takenAt).toLocaleString("tr-TR")}
               </p>
@@ -597,7 +597,7 @@ function DetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 p-1 text-white/30 transition-colors hover:text-white"
+            className="shrink-0 p-1 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
             aria-label="Kapat"
           >
             <X className="h-4.5 w-4.5" />
@@ -631,12 +631,12 @@ function DetailModal({
           </div>
 
           <div>
-            <div className="mb-1.5 flex justify-between text-[10px] text-white/30">
+            <div className="mb-1.5 flex justify-between text-[10px] text-[var(--text-muted)]">
               <span>{range.min}</span>
               <span className="tabular-nums">{pct}%</span>
               <span>{range.max}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/5">
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-2)]">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -649,28 +649,28 @@ function DetailModal({
           </div>
 
           {interp && (
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                 Yorum
               </p>
-              <p className="text-sm leading-relaxed text-white">
+              <p className="text-sm leading-relaxed text-[var(--text-primary)]">
                 {interp.summary}
               </p>
             </div>
           )}
 
           {interp?.doraSuggestion && (
-            <div className="relative rounded-xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#7B2FFF]/10 to-transparent p-4">
+            <div className="relative rounded-xl border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--primary)]/10 to-transparent p-4">
               <div className="flex items-start gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#7B2FFF]/30 bg-[#7B2FFF]/20 text-[#A78BFF]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/20 text-[var(--accent)]">
                   <Brain className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#A78BFF]">
+                  <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">
                     <Sparkles className="h-3 w-3" />
                     DORA önerisi (öğrenciye gösterilen)
                   </p>
-                  <p className="text-sm leading-relaxed text-white">
+                  <p className="text-sm leading-relaxed text-[var(--text-primary)]">
                     {interp.doraSuggestion}
                   </p>
                 </div>
@@ -681,7 +681,7 @@ function DetailModal({
           {test && (
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   Soru bazında cevaplar
                 </p>
                 {recalculated !== null &&
@@ -705,13 +705,13 @@ function DetailModal({
                   return (
                     <li
                       key={item.id}
-                      className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
+                      className="flex items-start justify-between gap-3 rounded-lg border border-[var(--border)] bg-white/[0.02] px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <span className="mr-2 text-[11px] font-bold tabular-nums text-white/40">
+                        <span className="mr-2 text-[11px] font-bold tabular-nums text-[var(--text-muted)]">
                           {idx + 1}.
                         </span>
-                        <span className="text-xs text-white/70">
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {item.text}
                         </span>
                         {item.reverse && (
@@ -721,10 +721,10 @@ function DetailModal({
                         )}
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-xs font-bold tabular-nums text-white">
+                        <p className="text-xs font-bold tabular-nums text-[var(--text-primary)]">
                           {raw ?? "—"}
                         </p>
-                        <p className="text-[10px] text-white/30">
+                        <p className="text-[10px] text-[var(--text-muted)]">
                           {scaledLabel}
                         </p>
                       </div>
@@ -751,8 +751,8 @@ function MiniMetric({
   accent: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
         {label}
       </p>
       <p className="truncate text-base font-black" style={{ color: accent }}>

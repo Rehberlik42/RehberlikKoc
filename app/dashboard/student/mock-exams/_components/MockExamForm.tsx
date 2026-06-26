@@ -146,8 +146,8 @@ function SubjectInputRow({
     <div
       className={`rounded-xl border px-3 py-3 transition-all duration-300 ${
         hasData
-          ? "border-[#7B2FFF]/30 bg-[#0d0d2b]/60 shadow-[0_0_16px_rgba(123,47,255,0.12)]"
-          : "border-white/8 bg-white/[0.03]"
+          ? "border-[var(--primary)]/30 bg-[var(--surface)]/60 shadow-[0_0_16px_rgba(123,47,255,0.12)]"
+          : "border-[var(--border)] bg-[var(--surface-2)]"
       }`}
     >
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -156,7 +156,7 @@ function SubjectInputRow({
             className="w-1.5 h-5 rounded-full shrink-0"
             style={{ background: row.color ?? "#4F7CFF" }}
           />
-          <p className="text-white text-sm font-semibold truncate">
+          <p className="text-[var(--text-primary)] text-sm font-semibold truncate">
             {row.subjectName}
           </p>
         </div>
@@ -186,7 +186,7 @@ function SubjectInputRow({
           color="#ef4444"
         />
         <MiniInput
-          icon={<Circle className="w-3 h-3 text-white/40" />}
+          icon={<Circle className="w-3 h-3 text-[var(--text-muted)]" />}
           value={row.empty}
           onChange={(v) => onChange({ ...row, empty: v })}
           color="#64748b"
@@ -194,15 +194,15 @@ function SubjectInputRow({
       </div>
 
       {hasData && (
-        <div className="mt-3 space-y-2 border-t border-white/8 pt-3">
+        <div className="mt-3 space-y-2 border-t border-[var(--border)] pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               Zayıf konular
             </p>
             {(row.errors.length > 0 || totalWrong > 0) && (
               <p
                 className={`text-[10px] tabular-nums ${
-                  distributionOverflow ? "font-semibold text-red-400" : "text-white/35"
+                  distributionOverflow ? "font-semibold text-red-400" : "text-[var(--text-muted)]"
                 }`}
               >
                 Konulara dağıtılan: {distributedWrong} / {totalWrong} yanlış
@@ -251,7 +251,7 @@ function SubjectInputRow({
                     </div>
                     <div className="flex items-end gap-2">
                       <div className="w-20 shrink-0">
-                        <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                        <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                           Yanlış
                         </label>
                         <input
@@ -261,14 +261,14 @@ function SubjectInputRow({
                           onChange={(e) =>
                             updateError(errIdx, { wrong: e.target.value })
                           }
-                          className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2 text-center text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => removeError(errIdx)}
                         aria-label="Konu satırını sil"
-                        className="mb-0.5 rounded-lg border border-white/10 bg-white/[0.04] p-2 text-white/40 transition-colors hover:border-red-400/30 hover:text-red-400"
+                        className="mb-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-muted)] transition-colors hover:border-red-400/30 hover:text-red-400"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -289,7 +289,7 @@ function SubjectInputRow({
             type="button"
             onClick={addError}
             disabled={topics.length === 0}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#A78BFF] transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Plus className="h-3 w-3" />
             Yanlış yapılan konu ekle
@@ -322,7 +322,7 @@ function MiniInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="w-full rounded-lg border border-white/10 bg-white/[0.04] py-1.5 pl-7 pr-2 text-center text-sm font-bold text-white placeholder-white/15 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0"
+        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] py-1.5 pl-7 pr-2 text-center text-sm font-bold text-[var(--text-primary)] placeholder-white/15 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0"
         style={{ ["--tw-ring-color" as string]: `${color}55` }}
       />
     </div>
@@ -593,16 +593,16 @@ export default function MockExamForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md overflow-hidden"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20 border border-[#7B2FFF]/20 flex items-center justify-center">
-          <Save className="w-4 h-4 text-[#A78BFF]" />
+      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-2)]/20 border border-[var(--primary)]/20 flex items-center justify-center">
+          <Save className="w-4 h-4 text-[var(--accent)]" />
         </div>
         <div>
-          <h3 className="text-white font-bold text-sm">Yeni Deneme Ekle</h3>
-          <p className="text-white/30 text-[11px]">
+          <h3 className="text-[var(--text-primary)] font-bold text-sm">Yeni Deneme Ekle</h3>
+          <p className="text-[var(--text-muted)] text-[11px]">
             Sınav türü, tarih ve ders bazlı sonuçlar
           </p>
         </div>
@@ -618,7 +618,7 @@ export default function MockExamForm({
             <select
               value={examId}
               onChange={(e) => setExamId(e.target.value)}
-              className="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 pr-8 text-sm text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              className="w-full cursor-pointer appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
             >
               {exams.map((ex) => (
                 <option key={ex.id} value={String(ex.id)}>
@@ -633,7 +633,7 @@ export default function MockExamForm({
               type="date"
               value={examDate}
               onChange={(e) => setExamDate(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F7CFF]/40"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-2)]/40"
             />
           </FormField>
         </div>
@@ -646,7 +646,7 @@ export default function MockExamForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="ör. Genel Deneme 5"
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
             />
           </FormField>
 
@@ -659,7 +659,7 @@ export default function MockExamForm({
               value={publisher}
               onChange={(e) => setPublisher(e.target.value)}
               placeholder="ör. 3D, Limit, ÖSYM"
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F7CFF]/40"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-2)]/40"
             />
           </FormField>
         </div>
@@ -667,10 +667,10 @@ export default function MockExamForm({
         {/* Ders bazli giris */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
-            <p className="text-white/40 text-[11px] font-semibold uppercase tracking-wider">
+            <p className="text-[var(--text-muted)] text-[11px] font-semibold uppercase tracking-wider">
               Ders Bazlı Sonuçlar
             </p>
-            <div className="flex items-center gap-3 text-[10px] text-white/30 uppercase tracking-wider font-semibold">
+            <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="w-2.5 h-2.5 text-green-400" /> D
               </span>
@@ -678,13 +678,13 @@ export default function MockExamForm({
                 <XCircle className="w-2.5 h-2.5 text-red-400" /> Y
               </span>
               <span className="flex items-center gap-1">
-                <Circle className="w-2.5 h-2.5 text-white/40" /> B
+                <Circle className="w-2.5 h-2.5 text-[var(--text-muted)]" /> B
               </span>
             </div>
           </div>
 
           {rows.length === 0 ? (
-            <div className="rounded-xl border border-white/8 border-dashed bg-white/2 px-4 py-6 text-center text-white/30 text-xs">
+            <div className="rounded-xl border border-[var(--border)] border-dashed bg-white/2 px-4 py-6 text-center text-[var(--text-muted)] text-xs">
               Bu sınav türü için ders tanımlanmamış.
             </div>
           ) : (
@@ -713,16 +713,16 @@ export default function MockExamForm({
         </div>
 
         {/* Toplam ozet */}
-        <div className="rounded-xl bg-gradient-to-br from-[#7B2FFF]/15 to-[#4F7CFF]/10 border border-[#7B2FFF]/25 px-4 py-3 flex items-center justify-between">
+        <div className="rounded-xl bg-gradient-to-br from-[var(--primary)]/15 to-[var(--primary-2)]/10 border border-[var(--primary)]/25 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-[#A78BFF]" />
-            <span className="text-white/60 text-[11px] font-semibold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <span className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider">
               Tahmini Toplam Net
             </span>
           </div>
           <span
             className={`text-xl font-black tabular-nums transition-colors duration-300 ${
-              totalNet >= 0 ? "text-white" : "text-red-400"
+              totalNet >= 0 ? "text-[var(--text-primary)]" : "text-red-400"
             }`}
           >
             {hasAnyData
@@ -735,7 +735,7 @@ export default function MockExamForm({
         <button
           type="submit"
           disabled={loading || !hasAnyData || hasDistributionOverflow}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[#7B2FFF]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[var(--primary)]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -761,7 +761,7 @@ function FormField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
+      <label className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider">
         {icon}
         {label}
       </label>

@@ -178,19 +178,19 @@ export default function AddEditModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="
-            bg-[#0f0f23] border border-white/10 rounded-xl shadow-2xl shadow-black/50
+            bg-[#0f0f23] border border-[var(--border)] rounded-xl shadow-2xl shadow-black/50
             w-full max-w-2xl max-h-[90vh] overflow-y-auto
           "
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0f0f23]/95">
-            <h2 className="text-xl font-bold text-white">
+          <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-[var(--border)] bg-[#0f0f23]/95">
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
               {editingContent ? "İçerik Düzenle" : "Yeni İçerik Ekle"}
             </h2>
             <button
               onClick={onClose}
-              className="text-white/40 hover:text-white transition-colors p-1"
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -200,7 +200,7 @@ export default function AddEditModal({
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 Başlık *
               </label>
               <input
@@ -211,9 +211,9 @@ export default function AddEditModal({
                 placeholder="İçerik başlığını girin"
                 className="
                   w-full px-3 py-2 rounded-lg
-                  bg-white/3 border border-white/10
-                  text-white placeholder:text-white/30
-                  focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                  bg-[var(--surface-2)] border border-[var(--border)]
+                  text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                   transition-colors
                 "
               />
@@ -221,7 +221,7 @@ export default function AddEditModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 Açıklama
               </label>
               <textarea
@@ -232,9 +232,9 @@ export default function AddEditModal({
                 rows={2}
                 className="
                   w-full px-3 py-2 rounded-lg
-                  bg-white/3 border border-white/10
-                  text-white placeholder:text-white/30
-                  focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                  bg-[var(--surface-2)] border border-[var(--border)]
+                  text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                   transition-colors resize-none
                 "
               />
@@ -242,7 +242,7 @@ export default function AddEditModal({
 
             {/* Cover Image URL */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 Kapak Görseli URL *
               </label>
               <input
@@ -253,9 +253,9 @@ export default function AddEditModal({
                 placeholder="https://..."
                 className="
                   w-full px-3 py-2 rounded-lg
-                  bg-white/3 border border-white/10
-                  text-white placeholder:text-white/30
-                  focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                  bg-[var(--surface-2)] border border-[var(--border)]
+                  text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                   transition-colors
                 "
               />
@@ -263,7 +263,7 @@ export default function AddEditModal({
 
             {/* Content Type */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 İçerik Türü *
               </label>
               <select
@@ -272,9 +272,9 @@ export default function AddEditModal({
                 onChange={handleInputChange}
                 className="
                   w-full px-3 py-2 rounded-lg
-                  bg-white/3 border border-white/10
-                  text-white
-                  focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                  bg-[var(--surface-2)] border border-[var(--border)]
+                  text-[var(--text-primary)]
+                  focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                   transition-colors cursor-pointer
                 "
               >
@@ -292,7 +292,7 @@ export default function AddEditModal({
 
             {/* Target Exam */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 Hedef Sınav
               </label>
               <select
@@ -301,9 +301,9 @@ export default function AddEditModal({
                 onChange={handleInputChange}
                 className="
                   w-full px-3 py-2 rounded-lg
-                  bg-white/3 border border-white/10
-                  text-white
-                  focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                  bg-[var(--surface-2)] border border-[var(--border)]
+                  text-[var(--text-primary)]
+                  focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                   transition-colors cursor-pointer
                 "
               >
@@ -319,7 +319,7 @@ export default function AddEditModal({
             {/* Dynamic Content Fields */}
             {formData.content_type === "blog" ? (
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Blog Metni (Markdown) *
                 </label>
                 <textarea
@@ -330,16 +330,16 @@ export default function AddEditModal({
                   rows={6}
                   className="
                     w-full px-3 py-2 rounded-lg
-                    bg-white/3 border border-white/10
-                    text-white placeholder:text-white/30
-                    focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                    bg-[var(--surface-2)] border border-[var(--border)]
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                    focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                     transition-colors resize-none font-mono text-xs
                   "
                 />
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Medya Linki (URL) *
                 </label>
                 <input
@@ -350,9 +350,9 @@ export default function AddEditModal({
                   placeholder="https://youtube.com/watch?v=... veya PDF URL"
                   className="
                     w-full px-3 py-2 rounded-lg
-                    bg-white/3 border border-white/10
-                    text-white placeholder:text-white/30
-                    focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30
+                    bg-[var(--surface-2)] border border-[var(--border)]
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                    focus:border-[var(--primary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30
                     transition-colors
                   "
                 />
@@ -374,7 +374,7 @@ export default function AddEditModal({
                 disabled={loading}
                 className="
                   px-4 py-2 rounded-lg
-                  bg-white/5 border border-white/10 text-white/80
+                  bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-secondary)]
                   hover:bg-white/10 transition-colors
                   disabled:opacity-50 disabled:cursor-not-allowed
                 "
@@ -386,9 +386,9 @@ export default function AddEditModal({
                 disabled={loading}
                 className="
                   px-4 py-2 rounded-lg
-                  bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF]
-                  text-white font-medium
-                  hover:shadow-lg hover:shadow-[#7B2FFF]/30
+                  bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)]
+                  text-[var(--text-primary)] font-medium
+                  hover:shadow-lg hover:shadow-[var(--primary)]/30
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition-all
                 "

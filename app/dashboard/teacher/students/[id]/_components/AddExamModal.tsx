@@ -68,21 +68,21 @@ export default function AddExamModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-exam-modal-title"
-          className="relative my-4 flex max-h-[90vh] w-full max-w-2xl flex-col animate-in fade-in zoom-in-95 rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 duration-200"
+          className="relative my-4 flex max-h-[90vh] w-full max-w-2xl flex-col animate-in fade-in zoom-in-95 rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/20 duration-200"
         >
-          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/8 px-5 py-4">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/15">
-                <FileBarChart2 className="h-4 w-4 text-[#A78BFF]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/15">
+                <FileBarChart2 className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
                 <h2
                   id="add-exam-modal-title"
-                  className="text-base font-bold text-white"
+                  className="text-base font-bold text-[var(--text-primary)]"
                 >
                   Deneme Ekle
                 </h2>
-                <p className="text-[11px] text-white/35">
+                <p className="text-[11px] text-[var(--text-muted)]">
                   Öğrenci adına deneme sonucu ve zayıf konular
                 </p>
               </div>
@@ -90,7 +90,7 @@ export default function AddExamModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-white/10 bg-white/[0.04] p-2 text-white/50 transition-colors hover:text-white"
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
               aria-label="Kapat"
             >
               <X className="h-4 w-4" />

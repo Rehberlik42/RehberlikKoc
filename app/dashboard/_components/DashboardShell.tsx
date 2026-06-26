@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -24,6 +24,7 @@ import {
   Settings,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveTheme } from "@/lib/themes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface UserProfile {
@@ -31,6 +32,7 @@ export interface UserProfile {
   full_name: string | null;
   role: "student" | "teacher" | "admin";
   avatar_url: string | null;
+  theme?: string | null;
 }
 
 interface NavItem {
@@ -49,6 +51,7 @@ const studentNav: NavItem[] = [
   { label: "Testler",      href: "/dashboard/student/tests",       icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Rehberlik",    href: "/dashboard/student/guidance",    icon: <Compass className="w-4.5 h-4.5" /> },
   { label: "Randevular",   href: "/dashboard/student/randevular",  icon: <CalendarCheck className="w-4.5 h-4.5" /> },
+  { label: "Ayarlar",      href: "/dashboard/settings",            icon: <Settings className="w-4.5 h-4.5" /> },
 ];
 
 const teacherNav: NavItem[] = [
@@ -58,15 +61,17 @@ const teacherNav: NavItem[] = [
   { label: "Kaynak Takibi",  href: "/dashboard/teacher/resources",        icon: <Library className="w-4.5 h-4.5" /> },
   { label: "Test Sonuçları", href: "/dashboard/teacher/tests",            icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
+  { label: "Ayarlar",        href: "/dashboard/settings",                 icon: <Settings className="w-4.5 h-4.5" /> },
 ];
 
 const adminNav: NavItem[] = [
   { label: "Yönetim Paneli", href: "/dashboard/admin/content",            icon: <Settings className="w-4.5 h-4.5" /> },
+  { label: "Ayarlar",        href: "/dashboard/settings",                 icon: <Settings className="w-4.5 h-4.5" /> },
 ];
 
 // ─── Gradient helpers ─────────────────────────────────────────────────────────
 const gradientText =
-  "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] bg-clip-text text-transparent";
+  "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] bg-clip-text text-transparent";
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 function Sidebar({
@@ -109,7 +114,7 @@ function Sidebar({
       <aside
         className={`
           fixed top-0 left-0 z-40 h-full w-64 flex flex-col
-          bg-[#07071a] border-r border-white/5
+          bg-[var(--sidebar)] border-r border-white/5
           transition-transform duration-300 ease-in-out
           ${open ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:static lg:z-auto
@@ -118,7 +123,7 @@ function Sidebar({
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-white/5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] flex items-center justify-center shadow-lg shadow-[#7B2FFF]/30">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] flex items-center justify-center shadow-lg shadow-[var(--primary)]/30">
               <GraduationCap className="w-4.5 h-4.5 text-white" />
             </div>
             <span className={`text-lg font-black tracking-widest uppercase ${gradientText}`}>
@@ -163,16 +168,16 @@ function Sidebar({
                 className={`
                   group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                   ${active
-                    ? "bg-gradient-to-r from-[#7B2FFF]/20 to-[#4F7CFF]/10 text-white border border-[#7B2FFF]/30 shadow-sm shadow-[#7B2FFF]/10"
+                    ? "bg-[var(--sidebar-active)]/20 text-white border border-[var(--sidebar-active)]/30 shadow-sm shadow-[var(--sidebar-active)]/10"
                     : "text-white/40 hover:text-white hover:bg-white/5"
                   }
                 `}
               >
-                <span className={active ? "text-[#A78BFF]" : "text-white/30 group-hover:text-white/60 transition-colors"}>
+                <span className={active ? "text-[var(--sidebar-active)]" : "text-white/30 group-hover:text-white/60 transition-colors"}>
                   {item.icon}
                 </span>
                 <span className="flex-1">{item.label}</span>
-                {active && <ChevronRight className="w-3.5 h-3.5 text-[#7B2FFF]/60" />}
+                {active && <ChevronRight className="w-3.5 h-3.5 text-[var(--sidebar-active)]/60" />}
               </Link>
             );
           })}
@@ -181,7 +186,7 @@ function Sidebar({
         {/* User info + sign out */}
         <div className="px-3 py-4 border-t border-white/5">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/3 border border-white/5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] flex items-center justify-center text-white text-xs font-bold shrink-0">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
@@ -239,30 +244,31 @@ function Topbar({
       resources:      "Kaynak Takibi",
       reports:        "Raporlar",
       raporlar:       "Raporlar",
+      settings:       "Ayarlar",
     };
     return titles[last] ?? "Dashboard";
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 md:px-6 bg-[#07071a]/80 backdrop-blur-md border-b border-white/5 shrink-0">
+    <header className="h-14 flex items-center justify-between px-4 md:px-6 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)] shrink-0">
       {/* Left: hamburger + title */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="lg:hidden text-white/40 hover:text-white transition-colors p-1"
+          className="lg:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
         >
           <Menu className="w-5 h-5" />
         </button>
-        <h1 className="text-white font-bold text-base">{getPageTitle()}</h1>
+        <h1 className="text-[var(--text-primary)] font-bold text-base">{getPageTitle()}</h1>
       </div>
 
       {/* Right: bell + avatar */}
       <div className="flex items-center gap-3">
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/5 transition-all">
+        <button className="relative w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-all">
           <Bell className="w-4.5 h-4.5" />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#7B2FFF] ring-2 ring-[#07071a]" />
+          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--primary)] ring-2 ring-[var(--surface)]" />
         </button>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] flex items-center justify-center text-white text-xs font-bold">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] flex items-center justify-center text-white text-xs font-bold">
           {profile.full_name
             ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
             : "?"}
@@ -281,9 +287,24 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const theme = resolveTheme(profile.theme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", theme);
+    return () => {
+      if (prev) root.setAttribute("data-theme", prev);
+      else root.removeAttribute("data-theme");
+    };
+  }, [theme]);
 
   return (
-    <div className="flex h-screen bg-[#05050f] overflow-hidden">
+    <div
+      data-dashboard-shell
+      data-theme={theme}
+      className="flex h-screen bg-[var(--bg)] overflow-hidden"
+    >
       <Sidebar
         profile={profile}
         open={sidebarOpen}

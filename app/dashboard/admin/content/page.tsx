@@ -16,10 +16,10 @@ export default async function AdminContentPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-3xl font-bold text-[var(--text-primary)]">
             İçerik Yönetim Sistemi (CMS)
           </h1>
-          <p className="text-white/40 mt-2">
+          <p className="text-[var(--text-muted)] mt-2">
             Rehberlik içeriklerinizi yönetin, ekleyin ve düzenleyin.
           </p>
         </div>
@@ -34,10 +34,10 @@ export default async function AdminContentPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-[var(--text-primary)]">
           İçerik Yönetim Sistemi (CMS)
         </h1>
-        <p className="text-white/40 mt-2">
+        <p className="text-[var(--text-muted)] mt-2">
           Rehberlik içeriklerinizi yönetin, ekleyin ve düzenleyin.
         </p>
       </div>

@@ -57,15 +57,15 @@ export default function GuidanceHub({ initialContents }: Props) {
                 onClick={() => setFilter(chip.id)}
                 className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ease-out ${
                   active
-                    ? "scale-[1.02] border-[#7B2FFF]/40 bg-gradient-to-r from-[#7B2FFF]/25 to-[#4F7CFF]/15 text-white shadow-md shadow-[#7B2FFF]/15"
-                    : "border-white/10 bg-slate-900/40 text-white/50 hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
+                    ? "scale-[1.02] border-[var(--primary)]/40 bg-gradient-to-r from-[var(--primary)]/25 to-[var(--primary-2)]/15 text-[var(--text-primary)] shadow-md shadow-[var(--primary)]/15"
+                    : "border-[var(--border)] bg-[var(--surface)]/40 text-[var(--text-secondary)] hover:border-[var(--border)] hover:bg-white/[0.05] hover:text-[var(--text-primary)]"
                 }`}
               >
                 <span>{chip.emoji}</span>
                 <span>{chip.label}</span>
                 <span
                   className={`text-xs tabular-nums ${
-                    active ? "text-[#A78BFF]" : "text-white/30"
+                    active ? "text-[var(--accent)]" : "text-[var(--text-muted)]"
                   }`}
                 >
                   {count}
@@ -76,25 +76,25 @@ export default function GuidanceHub({ initialContents }: Props) {
         </div>
 
         <div className="relative w-full sm:ml-auto sm:w-56">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="İçerik ara..."
-            className="w-full rounded-full border border-white/10 bg-slate-900/50 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 transition-all duration-200 focus:border-[#7B2FFF]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25 focus-visible:ring-offset-0"
+            className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)]/50 py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all duration-200 focus:border-[var(--primary)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25 focus-visible:ring-offset-0"
           />
         </div>
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#7B2FFF]/20 bg-gradient-to-br from-slate-900/40 to-[#0d0d2b]/30 p-12 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/10">
-            <Sparkles className="h-5 w-5 text-[#A78BFF]" />
+        <div className="rounded-2xl border border-dashed border-[var(--primary)]/20 bg-gradient-to-br from-slate-900/40 to-[var(--surface)]/30 p-12 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+            <Sparkles className="h-5 w-5 text-[var(--accent)]" />
           </div>
-          <p className="font-semibold text-white/70">Eşleşen içerik yok</p>
-          <p className="mt-1.5 text-sm text-white/40">
+          <p className="font-semibold text-[var(--text-secondary)]">Eşleşen içerik yok</p>
+          <p className="mt-1.5 text-sm text-[var(--text-muted)]">
             Farklı bir kategori dene veya aramayı temizle — tüm içerikler burada
             keşfedilmeyi bekliyor.
           </p>

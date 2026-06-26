@@ -45,7 +45,7 @@ export default function StatCard({
   const displayValue = isNumber ? Math.round(animated) : value;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 p-5 backdrop-blur-md">
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-5 backdrop-blur-md">
       <div
         aria-hidden
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-60 blur-[50px]"
@@ -53,14 +53,14 @@ export default function StatCard({
       />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             {label}
           </p>
-          <p className="text-3xl font-black tabular-nums text-white">
+          <p className="text-3xl font-black tabular-nums text-[var(--text-primary)]">
             {displayValue}
           </p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/70">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]">
           {icon}
         </div>
       </div>

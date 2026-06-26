@@ -24,7 +24,7 @@ export default function StudentDetailTabs({ overview, program, analysis }: Props
       <div
         role="tablist"
         aria-label="Öğrenci detay sekmeleri"
-        className="flex gap-1 rounded-2xl border border-white/8 bg-[#0d0d2b]/60 p-1"
+        className="flex gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-1"
       >
         {TABS.map((tab) => {
           const isActive = active === tab.id;
@@ -37,13 +37,13 @@ export default function StudentDetailTabs({ overview, program, analysis }: Props
               onClick={() => setActive(tab.id)}
               className={`relative flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
                 isActive
-                  ? "bg-[#7B2FFF]/15 text-white shadow-[0_0_20px_rgba(123,47,255,0.15)]"
-                  : "text-white/40 hover:text-white/70"
+                  ? "bg-[var(--primary)]/15 text-[var(--text-primary)] shadow-[0_0_20px_rgba(123,47,255,0.15)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               }`}
             >
               {tab.label}
               {isActive && (
-                <span className="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF]" />
+                <span className="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)]" />
               )}
             </button>
           );

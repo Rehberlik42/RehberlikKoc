@@ -43,8 +43,8 @@ function NeonTooltip({ active, payload }: NeonTooltipProps) {
   const point = payload[0].payload;
 
   return (
-    <div className="min-w-[180px] rounded-xl border border-[#7B2FFF]/40 bg-[#07071a]/95 px-4 py-3 shadow-2xl shadow-[#7B2FFF]/20 backdrop-blur-md">
-      <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A78BFF]">
+    <div className="min-w-[180px] rounded-xl border border-[var(--primary)]/40 bg-[var(--bg)]/95 px-4 py-3 shadow-2xl shadow-[var(--primary)]/20 backdrop-blur-md">
+      <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
         {point.examName} ·{" "}
         {new Date(point.fullDate).toLocaleDateString("tr-TR", {
           day: "2-digit",
@@ -52,16 +52,16 @@ function NeonTooltip({ active, payload }: NeonTooltipProps) {
           year: "numeric",
         })}
       </div>
-      <div className="mb-2 truncate text-sm font-semibold text-white">
+      <div className="mb-2 truncate text-sm font-semibold text-[var(--text-primary)]">
         {point.title}
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+      <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] pt-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
           Toplam Net
         </span>
         <span
           className={`text-lg font-black tabular-nums ${
-            point.net >= 0 ? "text-white" : "text-red-400"
+            point.net >= 0 ? "text-[var(--text-primary)]" : "text-red-400"
           }`}
           style={{
             textShadow:
@@ -81,14 +81,14 @@ function NeonTooltip({ active, payload }: NeonTooltipProps) {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState() {
   return (
-    <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-white/8 bg-white/[0.02] px-6 py-12 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#7B2FFF]/20 to-[#4F7CFF]/15">
-        <LineChartIcon className="h-5 w-5 text-[#A78BFF]" />
+    <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-white/[0.02] px-6 py-12 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-2)]/15">
+        <LineChartIcon className="h-5 w-5 text-[var(--accent)]" />
       </div>
-      <p className="mb-1 text-sm font-semibold text-white/60">
+      <p className="mb-1 text-sm font-semibold text-[var(--text-secondary)]">
         Henüz deneme verisi yok
       </p>
-      <p className="max-w-xs text-xs text-white/30">
+      <p className="max-w-xs text-xs text-[var(--text-muted)]">
         İlk denemeni kaydettiğinde net grafiklerin burada şık bir şekilde görünecek.
       </p>
     </div>
@@ -105,19 +105,19 @@ export default function MockExamChart({ data }: Props) {
   const lastIndex = data.length - 1;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md">
-      <div className="flex items-center gap-3 border-b border-white/5 px-5 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#4F7CFF]/20 bg-gradient-to-br from-[#4F7CFF]/30 to-[#00D4FF]/20">
-          <TrendingUp className="h-4 w-4 text-[#7AB3FF]" />
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary-2)]/20 bg-gradient-to-br from-[var(--primary-2)]/30 to-[var(--primary-3)]/20">
+          <TrendingUp className="h-4 w-4 text-[var(--accent)]" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-white">Net Gelişim Grafiği</h3>
-          <p className="text-[11px] text-white/30">
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">Net Gelişim Grafiği</h3>
+          <p className="text-[11px] text-[var(--text-muted)]">
             Zaman içindeki toplam net değişimi
           </p>
         </div>
         {data.length > 0 && (
-          <span className="rounded-md border border-white/8 bg-white/[0.04] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white/40">
+          <span className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             {data.length} deneme
           </span>
         )}
@@ -134,13 +134,13 @@ export default function MockExamChart({ data }: Props) {
             >
               <defs>
                 <linearGradient id="netGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#7B2FFF" />
-                  <stop offset="50%" stopColor="#4F7CFF" />
-                  <stop offset="100%" stopColor="#00D4FF" />
+                  <stop offset="0%" stopColor="var(--primary)" />
+                  <stop offset="50%" stopColor="var(--primary-2)" />
+                  <stop offset="100%" stopColor="var(--primary-3)" />
                 </linearGradient>
                 <linearGradient id="netFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7B2FFF" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#7B2FFF" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
                 <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -153,20 +153,20 @@ export default function MockExamChart({ data }: Props) {
 
               <CartesianGrid
                 strokeDasharray="3 6"
-                stroke="rgba(255,255,255,0.06)"
+                stroke="var(--border)"
                 vertical={false}
               />
 
               <XAxis
                 dataKey="date"
-                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}
                 tickLine={false}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                axisLine={{ stroke: "var(--border)" }}
                 dy={6}
               />
 
               <YAxis
-                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}
                 tickLine={false}
                 axisLine={false}
                 width={42}
@@ -174,19 +174,19 @@ export default function MockExamChart({ data }: Props) {
 
               <ReferenceLine
                 y={0}
-                stroke="rgba(255,255,255,0.12)"
+                stroke="var(--border)"
                 strokeDasharray="4 4"
               />
 
               <ReferenceLine
                 y={avgNet}
-                stroke="#A78BFF"
+                stroke="var(--accent)"
                 strokeDasharray="6 4"
                 strokeOpacity={0.55}
                 label={{
                   value: "Ort.",
                   position: "right",
-                  fill: "#A78BFF",
+                  fill: "var(--accent)",
                   fontSize: 10,
                   fontWeight: 700,
                 }}
@@ -195,7 +195,8 @@ export default function MockExamChart({ data }: Props) {
               <Tooltip
                 content={<NeonTooltip />}
                 cursor={{
-                  stroke: "rgba(123,47,255,0.4)",
+                  stroke: "var(--primary)",
+                  strokeOpacity: 0.4,
                   strokeWidth: 1,
                   strokeDasharray: "4 4",
                 }}
@@ -227,8 +228,8 @@ export default function MockExamChart({ data }: Props) {
                       cx={cx}
                       cy={cy}
                       r={isLast ? 6 : 4}
-                      fill={isLast ? "#7B2FFF" : "#0d0d2b"}
-                      stroke={isLast ? "#00D4FF" : "#7B2FFF"}
+                      fill={isLast ? "var(--primary)" : "var(--surface)"}
+                      stroke={isLast ? "var(--primary-3)" : "var(--primary)"}
                       strokeWidth={isLast ? 2.5 : 2}
                       filter={isLast ? "url(#glow)" : undefined}
                     />
@@ -236,8 +237,8 @@ export default function MockExamChart({ data }: Props) {
                 }}
                 activeDot={{
                   r: 7,
-                  fill: "#7B2FFF",
-                  stroke: "#A78BFF",
+                  fill: "var(--primary)",
+                  stroke: "var(--accent)",
                   strokeWidth: 2,
                 }}
                 isAnimationActive

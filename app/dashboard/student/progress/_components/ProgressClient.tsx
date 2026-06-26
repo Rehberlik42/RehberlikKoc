@@ -129,8 +129,8 @@ function OverallRing({
   const needsReviewWidth = total === 0 ? 0 : (needsReview / total) * 100;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-br from-[#0d0d2b]/80 to-[#07070f]/80 p-6 md:p-8">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[#7B2FFF]/8 blur-[60px]" />
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)]/80 to-[var(--bg)]/80 p-6 md:p-8">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[var(--primary)]/8 blur-[60px]" />
 
       <div className="relative flex flex-col items-center gap-8 sm:flex-row">
         {/* SVG Ring */}
@@ -138,9 +138,9 @@ function OverallRing({
           <svg width="140" height="140" viewBox="0 0 130 130" className="-rotate-90">
             <defs>
               <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7B2FFF" />
-                <stop offset="50%" stopColor="#4F7CFF" />
-                <stop offset="100%" stopColor="#00D4FF" />
+                <stop offset="0%" stopColor="var(--primary)" />
+                <stop offset="50%" stopColor="var(--primary-2)" />
+                <stop offset="100%" stopColor="var(--primary-3)" />
               </linearGradient>
             </defs>
             <circle
@@ -165,10 +165,10 @@ function OverallRing({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] bg-clip-text text-3xl font-black text-transparent">
+            <span className="bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] bg-clip-text text-3xl font-black text-transparent">
               {displayPct}%
             </span>
-            <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/30">
+            <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               Genel
             </span>
           </div>
@@ -176,21 +176,21 @@ function OverallRing({
 
         {/* Stats grid */}
         <div className="grid w-full flex-1 grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/5 bg-white/3 px-4 py-3">
-            <p className="mb-1 text-[10px] uppercase tracking-wider text-white/30">Toplam Konu</p>
-            <p className="text-2xl font-black text-white">{total}</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3">
+            <p className="mb-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Toplam Konu</p>
+            <p className="text-2xl font-black text-[var(--text-primary)]">{total}</p>
           </div>
-          <div className="rounded-xl border border-[#7B2FFF]/20 bg-[#7B2FFF]/10 px-4 py-3">
-            <p className="mb-1 text-[10px] uppercase tracking-wider text-[#A78BFF]">Tamamlandı</p>
-            <p className="text-2xl font-black text-white">{completed}</p>
+          <div className="rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/10 px-4 py-3">
+            <p className="mb-1 text-[10px] uppercase tracking-wider text-[var(--accent)]">Tamamlandı</p>
+            <p className="text-2xl font-black text-[var(--text-primary)]">{completed}</p>
           </div>
-          <div className="rounded-xl border border-[#4F7CFF]/20 bg-[#4F7CFF]/10 px-4 py-3">
-            <p className="mb-1 text-[10px] uppercase tracking-wider text-[#7AB3FF]">Çalışıyorum</p>
-            <p className="text-2xl font-black text-white">{inProgress}</p>
+          <div className="rounded-xl border border-[var(--primary-2)]/20 bg-[var(--primary-2)]/10 px-4 py-3">
+            <p className="mb-1 text-[10px] uppercase tracking-wider text-[var(--accent)]">Çalışıyorum</p>
+            <p className="text-2xl font-black text-[var(--text-primary)]">{inProgress}</p>
           </div>
           <div className="rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3">
             <p className="mb-1 text-[10px] uppercase tracking-wider text-orange-400">Tekrar Lazım</p>
-            <p className="text-2xl font-black text-white">{needsReview}</p>
+            <p className="text-2xl font-black text-[var(--text-primary)]">{needsReview}</p>
           </div>
         </div>
       </div>
@@ -198,23 +198,23 @@ function OverallRing({
       {/* Multi-segment overall bar */}
       <div className="relative mt-6">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider text-white/30">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
             Müfredat Tamamlanma
           </span>
-          <span className="text-xs font-bold text-white/50">
+          <span className="text-xs font-bold text-[var(--text-secondary)]">
             {completed}/{total}
           </span>
         </div>
-        <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/5">
+        <div className="flex h-3 w-full overflow-hidden rounded-full bg-[var(--surface-2)]">
           {completedWidth > 0 && (
             <div
-              className="h-full bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] shadow-[0_0_10px_rgba(123,47,255,0.45)] transition-[width] duration-1000 ease-out"
+              className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] shadow-[0_0_10px_rgba(123,47,255,0.45)] transition-[width] duration-1000 ease-out"
               style={{ width: mounted ? `${completedWidth}%` : "0%" }}
             />
           )}
           {inProgressWidth > 0 && (
             <div
-              className="h-full bg-[#4F7CFF] shadow-[0_0_8px_rgba(79,124,255,0.4)] transition-[width] duration-1000 ease-out"
+              className="h-full bg-[var(--primary-2)] shadow-[0_0_8px_rgba(79,124,255,0.4)] transition-[width] duration-1000 ease-out"
               style={{
                 width: mounted ? `${inProgressWidth}%` : "0%",
                 transitionDelay: "80ms",
@@ -262,13 +262,13 @@ function SubjectAccordion({
   const pct = topics.length === 0 ? 0 : Math.round((completedCount / topics.length) * 100);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/6 transition-all duration-200 hover:border-white/10">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] transition-all duration-200 hover:border-[var(--border)]">
       <button
         onClick={onToggle}
-        className="flex w-full items-center gap-4 bg-[#0d0d2b]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[#0d0d2b]/90"
+        className="flex w-full items-center gap-4 bg-[var(--surface)]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[var(--surface)]/90"
       >
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)]"
           style={{
             background: subject.color
               ? `${subject.color}22`
@@ -284,9 +284,9 @@ function SubjectAccordion({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-white">{subject.name}</span>
+            <span className="text-sm font-semibold text-[var(--text-primary)]">{subject.name}</span>
             {subject.exam && (
-              <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-white/30">
+              <span className="rounded-full bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
                 {subject.exam.name}
               </span>
             )}
@@ -294,18 +294,18 @@ function SubjectAccordion({
           <div className="mt-1.5 flex items-center gap-2">
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/6">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] shadow-[0_0_8px_rgba(123,47,255,0.35)] transition-[width] duration-700 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] shadow-[0_0_8px_rgba(123,47,255,0.35)] transition-[width] duration-700 ease-out"
                 style={{ width: mounted ? `${pct}%` : "0%" }}
               />
             </div>
-            <span className="shrink-0 text-[10px] font-semibold text-white/30">
+            <span className="shrink-0 text-[10px] font-semibold text-[var(--text-muted)]">
               {completedCount}/{topics.length}
             </span>
           </div>
         </div>
 
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-white/30 transition-transform duration-300 ${
+          className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -316,9 +316,9 @@ function SubjectAccordion({
         style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="divide-y divide-white/3 bg-[#07070f]/40">
+          <div className="divide-y divide-white/3 bg-[var(--bg)]/40">
             {topics.length === 0 ? (
-              <p className="px-5 py-4 text-xs italic text-white/20">
+              <p className="px-5 py-4 text-xs italic text-[var(--text-muted)]">
                 Bu derse ait konu bulunamadı.
               </p>
             ) : (
@@ -421,7 +421,7 @@ export default function ProgressClient({
           ([key, cfg]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className={cfg.color}>{cfg.icon}</span>
-              <span className="text-xs text-white/30">{cfg.label}</span>
+              <span className="text-xs text-[var(--text-muted)]">{cfg.label}</span>
             </div>
           )
         )}

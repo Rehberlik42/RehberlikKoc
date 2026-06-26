@@ -34,15 +34,15 @@ export const STATUS_CONFIG: Record<
   not_started: {
     label: "Başlamadı",
     icon: <Circle className="w-3.5 h-3.5" />,
-    color: "text-white/30",
+    color: "text-[var(--text-muted)]",
     barClass: "bg-white/15",
     pct: 0,
   },
   in_progress: {
     label: "Çalışıyorum",
     icon: <RefreshCw className="w-3.5 h-3.5" />,
-    color: "text-[#7AB3FF]",
-    barClass: "bg-gradient-to-r from-[#4F7CFF] to-[#00D4FF]",
+    color: "text-[var(--accent)]",
+    barClass: "bg-gradient-to-r from-[var(--primary-2)] to-[var(--primary-3)]",
     pct: 50,
   },
   needs_review: {
@@ -55,8 +55,8 @@ export const STATUS_CONFIG: Record<
   completed: {
     label: "Tamamlandı",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-    color: "text-[#A78BFF]",
-    barClass: "bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF]",
+    color: "text-[var(--accent)]",
+    barClass: "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)]",
     pct: 100,
   },
 };
@@ -137,18 +137,18 @@ export default function TopicRow({
   };
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:-translate-y-px">
+    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-[var(--surface-2)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:-translate-y-px">
       {/* Konu adı */}
       <div className="flex-1 min-w-0">
         <p
           className={`flex items-center gap-1.5 text-sm font-medium truncate transition-colors duration-200 ${
             status === "completed"
-              ? "text-white/45 decoration-white/20"
-              : "text-white/80"
+              ? "text-[var(--text-muted)] decoration-white/20"
+              : "text-[var(--text-secondary)]"
           }`}
         >
           {status === "completed" && (
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#A78BFF]/80" />
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]/80" />
           )}
           <span className={status === "completed" ? "line-through decoration-white/25" : ""}>
             {topicName}
@@ -174,15 +174,15 @@ export default function TopicRow({
       <div className="relative shrink-0">
         {saving ? (
           <div className="flex h-7 w-28 items-center justify-center">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-white/30" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-muted)]" />
           </div>
         ) : (
           <select
             value={status}
             onChange={(e) => handleChange(e.target.value as ProgressStatus)}
             className={`
-              h-7 w-28 cursor-pointer appearance-none rounded-lg border border-white/8
-              bg-white/4 pl-6 pr-2 text-[11px] font-semibold
+              h-7 w-28 cursor-pointer appearance-none rounded-lg border border-[var(--border)]
+              bg-[var(--surface-2)] pl-6 pr-2 text-[11px] font-semibold
               transition-all duration-200 focus:outline-none
               ${cfg.color}
             `}
@@ -194,7 +194,7 @@ export default function TopicRow({
           >
             {(Object.entries(STATUS_CONFIG) as [ProgressStatus, typeof STATUS_CONFIG[ProgressStatus]][]).map(
               ([key, val]) => (
-                <option key={key} value={key} className="bg-[#0d0d2b] text-white">
+                <option key={key} value={key} className="bg-[var(--surface)] text-[var(--text-primary)]">
                   {val.label}
                 </option>
               )

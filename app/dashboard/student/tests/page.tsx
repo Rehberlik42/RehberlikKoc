@@ -67,22 +67,22 @@ export default async function StudentTestsPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-1.5">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#7B2FFF]/15 border border-[#7B2FFF]/25 text-[#A78BFF] text-[10px] font-bold uppercase tracking-widest">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--primary)]/15 border border-[var(--primary)]/25 text-[var(--accent)] text-[10px] font-bold uppercase tracking-widest">
           <Sparkles className="w-3 h-3" />
           DORA · Bütüncül değerlendirme
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
-          <HeartPulse className="w-7 h-7 text-[#A78BFF]" />
+        <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-2">
+          <HeartPulse className="w-7 h-7 text-[var(--accent)]" />
           Testler ve Envanterler
         </h2>
-        <p className="text-white/40 text-sm max-w-2xl">
+        <p className="text-[var(--text-muted)] text-sm max-w-2xl">
           Kendini daha iyi tanı: kaygı, motivasyon ve çalışma düzeyini ölçen
           bilimsel testlerle kişisel rehberlik öneriler al.
         </p>
       </div>
 
       {/* DORA kartı */}
-      <div className="relative rounded-2xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] p-5 overflow-hidden">
+      <div className="relative rounded-2xl border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] p-5 overflow-hidden">
         <div
           aria-hidden
           className="absolute -right-12 -top-12 w-48 h-48 rounded-full blur-[80px] opacity-40 pointer-events-none"
@@ -92,13 +92,13 @@ export default async function StudentTestsPage() {
           }}
         />
         <div className="relative flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#7B2FFF]/20 border border-[#7B2FFF]/30 flex items-center justify-center text-[#A78BFF] shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center text-[var(--accent)] shrink-0">
             <Brain className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <p className="text-white text-sm font-semibold leading-relaxed">
+            <p className="text-[var(--text-primary)] text-sm font-semibold leading-relaxed">
               Bu testler kısa, dürüst yanıtlarla en doğru sonucu verir. Her
-              sorudan sonra <span className="text-[#A78BFF]">ilk içgüdünle</span>{" "}
+              sorudan sonra <span className="text-[var(--accent)]">ilk içgüdünle</span>{" "}
               ilerle — düşünmek için fazla zaman alma. Sonuçlar yalnızca sen ve
               koçun tarafından görülebilir.
             </p>
@@ -108,10 +108,10 @@ export default async function StudentTestsPage() {
 
       {/* Test grid */}
       {tests.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center">
-          <Activity className="w-10 h-10 mx-auto text-white/30 mb-2" />
-          <p className="text-white/60 font-semibold">Henüz aktif test yok</p>
-          <p className="text-white/40 text-sm mt-1">
+        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/30 p-12 text-center">
+          <Activity className="w-10 h-10 mx-auto text-[var(--text-muted)] mb-2" />
+          <p className="text-[var(--text-secondary)] font-semibold">Henüz aktif test yok</p>
+          <p className="text-[var(--text-muted)] text-sm mt-1">
             Admin tarafından yeni testler eklendiğinde burada görünecek.
           </p>
         </div>
@@ -151,7 +151,7 @@ function TestCard({
   return (
     <Link
       href={`/dashboard/student/tests/${test.id}`}
-      className="group relative rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md p-5 overflow-hidden hover:border-white/15 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 block"
+      className="group relative rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md p-5 overflow-hidden hover:border-[var(--border)] hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 block"
       style={
         {
           "--accent": meta.color,
@@ -190,17 +190,17 @@ function TestCard({
       </div>
 
       {/* Title + description */}
-      <h3 className="relative text-white text-base font-bold mt-3 leading-tight">
+      <h3 className="relative text-[var(--text-primary)] text-base font-bold mt-3 leading-tight">
         {test.title}
       </h3>
       {test.description && (
-        <p className="relative text-white/40 text-xs mt-1.5 leading-relaxed line-clamp-2">
+        <p className="relative text-[var(--text-muted)] text-xs mt-1.5 leading-relaxed line-clamp-2">
           {test.description}
         </p>
       )}
 
       {/* Meta strip */}
-      <div className="relative mt-3 flex items-center gap-3 text-[11px] text-white/40">
+      <div className="relative mt-3 flex items-center gap-3 text-[11px] text-[var(--text-muted)]">
         <span className="inline-flex items-center gap-1">
           <Flame className="w-3 h-3" />
           {itemCount} soru
@@ -209,19 +209,19 @@ function TestCard({
       </div>
 
       {/* Footer: önceki sonuç (varsa) + CTA */}
-      <div className="relative mt-4 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
+      <div className="relative mt-4 pt-4 border-t border-[var(--border)] flex items-center justify-between gap-3">
         {done && lastResult ? (
           <div className="flex items-center gap-1.5 text-[11px] min-w-0">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="text-white/40 truncate">
+            <span className="text-[var(--text-muted)] truncate">
               {lastResult.interpretation ?? "Sonuç hazır"} ·{" "}
-              <span className="text-white/30">
+              <span className="text-[var(--text-muted)]">
                 {timeAgo(lastResult.taken_at)}
               </span>
             </span>
           </div>
         ) : (
-          <span className="text-white/30 text-[11px] font-medium">
+          <span className="text-[var(--text-muted)] text-[11px] font-medium">
             Henüz çözmedin
           </span>
         )}

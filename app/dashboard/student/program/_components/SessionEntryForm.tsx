@@ -117,7 +117,7 @@ function NumInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
+      <label className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider">
         {icon}
         {label}
       </label>
@@ -126,10 +126,10 @@ function NumInput({
         min={min}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-xl border px-3 py-2.5 text-center text-base text-sm font-bold text-white placeholder-white/20 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${
+        className={`w-full rounded-xl border px-3 py-2.5 text-center text-base text-sm font-bold text-[var(--text-primary)] placeholder-white/20 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${
           hasValue
-            ? "border-white/15 bg-white/[0.06]"
-            : "border-white/8 bg-white/[0.04]"
+            ? "border-[var(--border)] bg-white/[0.06]"
+            : "border-[var(--border)] bg-[var(--surface-2)]"
         }`}
         style={{
           ["--tw-ring-color" as string]: `${accentColor}55`,
@@ -165,7 +165,7 @@ function SelectField({
         disabled ? "opacity-50" : "opacity-100"
       }`}
     >
-      <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
+      <label className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider">
         {icon}
         {label}
       </label>
@@ -174,15 +174,15 @@ function SelectField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className={`w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-sm text-white transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${
+          className={`w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${
             highlighted
-              ? "cursor-pointer border-[#7B2FFF]/25 bg-[#7B2FFF]/[0.06] shadow-[0_0_12px_rgba(123,47,255,0.1)]"
-              : "cursor-pointer border-white/8 bg-white/[0.04]"
+              ? "cursor-pointer border-[var(--primary)]/25 bg-[var(--primary)]/[0.06] shadow-[0_0_12px_rgba(123,47,255,0.1)]"
+              : "cursor-pointer border-[var(--border)] bg-[var(--surface-2)]"
           }`}
         >
           {children}
         </select>
-        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
@@ -283,15 +283,15 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
         />
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/50">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#7B2FFF]/20 bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20">
-            <Save className="h-4 w-4 text-[#A78BFF]" />
+        <div className="flex items-center gap-3 border-b border-[var(--border)] px-6 py-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary)]/20 bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-2)]/20">
+            <Save className="h-4 w-4 text-[var(--accent)]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Yeni Çalışma Girişi</h3>
-            <p className="text-[11px] text-white/30">Bugünkü çalışmanı kaydet</p>
+            <h3 className="text-sm font-bold text-[var(--text-primary)]">Yeni Çalışma Girişi</h3>
+            <p className="text-[11px] text-[var(--text-muted)]">Bugünkü çalışmanı kaydet</p>
           </div>
         </div>
 
@@ -354,7 +354,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
             />
             <NumInput
               label="Süre (dk)"
-              icon={<Clock className="w-3.5 h-3.5 text-[#7AB3FF]" />}
+              icon={<Clock className="w-3.5 h-3.5 text-[var(--accent)]" />}
               value={duration}
               onChange={setDuration}
               accentColor="#4F7CFF"
@@ -363,8 +363,8 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
 
           {/* Net önizleme */}
           {net !== null && netDisplay && (
-            <div className="animate-in fade-in slide-in-from-top-1 fill-mode-both flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.04] px-4 py-2.5 duration-300">
-              <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
+            <div className="animate-in fade-in slide-in-from-top-1 fill-mode-both flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 duration-300">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 Hesaplanan Net
               </span>
               <span
@@ -382,7 +382,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
             className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
             style={{ animationDelay: "100ms" }}
           >
-            <label className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
+            <label className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider">
               <FileText className="w-3.5 h-3.5" />
               Not (opsiyonel)
             </label>
@@ -391,7 +391,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Bu konuda dikkat ettiğin şeyler, DORA'ya not..."
-              className="w-full resize-none rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40 focus-visible:ring-offset-0"
+              className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0"
             />
           </div>
 
@@ -399,7 +399,7 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[#7B2FFF]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[var(--primary)]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
             style={{ animationDelay: "150ms" }}
           >
             {loading ? (

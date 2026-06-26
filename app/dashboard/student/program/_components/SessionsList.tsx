@@ -100,19 +100,19 @@ export default function SessionsList({
     <div
       className={
         embedded
-          ? "rounded-xl border border-white/8 bg-slate-900/40 overflow-hidden"
-          : "rounded-2xl border border-white/8 bg-[#0d0d2b]/50 overflow-hidden"
+          ? "rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 overflow-hidden"
+          : "rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 overflow-hidden"
       }
     >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between gap-3">
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4F7CFF]/30 to-[#00D4FF]/10 border border-[#4F7CFF]/20 flex items-center justify-center">
-            <ListChecks className="w-4 h-4 text-[#7AB3FF]" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary-2)]/30 to-[var(--primary-3)]/10 border border-[var(--primary-2)]/20 flex items-center justify-center">
+            <ListChecks className="w-4 h-4 text-[var(--accent)]" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-sm">Son Çalışmalarım</h3>
-            <p className="text-white/30 text-[11px]">
+            <h3 className="text-[var(--text-primary)] font-bold text-sm">Son Çalışmalarım</h3>
+            <p className="text-[var(--text-muted)] text-[11px]">
               En son {sessions.length} kayıt gösteriliyor
             </p>
           </div>
@@ -120,7 +120,7 @@ export default function SessionsList({
         <button
           onClick={fetchSessions}
           disabled={loading}
-          className="pdf-export-hide print-hidden w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white hover:bg-white/5 transition-all"
+          className="pdf-export-hide print-hidden w-7 h-7 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-all"
           title="Yenile"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -130,13 +130,13 @@ export default function SessionsList({
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <RefreshCw className="w-5 h-5 text-white/20 animate-spin" />
+          <RefreshCw className="w-5 h-5 text-[var(--text-muted)] animate-spin" />
         </div>
       ) : sessions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
-          <BookOpen className="w-10 h-10 text-white/10" />
-          <p className="text-white/40 text-sm">Henüz kayıtlı çalışma yok.</p>
-          <p className="text-white/20 text-xs">
+          <BookOpen className="w-10 h-10 text-[var(--text-primary)]/10" />
+          <p className="text-[var(--text-muted)] text-sm">Henüz kayıtlı çalışma yok.</p>
+          <p className="text-[var(--text-muted)] text-xs">
             Soldaki formu kullanarak ilk çalışmayı ekle!
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function SessionsList({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-white/30 text-[11px] uppercase tracking-wider">
+                <tr className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider">
                   <th className="px-6 py-3 text-left font-semibold">Tarih</th>
                   <th className="px-4 py-3 text-left font-semibold">Ders</th>
                   <th className="px-4 py-3 text-left font-semibold">Konu</th>
@@ -163,7 +163,7 @@ export default function SessionsList({
                   <th className="px-4 py-3 text-center font-semibold">Net</th>
                   <th className="px-4 py-3 text-center font-semibold">
                     <span className="flex items-center justify-center gap-1">
-                      <Clock className="w-3 h-3 text-[#7AB3FF]/60" />Süre
+                      <Clock className="w-3 h-3 text-[var(--accent)]/60" />Süre
                     </span>
                   </th>
                 </tr>
@@ -174,19 +174,19 @@ export default function SessionsList({
                   return (
                     <tr
                       key={s.id}
-                      className={`border-t border-white/4 hover:bg-white/2 transition-colors ${
+                      className={`border-t border-[var(--border)] hover:bg-white/2 transition-colors ${
                         i === 0 ? "border-t-0" : ""
                       }`}
                     >
-                      <td className="px-6 py-3 text-white/50 text-xs whitespace-nowrap">
+                      <td className="px-6 py-3 text-[var(--text-secondary)] text-xs whitespace-nowrap">
                         {formatDate(s.study_date)}
                       </td>
-                      <td className="px-4 py-3 text-white font-medium text-xs max-w-[130px] truncate">
+                      <td className="px-4 py-3 text-[var(--text-primary)] font-medium text-xs max-w-[130px] truncate">
                         {s.subject?.name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-white/40 text-xs max-w-[130px] truncate">
+                      <td className="px-4 py-3 text-[var(--text-muted)] text-xs max-w-[130px] truncate">
                         {s.topic?.name ?? (
-                          <Minus className="w-3 h-3 text-white/15 inline" />
+                          <Minus className="w-3 h-3 text-[var(--text-primary)]/15 inline" />
                         )}
                       </td>
                       <td className="px-4 py-3 text-center text-green-400 font-bold text-xs">
@@ -207,7 +207,7 @@ export default function SessionsList({
                           {net.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-white/40 text-xs">
+                      <td className="px-4 py-3 text-center text-[var(--text-muted)] text-xs">
                         {s.duration_minutes > 0 ? `${s.duration_minutes}dk` : "—"}
                       </td>
                     </tr>
@@ -225,14 +225,14 @@ export default function SessionsList({
                 <div key={s.id} className="px-5 py-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-white font-semibold text-sm">
+                      <p className="text-[var(--text-primary)] font-semibold text-sm">
                         {s.subject?.name ?? "—"}
                       </p>
                       {s.topic && (
-                        <p className="text-white/40 text-xs">{s.topic.name}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{s.topic.name}</p>
                       )}
                     </div>
-                    <span className="text-white/30 text-xs">{formatDate(s.study_date)}</span>
+                    <span className="text-[var(--text-muted)] text-xs">{formatDate(s.study_date)}</span>
                   </div>
                   <div className="flex items-center gap-4 text-xs">
                     <span className="text-green-400 font-bold">D: {s.correct_count}</span>
@@ -248,7 +248,7 @@ export default function SessionsList({
                       {net.toFixed(2)}
                     </span>
                     {s.duration_minutes > 0 && (
-                      <span className="text-white/30 flex items-center gap-1">
+                      <span className="text-[var(--text-muted)] flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {s.duration_minutes}dk
                       </span>

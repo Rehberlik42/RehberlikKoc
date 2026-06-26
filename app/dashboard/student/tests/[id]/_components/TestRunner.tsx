@@ -112,10 +112,10 @@ function resultPalette(level: string | undefined, type: TestType) {
     };
   if (isNeutral)
     return {
-      bg: "from-[#4F7CFF]/20 to-transparent",
-      border: "border-[#4F7CFF]/35",
-      ring: "ring-[#4F7CFF]/30",
-      text: "text-[#7AB3FF]",
+      bg: "from-[var(--primary-2)]/20 to-transparent",
+      border: "border-[var(--primary-2)]/35",
+      ring: "ring-[var(--primary-2)]/30",
+      text: "text-[var(--accent)]",
       glow: "rgba(79,124,255,0.45)",
       label: "Dengeli",
     };
@@ -280,7 +280,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {/* Test başlık kartı */}
-      <div className="relative rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md p-5 overflow-hidden">
+      <div className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md p-5 overflow-hidden">
         <div
           aria-hidden
           className="absolute -right-12 -top-12 w-48 h-48 rounded-full blur-[80px] opacity-40 pointer-events-none"
@@ -308,18 +308,18 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
             >
               {meta.label}
             </span>
-            <h1 className="text-white text-2xl font-black mt-1.5">
+            <h1 className="text-[var(--text-primary)] text-2xl font-black mt-1.5">
               {test.title}
             </h1>
             {test.description && (
-              <p className="text-white/50 text-sm mt-1.5 leading-relaxed">
+              <p className="text-[var(--text-secondary)] text-sm mt-1.5 leading-relaxed">
                 {test.description}
               </p>
             )}
             {previousResult && previousResult.score !== null && (
-              <p className="mt-2 text-[11px] text-white/40">
+              <p className="mt-2 text-[11px] text-[var(--text-muted)]">
                 Daha önce çözdün — son skor:{" "}
-                <span className="text-white/70 font-semibold">
+                <span className="text-[var(--text-secondary)] font-semibold">
                   {previousResult.score}
                 </span>
                 . Bu çözüş eskisinin üstüne yeni bir kayıt oluşturacak.
@@ -331,14 +331,14 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
 
       {/* İlerleme şeridi (sticky) */}
       <div className="sticky top-2 z-20">
-        <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
-          <div className="mb-2 flex items-center justify-between text-[11px] text-white/50">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
+          <div className="mb-2 flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
             <span className="font-semibold">
               {answeredCount} / {total} cevaplandı
             </span>
             <span className="tabular-nums">{progressPct}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
             <div
               className="h-full rounded-full transition-[width] duration-700 ease-out"
               style={{
@@ -362,12 +362,12 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
             <div
               id={`q-${item.id}`}
               key={item.id}
-              className={`relative rounded-2xl border bg-slate-900/40 p-5 backdrop-blur-md transition-all duration-500 ease-out ${
+              className={`relative rounded-2xl border bg-[var(--surface)]/40 p-5 backdrop-blur-md transition-all duration-500 ease-out ${
                 isAnswered
-                  ? "scale-[0.995] border-white/10 opacity-75"
+                  ? "scale-[0.995] border-[var(--border)] opacity-75"
                   : isActive
-                    ? "scale-100 border-[#7B2FFF]/40 shadow-lg shadow-[#7B2FFF]/15 ring-1 ring-[#7B2FFF]/20"
-                    : "scale-100 border-white/8 opacity-100"
+                    ? "scale-100 border-[var(--primary)]/40 shadow-lg shadow-[var(--primary)]/15 ring-1 ring-[var(--primary)]/20"
+                    : "scale-100 border-[var(--border)] opacity-100"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -375,7 +375,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
                   className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black tabular-nums shrink-0 ${
                     isAnswered
                       ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                      : "bg-white/5 text-white/50 border border-white/10"
+                      : "bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)]"
                   }`}
                 >
                   {isAnswered ? (
@@ -384,7 +384,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
                     idx + 1
                   )}
                 </div>
-                <p className="text-white text-sm sm:text-base font-medium leading-relaxed flex-1">
+                <p className="text-[var(--text-primary)] text-sm sm:text-base font-medium leading-relaxed flex-1">
                   {item.text}
                 </p>
               </div>
@@ -403,14 +403,14 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
                         onClick={() => handleSelect(item.id, value, idx)}
                         className={`group/btn relative flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-3 text-[10px] font-semibold transition-all duration-200 sm:text-[11px] ${
                           isSelected
-                            ? "scale-105 border-[#7B2FFF]/50 bg-[#7B2FFF]/20 text-white shadow-md shadow-[#7B2FFF]/25"
-                            : "scale-100 border-white/8 bg-white/[0.03] text-white/40 hover:scale-[1.02] hover:border-white/20 hover:bg-white/[0.05] hover:text-white active:scale-95"
+                            ? "scale-105 border-[var(--primary)]/50 bg-[var(--primary)]/20 text-[var(--text-primary)] shadow-md shadow-[var(--primary)]/25"
+                            : "scale-100 border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:scale-[1.02] hover:border-[var(--border)] hover:bg-white/[0.05] hover:text-[var(--text-primary)] active:scale-95"
                         }`}
                         title={label}
                       >
                         <span
                           className={`text-base sm:text-lg font-black tabular-nums ${
-                            isSelected ? "text-[#A78BFF]" : ""
+                            isSelected ? "text-[var(--accent)]" : ""
                           }`}
                         >
                           {value}
@@ -429,8 +429,8 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
       </div>
 
       {/* Submit */}
-      <div className="sticky bottom-2 z-20 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
-        <div className="flex items-center gap-2 text-[11px] text-white/40">
+      <div className="sticky bottom-2 z-20 flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/85 p-3 shadow-lg shadow-black/20 backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
           {ready ? (
             <span className="text-emerald-300 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Hazırsın!
@@ -446,7 +446,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
             type="button"
             onClick={handleReset}
             disabled={submitting || answeredCount === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-white/50 hover:text-white text-xs font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Temizle
@@ -455,7 +455,7 @@ export default function TestRunner({ test, testType, previousResult }: Props) {
             type="button"
             onClick={handleSubmit}
             disabled={!ready || submitting}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] text-white text-sm font-semibold shadow-lg shadow-[#7B2FFF]/25 hover:shadow-[#7B2FFF]/40 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] text-[var(--text-primary)] text-sm font-semibold shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {submitting ? (
               <>
@@ -544,10 +544,10 @@ function ResultScreen({
             >
               {meta.label} sonucu
             </span>
-            <h2 className="text-white text-2xl sm:text-3xl font-black mt-1.5">
+            <h2 className="text-[var(--text-primary)] text-2xl sm:text-3xl font-black mt-1.5">
               {interpretation?.label ?? "Sonuç hazır"}
             </h2>
-            <p className="text-white/60 text-sm mt-2 leading-relaxed max-w-2xl">
+            <p className="text-[var(--text-secondary)] text-sm mt-2 leading-relaxed max-w-2xl">
               {interpretation?.summary ?? "Skorun başarıyla hesaplandı."}
             </p>
           </div>
@@ -555,17 +555,17 @@ function ResultScreen({
 
         {/* Skor barı */}
         <div className="relative mt-6">
-          <div className="flex items-end justify-between mb-2 text-[11px] text-white/40">
+          <div className="flex items-end justify-between mb-2 text-[11px] text-[var(--text-muted)]">
             <span>
               Skor:{" "}
               <span className={`text-2xl font-black tabular-nums ${palette.text}`}>
                 {Math.round(animatedScore)}
               </span>
-              <span className="text-white/30"> / {range.max}</span>
+              <span className="text-[var(--text-muted)]"> / {range.max}</span>
             </span>
             <span className="tabular-nums">{pct}%</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/5">
+          <div className="h-2.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
             <div
               className="h-full rounded-full transition-[width] duration-1000 ease-out"
               style={{
@@ -575,7 +575,7 @@ function ResultScreen({
               }}
             />
           </div>
-          <div className="flex justify-between mt-1 text-[10px] text-white/30">
+          <div className="flex justify-between mt-1 text-[10px] text-[var(--text-muted)]">
             <span>{range.min}</span>
             <span>{range.max}</span>
           </div>
@@ -584,7 +584,7 @@ function ResultScreen({
 
       {/* DORA önerisi */}
       {interpretation?.doraSuggestion && (
-        <div className="relative rounded-2xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] p-5 overflow-hidden">
+        <div className="relative rounded-2xl border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] p-5 overflow-hidden">
           <div
             aria-hidden
             className="absolute -right-10 -top-10 w-40 h-40 rounded-full blur-[70px] opacity-35 pointer-events-none"
@@ -594,14 +594,14 @@ function ResultScreen({
             }}
           />
           <div className="relative flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#7B2FFF]/20 border border-[#7B2FFF]/30 flex items-center justify-center text-[#A78BFF] shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center text-[var(--accent)] shrink-0">
               <Brain className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#A78BFF]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
                 DORA önerisi
               </p>
-              <p className="text-white text-sm font-medium mt-1.5 leading-relaxed">
+              <p className="text-[var(--text-primary)] text-sm font-medium mt-1.5 leading-relaxed">
                 {interpretation.doraSuggestion}
               </p>
             </div>
@@ -614,7 +614,7 @@ function ResultScreen({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-semibold hover:bg-white/10 hover:border-white/20 transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold hover:bg-white/10 hover:border-[var(--border)] transition-all"
         >
           <RotateCcw className="w-4 h-4" />
           Bir kez daha çöz
@@ -623,14 +623,14 @@ function ResultScreen({
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/student/tests"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white/60 hover:text-white text-sm font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-semibold transition-colors"
           >
             <ArrowLeftIcon className="w-4 h-4" />
             Diğer testler
           </Link>
           <Link
             href="/dashboard/student/recommendations"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] text-white text-sm font-semibold shadow-lg shadow-[#7B2FFF]/25 hover:shadow-[#7B2FFF]/40 hover:scale-[1.02] active:scale-100 transition-all"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] text-[var(--text-primary)] text-sm font-semibold shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 hover:scale-[1.02] active:scale-100 transition-all"
           >
             DORA önerilerine git
             <ArrowRight className="w-4 h-4" />
@@ -639,7 +639,7 @@ function ResultScreen({
       </div>
 
       {/* Süre damgası alt bilgi (gizli not — test başlığını da göster) */}
-      <p className="text-center text-white/30 text-[11px]">
+      <p className="text-center text-[var(--text-muted)] text-[11px]">
         {test.title} · {new Date().toLocaleString("tr-TR")}
       </p>
     </div>

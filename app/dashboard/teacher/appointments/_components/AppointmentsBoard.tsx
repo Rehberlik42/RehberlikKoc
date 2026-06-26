@@ -57,9 +57,9 @@ export const COLUMNS: ColumnDef[] = [
     id: "confirmed",
     label: "Onaylananlar",
     icon: <CalendarCheck className="w-4 h-4" />,
-    accent: "text-[#7AB3FF]",
-    ring: "border-[#4F7CFF]/30",
-    badgeBg: "bg-[#4F7CFF]/15 border-[#4F7CFF]/30 text-[#7AB3FF]",
+    accent: "text-[var(--accent)]",
+    ring: "border-[var(--primary-2)]/30",
+    badgeBg: "bg-[var(--primary-2)]/15 border-[var(--primary-2)]/30 text-[var(--accent)]",
     glow: "rgba(79,124,255,0.35)",
   },
   {
@@ -150,8 +150,8 @@ function StatusSummaryBadge({
       {column.icon}
       {column.label}
       <span
-        className={`font-normal tabular-nums text-white/40 transition-transform duration-200 ${
-          pop ? "scale-125 text-white/70" : "scale-100"
+        className={`font-normal tabular-nums text-[var(--text-muted)] transition-transform duration-200 ${
+          pop ? "scale-125 text-[var(--text-secondary)]" : "scale-100"
         }`}
       >
         · {count}
@@ -300,7 +300,7 @@ export default function AppointmentsBoard({
           type="button"
           onClick={() => setModalOpen(true)}
           disabled={students.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-[#7B2FFF]/40 active:scale-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-[var(--primary)]/40 active:scale-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
           title={
             students.length === 0
               ? "Önce sana öğrenci atanması gerekiyor"

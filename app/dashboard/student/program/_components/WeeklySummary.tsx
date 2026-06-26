@@ -65,11 +65,45 @@ function useAnimatedNumber(target: number, active: boolean, duration = 600) {
 function SkeletonBar({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-white/[0.08] ${className}`}
+      className={`animate-pulse rounded-md bg-[var(--surface-2)] ${className}`}
       aria-hidden
     />
   );
 }
+
+type AccentToken = "primary" | "primary-2" | "primary-3" | "success" | "danger";
+
+const MINI_STAT_CARD: Record<AccentToken, string> = {
+  primary:
+    "bg-gradient-to-br from-[var(--primary)]/[0.07] to-[var(--surface)]/80",
+  "primary-2":
+    "bg-gradient-to-br from-[var(--primary-2)]/[0.07] to-[var(--surface)]/80",
+  "primary-3":
+    "bg-gradient-to-br from-[var(--primary-3)]/[0.07] to-[var(--surface)]/80",
+  success:
+    "bg-gradient-to-br from-green-500/[0.08] to-[var(--surface)]/80",
+  danger:
+    "bg-gradient-to-br from-red-500/[0.08] to-[var(--surface)]/80",
+};
+
+const MINI_STAT_ICON: Record<AccentToken, string> = {
+  primary:
+    "border-[var(--primary)]/35 bg-[var(--primary)]/10 text-[var(--primary)]",
+  "primary-2":
+    "border-[var(--primary-2)]/35 bg-[var(--primary-2)]/10 text-[var(--primary-2)]",
+  "primary-3":
+    "border-[var(--primary-3)]/35 bg-[var(--primary-3)]/10 text-[var(--primary-3)]",
+  success: "border-green-500/35 bg-green-500/10 text-green-600",
+  danger: "border-red-500/35 bg-red-500/10 text-red-500",
+};
+
+const GOAL_BAR_FILL: Record<AccentToken, string> = {
+  primary: "from-[var(--primary)] to-[var(--primary)]/65",
+  "primary-2": "from-[var(--primary-2)] to-[var(--primary-2)]/65",
+  "primary-3": "from-[var(--primary-3)] to-[var(--primary-3)]/65",
+  success: "from-green-500 to-green-500/65",
+  danger: "from-red-500 to-red-500/65",
+};
 
 export default function WeeklySummary({
   refreshKey = 0,
@@ -166,7 +200,7 @@ export default function WeeklySummary({
           icon={<CalendarDays className="h-4 w-4" />}
           label="Bu hafta oturum"
           value={String(Math.round(animatedSessions))}
-          accent="#7B2FFF"
+          accentToken="primary"
           delay={0}
           loading={loading}
         />
@@ -174,7 +208,7 @@ export default function WeeklySummary({
           icon={<Target className="h-4 w-4" />}
           label="Çözülen soru"
           value={String(Math.round(animatedQuestions))}
-          accent="#4F7CFF"
+          accentToken="primary-2"
           delay={50}
           loading={loading}
         />
@@ -182,7 +216,7 @@ export default function WeeklySummary({
           icon={<Clock className="h-4 w-4" />}
           label="Toplam süre"
           value={`${Math.round(animatedMinutes)} dk`}
-          accent="#00D4FF"
+          accentToken="primary-3"
           delay={100}
           loading={loading}
         />
@@ -191,7 +225,7 @@ export default function WeeklySummary({
           label="Haftalık net"
           value={animatedNet.toFixed(2)}
           sub={stats ? `${stats.activeDays} aktif gün` : undefined}
-          accent={net >= 0 ? "#10B981" : "#ef4444"}
+          accentToken={net >= 0 ? "success" : "danger"}
           delay={150}
           loading={loading}
           glow={!loading}
@@ -201,7 +235,7 @@ export default function WeeklySummary({
 
       {/* Haftalık ilerleme hedefleri */}
       {loading ? (
-        <div className="space-y-3 rounded-xl border border-white/8 bg-[#0d0d2b]/40 p-4">
+        <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-4">
           <SkeletonBar className="h-3 w-36" />
           <SkeletonBar className="h-2 w-full" />
           <SkeletonBar className="h-2 w-full" />
@@ -213,8 +247,8 @@ export default function WeeklySummary({
           </div>
         </div>
       ) : stats ? (
-        <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both space-y-3 rounded-xl border border-white/8 bg-[#0d0d2b]/40 p-4 duration-300">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+        <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-4 duration-300">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             Haftalık ilerleme
           </p>
 
@@ -223,7 +257,7 @@ export default function WeeklySummary({
             current={stats.sessionCount}
             goal={WEEKLY_GOALS.sessions}
             pct={sessionPct}
-            accent="#7B2FFF"
+            accentToken="primary"
             mounted={barsMounted}
           />
           <GoalBar
@@ -231,7 +265,7 @@ export default function WeeklySummary({
             current={stats.totalQuestions}
             goal={WEEKLY_GOALS.questions}
             pct={questionPct}
-            accent="#4F7CFF"
+            accentToken="primary-2"
             mounted={barsMounted}
           />
           <GoalBar
@@ -239,17 +273,17 @@ export default function WeeklySummary({
             current={stats.totalMinutes}
             goal={WEEKLY_GOALS.minutes}
             pct={minutePct}
-            accent="#00D4FF"
+            accentToken="primary-3"
             mounted={barsMounted}
           />
 
           {/* activeDays: hangi günlerin dolu olduğu verisi yok; ilk N hücreyi dolduruyoruz */}
-          <div className="border-t border-white/5 pt-3">
+          <div className="border-t border-[var(--border)] pt-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 Aktif günler
               </span>
-              <span className="text-[10px] tabular-nums text-white/30">
+              <span className="text-[10px] tabular-nums text-[var(--text-muted)]">
                 {stats.activeDays} / 7
               </span>
             </div>
@@ -261,13 +295,13 @@ export default function WeeklySummary({
                     <div
                       className={`h-2 w-full rounded-full transition-all duration-500 ${
                         filled
-                          ? "bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] shadow-[0_0_8px_rgba(123,47,255,0.35)]"
-                          : "bg-white/[0.06]"
+                          ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] shadow-[0_0_8px_rgba(123,47,255,0.35)]"
+                          : "bg-[var(--surface-2)]"
                       }`}
                     />
                     <span
                       className={`text-[9px] font-semibold ${
-                        filled ? "text-[#A78BFF]" : "text-white/25"
+                        filled ? "text-[var(--accent)]" : "text-[var(--text-muted)]"
                       }`}
                     >
                       {day}
@@ -288,14 +322,14 @@ function GoalBar({
   current,
   goal,
   pct,
-  accent,
+  accentToken,
   mounted,
 }: {
   label: string;
   current: number;
   goal: number;
   pct: number;
-  accent: string;
+  accentToken: AccentToken;
   mounted: boolean;
 }) {
   const width = mounted ? `${pct}%` : "0%";
@@ -303,19 +337,15 @@ function GoalBar({
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold text-white/50">{label}</span>
-        <span className="text-[10px] tabular-nums text-white/40">
+        <span className="text-[11px] font-semibold text-[var(--text-secondary)]">{label}</span>
+        <span className="text-[10px] tabular-nums text-[var(--text-muted)]">
           {current} / {goal}
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
         <div
-          className="h-full rounded-full transition-[width] duration-700 ease-out"
-          style={{
-            width,
-            background: `linear-gradient(90deg, ${accent}, ${accent}99)`,
-            boxShadow: mounted ? `0 0 10px ${accent}55` : undefined,
-          }}
+          className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${GOAL_BAR_FILL[accentToken]}`}
+          style={{ width }}
         />
       </div>
     </div>
@@ -327,7 +357,7 @@ function MiniStat({
   label,
   value,
   sub,
-  accent,
+  accentToken,
   delay,
   loading,
   glow = false,
@@ -337,7 +367,7 @@ function MiniStat({
   label: string;
   value: string;
   sub?: string;
-  accent: string;
+  accentToken: AccentToken;
   delay: number;
   loading: boolean;
   glow?: boolean;
@@ -345,7 +375,7 @@ function MiniStat({
 }) {
   if (loading) {
     return (
-      <div className="rounded-xl border border-white/8 bg-slate-900/50 p-3">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]/50 p-3">
         <SkeletonBar className="mb-2 h-8 w-8 rounded-lg" />
         <SkeletonBar className="mb-2 h-2.5 w-20" />
         <SkeletonBar className="h-6 w-14" />
@@ -355,45 +385,36 @@ function MiniStat({
 
   return (
     <div
-      className={`group rounded-xl border border-white/8 bg-slate-900/50 p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${
+      className={`group rounded-xl border border-[var(--border)] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--border)] animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${MINI_STAT_CARD[accentToken]} ${
         glow
           ? positive
             ? "shadow-[0_0_14px_rgba(16,185,129,0.12)]"
             : "shadow-[0_0_14px_rgba(239,68,68,0.12)]"
-          : "hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+          : "hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
       }`}
-      style={{
-        animationDelay: `${delay}ms`,
-        background: `linear-gradient(135deg, ${accent}08 0%, transparent 60%), rgba(15,23,42,0.5)`,
-      }}
+      style={{ animationDelay: `${delay}ms` }}
     >
       <div
-        className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-105"
-        style={{
-          background: `${accent}18`,
-          borderColor: `${accent}40`,
-          color: accent,
-          boxShadow: `0 0 12px ${accent}22`,
-        }}
+        className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-105 ${MINI_STAT_ICON[accentToken]}`}
       >
         {icon}
       </div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
         {label}
       </p>
       <p
         className={`mt-0.5 text-lg font-black tabular-nums transition-colors duration-300 ${
           glow && positive
-            ? "text-[#10B981]"
+            ? "text-green-600"
             : glow && !positive
-              ? "text-red-400"
-              : "text-white"
+              ? "text-red-500"
+              : "text-[var(--text-primary)]"
         }`}
       >
         {value}
       </p>
       {sub && (
-        <p className="mt-0.5 text-[10px] text-white/30">{sub}</p>
+        <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{sub}</p>
       )}
     </div>
   );

@@ -42,25 +42,25 @@ function MockExamRow({
   const net = totalNet(m);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/40 backdrop-blur-sm transition-all duration-300 hover:border-white/15">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 backdrop-blur-sm transition-all duration-300 hover:border-[var(--border)]">
       {/* Header satiri */}
       <div className="flex items-center gap-4 px-5 py-4">
         {/* Net badge */}
         <div
           className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border transition-shadow duration-300 ${
             net >= 0
-              ? "border-[#7B2FFF]/30 bg-gradient-to-br from-[#7B2FFF]/20 to-[#4F7CFF]/15 shadow-[0_0_14px_rgba(123,47,255,0.2)]"
+              ? "border-[var(--primary)]/30 bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-2)]/15 shadow-[0_0_14px_rgba(123,47,255,0.2)]"
               : "border-red-500/30 bg-red-500/10 shadow-[0_0_14px_rgba(239,68,68,0.15)]"
           }`}
         >
           <span
             className={`text-lg font-black tabular-nums leading-none ${
-              net >= 0 ? "text-white" : "text-red-400"
+              net >= 0 ? "text-[var(--text-primary)]" : "text-red-400"
             }`}
           >
             {net.toFixed(1)}
           </span>
-          <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-0.5">
+          <span className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold mt-0.5">
             net
           </span>
         </div>
@@ -68,21 +68,21 @@ function MockExamRow({
         {/* Detay */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-[#7B2FFF]/20 text-[#A78BFF] border border-[#7B2FFF]/25">
+            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-[var(--primary)]/20 text-[var(--accent)] border border-[var(--primary)]/25">
               {m.exam?.name ?? "—"}
             </span>
             {m.title && (
-              <span className="text-white font-semibold text-sm truncate">
+              <span className="text-[var(--text-primary)] font-semibold text-sm truncate">
                 {m.title}
               </span>
             )}
             {!m.title && (
-              <span className="text-white/40 text-sm italic">
+              <span className="text-[var(--text-muted)] text-sm italic">
                 İsimsiz deneme
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-white/40 flex-wrap">
+          <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)] flex-wrap">
             <span className="flex items-center gap-1">
               <CalendarDays className="w-3 h-3" />
               {formatDate(m.exam_date)}
@@ -107,7 +107,7 @@ function MockExamRow({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
             aria-label="Detayları göster"
           >
             {open ? (
@@ -131,7 +131,7 @@ function MockExamRow({
               <button
                 type="button"
                 onClick={() => setConfirm(false)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/40 transition-all hover:bg-white/[0.08]"
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] transition-all hover:bg-white/[0.08]"
               >
                 İptal
               </button>
@@ -140,7 +140,7 @@ function MockExamRow({
             <button
               type="button"
               onClick={() => setConfirm(true)}
-              className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              className="p-2 rounded-lg text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
               aria-label="Sil"
             >
               <Trash2 className="w-4 h-4" />
@@ -156,9 +156,9 @@ function MockExamRow({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-white/5 bg-black/15 px-5 py-4">
+          <div className="border-t border-[var(--border)] bg-black/15 px-5 py-4">
             {m.results.length === 0 ? (
-              <p className="text-xs italic text-white/30">
+              <p className="text-xs italic text-[var(--text-muted)]">
                 Bu deneme için ders detayı bulunmuyor.
               </p>
             ) : (
@@ -175,7 +175,7 @@ function MockExamRow({
                     return (
                       <div
                         key={r.id}
-                        className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
+                        className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2"
                       >
                         <span
                           className="h-7 w-1 shrink-0 rounded-full"
@@ -184,17 +184,17 @@ function MockExamRow({
                           }}
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold text-white">
+                          <p className="truncate text-xs font-semibold text-[var(--text-primary)]">
                             {r.subject?.name ?? "—"}
                           </p>
-                          <p className="text-[10px] text-white/30">
+                          <p className="text-[10px] text-[var(--text-muted)]">
                             {r.correct_count}D · {r.wrong_count}Y ·{" "}
                             {r.empty_count}B
                           </p>
                         </div>
                         <span
                           className={`shrink-0 text-xs font-black tabular-nums ${
-                            subjectNet >= 0 ? "text-white" : "text-red-400"
+                            subjectNet >= 0 ? "text-[var(--text-primary)]" : "text-red-400"
                           }`}
                         >
                           {subjectNet >= 0 ? "+" : ""}
@@ -215,19 +215,19 @@ function MockExamRow({
 // ─── List ─────────────────────────────────────────────────────────────────────
 export default function MockExamsList({ mockExams, onDelete }: Props) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20 border border-[#7B2FFF]/20 flex items-center justify-center">
-          <History className="w-4 h-4 text-[#A78BFF]" />
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-2)]/20 border border-[var(--primary)]/20 flex items-center justify-center">
+          <History className="w-4 h-4 text-[var(--accent)]" />
         </div>
         <div className="flex-1">
-          <h3 className="text-white font-bold text-sm">Geçmiş Denemelerim</h3>
-          <p className="text-white/30 text-[11px]">
+          <h3 className="text-[var(--text-primary)] font-bold text-sm">Geçmiş Denemelerim</h3>
+          <p className="text-[var(--text-muted)] text-[11px]">
             En yeniden eskiye doğru sıralı
           </p>
         </div>
         {mockExams.length > 0 && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 px-2 py-1 rounded-md bg-white/4 border border-white/8">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] px-2 py-1 rounded-md bg-[var(--surface-2)] border border-[var(--border)]">
             {mockExams.length} kayıt
           </span>
         )}
@@ -235,11 +235,11 @@ export default function MockExamsList({ mockExams, onDelete }: Props) {
 
       <div className="p-5">
         {mockExams.length === 0 ? (
-          <div className="rounded-xl border border-white/8 border-dashed bg-white/2 px-4 py-10 text-center">
-            <p className="text-white/50 text-sm font-semibold mb-1">
+          <div className="rounded-xl border border-[var(--border)] border-dashed bg-white/2 px-4 py-10 text-center">
+            <p className="text-[var(--text-secondary)] text-sm font-semibold mb-1">
               Henüz deneme kaydedilmedi
             </p>
-            <p className="text-white/30 text-xs">
+            <p className="text-[var(--text-muted)] text-xs">
               Yukarıdaki formdan ilk denemeni eklediğinde burada listelenir.
             </p>
           </div>

@@ -61,17 +61,17 @@ export default function DeleteConfirmModal({
           {/* Header */}
           <div className="flex items-center gap-3 px-6 py-4 border-b border-red-500/20">
             <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-            <h2 className="text-lg font-bold text-white">
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
               İçeriği Sil?
             </h2>
           </div>
 
           {/* Body */}
           <div className="px-6 py-4 space-y-3">
-            <p className="text-white/70 text-sm">
+            <p className="text-[var(--text-secondary)] text-sm">
               <strong>"{content.title}"</strong> başlıklı içerik silinecek.
             </p>
-            <p className="text-white/50 text-xs">
+            <p className="text-[var(--text-secondary)] text-xs">
               Bu işlem geri alınamaz. Devam etmek istediğinizden emin misiniz?
             </p>
 
@@ -83,13 +83,13 @@ export default function DeleteConfirmModal({
           </div>
 
           {/* Buttons */}
-          <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--border)]">
             <button
               onClick={onCancel}
               disabled={loading}
               className="
                 px-4 py-2 rounded-lg
-                bg-white/5 border border-white/10 text-white/80
+                bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-secondary)]
                 hover:bg-white/10 transition-colors
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
@@ -101,7 +101,7 @@ export default function DeleteConfirmModal({
               disabled={loading}
               className="
                 px-4 py-2 rounded-lg
-                bg-red-600/80 text-white font-medium
+                bg-red-600/80 text-[var(--text-primary)] font-medium
                 hover:bg-red-700 transition-colors
                 disabled:opacity-50 disabled:cursor-not-allowed
               "

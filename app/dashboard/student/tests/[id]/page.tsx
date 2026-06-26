@@ -45,7 +45,7 @@ export default async function StudentTestRunPage({
     <div className="max-w-3xl mx-auto space-y-6">
       <Link
         href="/dashboard/student/tests"
-        className="inline-flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-medium transition-colors"
+        className="inline-flex items-center gap-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm font-medium transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Tüm testler

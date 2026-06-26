@@ -55,10 +55,10 @@ export default async function MockExamsPage() {
       {/* Header + PDF */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
             Deneme Sınavlarım ve Performans Analizim
           </h2>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-[var(--text-muted)] text-sm mt-1">
             Her denemeyi kaydet, DORA senin için ilerlemeni grafiksel olarak izlesin.
           </p>
         </div>

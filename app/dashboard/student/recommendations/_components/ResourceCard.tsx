@@ -78,7 +78,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
-      className="group relative flex animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex-col overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:border-transparent motion-reduce:animate-none"
+      className="group relative flex animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:border-transparent motion-reduce:animate-none"
       style={{
         boxShadow: undefined,
       }}
@@ -121,7 +121,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
 
         {/* Dark overlay for readable badge */}
         {resource.thumbnail_url && (
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07071a]/90 via-[#07071a]/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--sidebar)]/90 via-[var(--sidebar)]/20 to-transparent" />
         )}
 
         {/* Type badge top-left */}
@@ -141,7 +141,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
         {resource.type === "youtube" && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-500/50 bg-red-500/30 shadow-lg shadow-red-500/20 backdrop-blur-md">
-              <PlayCircle className="h-7 w-7 text-white" />
+              <PlayCircle className="h-7 w-7 text-[var(--text-primary)]" />
             </div>
           </div>
         )}
@@ -168,32 +168,32 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
             </span>
           )}
           {resource.subject?.exam && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white/30">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
               {resource.subject.exam.name}
             </span>
           )}
           {resource.topic && (
-            <span className="max-w-[120px] truncate text-[10px] font-semibold text-white/40">
+            <span className="max-w-[120px] truncate text-[10px] font-semibold text-[var(--text-muted)]">
               · {resource.topic.name}
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-white">
+        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-[var(--text-primary)] transition-colors group-hover:text-[var(--text-primary)]">
           {resource.title}
         </h3>
 
         {/* Description */}
         {resource.description && (
-          <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-white/45">
+          <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-[var(--text-muted)]">
             {resource.description}
           </p>
         )}
 
         {/* Footer: viewCount + CTA */}
-        <div className="flex items-center justify-between gap-2 border-t border-white/5 pt-2.5">
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-white/30">
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] pt-2.5">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-[var(--text-muted)]">
             <Eye className="h-3 w-3" />
             {resource.view_count > 0 ? resource.view_count : "yeni"}
           </div>
@@ -212,7 +212,7 @@ export default function ResourceCard({ resource }: { resource: ResourceItem }) {
       </div>
 
       {/* External link icon top-right (always visible, subtle) */}
-      <ExternalLink className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-white/40 transition-colors group-hover:text-white" />
+      <ExternalLink className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[var(--text-muted)] transition-colors group-hover:text-[var(--text-primary)]" />
     </a>
   );
 }

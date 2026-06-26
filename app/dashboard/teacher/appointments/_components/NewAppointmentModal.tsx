@@ -151,19 +151,19 @@ export default function NewAppointmentModal({
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/20 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
         {/* Top accent */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#7B2FFF]/15 border border-[#7B2FFF]/25 flex items-center justify-center text-[#A78BFF]">
+            <div className="w-9 h-9 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-[var(--accent)]">
               <CalendarPlus className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h3 className="text-white text-base font-bold">Yeni Randevu</h3>
-              <p className="text-white/40 text-[11px]">
+              <h3 className="text-[var(--text-primary)] text-base font-bold">Yeni Randevu</h3>
+              <p className="text-[var(--text-muted)] text-[11px]">
                 Öğrencinle bir koçluk seansı planla
               </p>
             </div>
@@ -171,7 +171,7 @@ export default function NewAppointmentModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-white/30 hover:text-white transition-colors p-1"
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1"
             aria-label="Kapat"
           >
             <X className="w-4.5 h-4.5" />
@@ -182,19 +182,19 @@ export default function NewAppointmentModal({
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           {/* Öğrenci seçimi */}
           <div>
-            <label className="text-white/60 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
               <User className="w-3.5 h-3.5" />
               Öğrenci
             </label>
             {students.length === 0 ? (
-              <p className="text-white/40 text-xs px-3 py-2 rounded-lg border border-dashed border-white/10 bg-white/3">
+              <p className="text-[var(--text-muted)] text-xs px-3 py-2 rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-2)]">
                 Henüz sana öğrenci atanmamış.
               </p>
             ) : (
               <select
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg bg-[#05050f] border border-white/10 text-white text-sm focus:outline-none focus:border-[#7B2FFF]/50 focus:ring-2 focus:ring-[#7B2FFF]/20 transition-colors"
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--primary)]/50 focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
               >
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -205,7 +205,7 @@ export default function NewAppointmentModal({
               </select>
             )}
             {selectedStudent?.grade && (
-              <p className="text-white/30 text-[10px] mt-1.5">
+              <p className="text-[var(--text-muted)] text-[10px] mt-1.5">
                 Seçili: {selectedStudent.full_name} ({selectedStudent.grade}. sınıf)
               </p>
             )}
@@ -213,7 +213,7 @@ export default function NewAppointmentModal({
 
           {/* Tarih/saat */}
           <div>
-            <label className="text-white/60 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
               <Clock className="w-3.5 h-3.5" />
               Tarih ve Saat
             </label>
@@ -222,13 +222,13 @@ export default function NewAppointmentModal({
               value={appointmentDate}
               onChange={(e) => setAppointmentDate(e.target.value)}
               required
-              className="w-full px-3 py-2.5 rounded-lg bg-[#05050f] border border-white/10 text-white text-sm focus:outline-none focus:border-[#4F7CFF]/50 focus:ring-2 focus:ring-[#4F7CFF]/20 transition-colors [color-scheme:dark]"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--primary-2)]/50 focus:ring-2 focus:ring-[var(--primary-2)]/20 transition-colors [color-scheme:dark]"
             />
           </div>
 
           {/* Süre preset chip'leri */}
           <div>
-            <label className="text-white/60 text-[11px] font-semibold uppercase tracking-wider mb-1.5 block">
+            <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider mb-1.5 block">
               Süre (dakika)
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -239,8 +239,8 @@ export default function NewAppointmentModal({
                   onClick={() => setDuration(d)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                     duration === d
-                      ? "bg-[#7B2FFF]/20 border-[#7B2FFF]/40 text-[#A78BFF]"
-                      : "bg-white/3 border-white/8 text-white/50 hover:text-white hover:border-white/15"
+                      ? "bg-[var(--primary)]/20 border-[var(--primary)]/40 text-[var(--accent)]"
+                      : "bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border)]"
                   }`}
                 >
                   {d} dk
@@ -251,16 +251,16 @@ export default function NewAppointmentModal({
 
           {/* Notlar */}
           <div>
-            <label className="text-white/60 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
               <StickyNote className="w-3.5 h-3.5" />
-              Notlar <span className="text-white/30 font-normal normal-case">(opsiyonel)</span>
+              Notlar <span className="text-[var(--text-muted)] font-normal normal-case">(opsiyonel)</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Bu seansta ne konuşmayı planlıyorsun?"
-              className="w-full px-3 py-2.5 rounded-lg bg-[#05050f] border border-white/10 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-[#7B2FFF]/50 focus:ring-2 focus:ring-[#7B2FFF]/20 transition-colors resize-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]/50 focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors resize-none"
             />
           </div>
 
@@ -270,14 +270,14 @@ export default function NewAppointmentModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 rounded-lg text-white/60 hover:text-white text-sm font-semibold transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-semibold transition-colors disabled:opacity-50"
             >
               Vazgeç
             </button>
             <button
               type="submit"
               disabled={loading || students.length === 0 || !studentId}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] text-white text-sm font-semibold shadow-lg shadow-[#7B2FFF]/25 hover:shadow-[#7B2FFF]/40 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] text-[var(--text-primary)] text-sm font-semibold shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {loading ? (
                 <>

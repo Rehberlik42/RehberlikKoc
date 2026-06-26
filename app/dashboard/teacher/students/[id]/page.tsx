@@ -292,14 +292,14 @@ export default async function StudentDetailPage({
       {/* Geri linki */}
       <Link
         href="/dashboard/teacher/students"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-white/40 transition-colors hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
       >
         <ArrowLeft className="h-4 w-4" />
         Tüm öğrenciler
       </Link>
 
       {/* Profil kartı */}
-      <div className="relative animate-in fade-in slide-in-from-bottom-4 fill-mode-both overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] p-6 duration-500 md:p-8">
+      <div className="relative animate-in fade-in slide-in-from-bottom-4 fill-mode-both overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] p-6 duration-500 md:p-8">
         <div
           className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full opacity-60 blur-[100px]"
           style={{
@@ -313,10 +313,10 @@ export default async function StudentDetailPage({
             <img
               src={student.avatar_url}
               alt=""
-              className="h-20 w-20 shrink-0 rounded-2xl border border-white/10 object-cover shadow-lg shadow-[#7B2FFF]/25"
+              className="h-20 w-20 shrink-0 rounded-2xl border border-[var(--border)] object-cover shadow-lg shadow-[var(--primary)]/25"
             />
           ) : (
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] text-2xl font-black text-white shadow-lg shadow-[#7B2FFF]/30">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-2xl font-black text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/30">
               {initialsFromName(student.full_name)}
             </div>
           )}
@@ -328,39 +328,39 @@ export default async function StudentDetailPage({
               <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
               {targetExamLabel(exam)}
             </span>
-            <h1 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
               {student.full_name ?? "İsimsiz Öğrenci"}
             </h1>
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/45">
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--text-muted)]">
               {student.grade && (
                 <span className="flex items-center gap-1.5">
-                  <GraduationCap className="h-4 w-4 shrink-0 text-white/35" />
+                  <GraduationCap className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
                   {student.grade}. sınıf
                 </span>
               )}
               {student.school && (
                 <span className="flex items-center gap-1.5">
-                  <BookOpen className="h-4 w-4 shrink-0 text-white/35" />
+                  <BookOpen className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
                   {student.school}
                 </span>
               )}
               {student.phone && (
                 <a
                   href={`tel:${student.phone.replace(/\s/g, "")}`}
-                  className="flex items-center gap-1.5 transition-colors hover:text-[#A78BFF]"
+                  className="flex items-center gap-1.5 transition-colors hover:text-[var(--accent)]"
                 >
-                  <Phone className="h-4 w-4 shrink-0 text-white/35" />
+                  <Phone className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
                   {student.phone}
                 </a>
               )}
             </div>
             {student.bio && (
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60">
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
                 {student.bio}
               </p>
             )}
             {student.created_at ? (
-              <p className="mt-3 text-xs text-white/30">
+              <p className="mt-3 text-xs text-[var(--text-muted)]">
                 {timeAgo(student.created_at)} eklendi
               </p>
             ) : null}
@@ -377,19 +377,19 @@ export default async function StudentDetailPage({
                   icon: <BarChart2 className="h-5 w-5" />,
                   label: "Toplam Deneme",
                   value: mockCount ?? 0,
-                  accent: "text-[#A78BFF]",
+                  accent: "text-[var(--accent)]",
                 },
                 {
                   icon: <Sparkles className="h-5 w-5" />,
                   label: "Çalışma Oturumu",
                   value: sessionCount ?? 0,
-                  accent: "text-[#7AB3FF]",
+                  accent: "text-[var(--primary-2)]",
                 },
                 {
                   icon: <Calendar className="h-5 w-5" />,
                   label: "Ortak Randevu",
                   value: appointmentCount ?? 0,
-                  accent: "text-[#70E6FF]",
+                  accent: "text-[var(--primary-3)]",
                 },
               ].map((card, index) => (
                 <div

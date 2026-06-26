@@ -281,26 +281,26 @@ export default function AddTaskModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-task-modal-title"
-          className="relative max-h-[90vh] w-full max-w-lg animate-in fade-in zoom-in-95 fill-mode-both overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#0d0d2b] to-[#07070f] shadow-2xl shadow-[#7B2FFF]/20 duration-200"
+          className="relative max-h-[90vh] w-full max-w-lg animate-in fade-in zoom-in-95 fill-mode-both overflow-y-auto rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/20 duration-200"
         >
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7B2FFF] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
 
-          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
             <div>
               <h2
                 id="add-task-modal-title"
-                className="text-base font-bold text-white"
+                className="text-base font-bold text-[var(--text-primary)]"
               >
                 Görev Ekle — {dayLabel}
               </h2>
-              <p className="mt-0.5 text-[11px] text-white/35">
+              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
                 Öğrenciye planlı görev ata
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-white/8 bg-white/[0.04] p-2 text-white/40 transition-colors hover:text-white"
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
               aria-label="Kapat"
             >
               <X className="h-4 w-4" />
@@ -357,13 +357,13 @@ export default function AddTaskModal({
               </div>
             )}
 
-            <div className="space-y-4 border-t border-white/8 pt-4">
+            <div className="space-y-4 border-t border-[var(--border)] pt-4">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   Kaynak (opsiyonel)
                 </p>
                 {resourcesLoading && (
-                  <span className="text-[10px] text-white/30">Kaynaklar yükleniyor…</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">Kaynaklar yükleniyor…</span>
                 )}
               </div>
 
@@ -412,7 +412,7 @@ export default function AddTaskModal({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+              <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 <FileText className="h-3.5 w-3.5" />
                 Başlık
               </label>
@@ -425,7 +425,7 @@ export default function AddTaskModal({
                 }}
                 required
                 placeholder="Görev başlığı"
-                className="w-full rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40 focus-visible:ring-offset-0"
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0"
               />
             </div>
 
@@ -433,14 +433,14 @@ export default function AddTaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-3 text-sm font-semibold text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white"
+                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
               >
                 İptal
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-3 text-sm font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all duration-300 hover:shadow-[#7B2FFF]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:shadow-[var(--primary)]/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

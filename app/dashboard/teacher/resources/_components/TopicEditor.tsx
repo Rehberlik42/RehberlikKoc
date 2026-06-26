@@ -108,13 +108,13 @@ function SortableTopicRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-2 py-2 transition-all ${
-        isDragging ? "z-10 scale-[1.02] opacity-80 shadow-lg shadow-[#7B2FFF]/10" : ""
+      className={`flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-2 transition-all ${
+        isDragging ? "z-10 scale-[1.02] opacity-80 shadow-lg shadow-[var(--primary)]/10" : ""
       }`}
     >
       <button
         type="button"
-        className="cursor-grab touch-none rounded-lg p-1.5 text-white/25 transition-colors hover:bg-white/5 hover:text-white/50 active:cursor-grabbing"
+        className="cursor-grab touch-none rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text-secondary)] active:cursor-grabbing"
         aria-label="Sırayı değiştir"
         {...attributes}
         {...listeners}
@@ -122,7 +122,7 @@ function SortableTopicRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <span className="w-5 shrink-0 text-center text-[11px] font-bold text-white/30">
+      <span className="w-5 shrink-0 text-center text-[11px] font-bold text-[var(--text-muted)]">
         {index + 1}
       </span>
 
@@ -152,7 +152,7 @@ function SortableTopicRow({
           }
         }}
         placeholder="Konu adı"
-        className="min-w-0 flex-1 rounded-lg border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-sm text-white placeholder-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+        className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-sm text-[var(--text-primary)] placeholder-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
       />
 
       <div className="flex shrink-0 items-center gap-0.5">
@@ -160,7 +160,7 @@ function SortableTopicRow({
           type="button"
           onClick={() => adjustCount(-1)}
           disabled={topic.target_count <= 0}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 text-white/40 transition-colors hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/10 hover:text-[#A78BFF] disabled:opacity-30"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 hover:text-[var(--accent)] disabled:opacity-30"
           aria-label="Soru sayısını azalt"
         >
           <Minus className="h-3.5 w-3.5" />
@@ -172,13 +172,13 @@ function SortableTopicRow({
           onChange={(e) =>
             onCountChange(topic.tempId, Math.max(0, parseInt(e.target.value, 10) || 0))
           }
-          className="w-12 rounded-lg border border-white/8 bg-white/[0.04] px-1 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+          className="w-12 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-1 py-1.5 text-center text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
           aria-label="Soru sayısı"
         />
         <button
           type="button"
           onClick={() => adjustCount(1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 text-white/40 transition-colors hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/10 hover:text-[#A78BFF]"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]"
           aria-label="Soru sayısını artır"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ function SortableTopicRow({
       <button
         type="button"
         onClick={() => onRemove(topic.tempId)}
-        className="rounded-lg p-1.5 text-white/25 transition-colors hover:bg-red-500/10 hover:text-red-400"
+        className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
         aria-label="Konuyu sil"
       >
         <X className="h-4 w-4" />
@@ -280,19 +280,19 @@ export default function TopicEditor({ topics, onChange }: TopicEditorProps) {
   };
 
   return (
-    <div className="space-y-3 border-t border-white/8 pt-5">
+    <div className="space-y-3 border-t border-[var(--border)] pt-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-white">Konular</h3>
-        <div className="flex items-center gap-1 rounded-lg border border-white/8 bg-white/[0.03] p-0.5 text-[10px] font-semibold">
-          <span className="rounded-md bg-[#7B2FFF]/20 px-2.5 py-1 text-[#A78BFF]">
+        <h3 className="text-sm font-bold text-[var(--text-primary)]">Konular</h3>
+        <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-[10px] font-semibold">
+          <span className="rounded-md bg-[var(--primary)]/20 px-2.5 py-1 text-[var(--accent)]">
             Manuel Giriş
           </span>
           <span
-            className="cursor-not-allowed px-2.5 py-1 text-white/25"
+            className="cursor-not-allowed px-2.5 py-1 text-[var(--text-muted)]"
             title="Faz 3B — yakında"
           >
             Excel ile Yükle
-            <span className="ml-1 text-[8px] uppercase tracking-wider text-white/20">
+            <span className="ml-1 text-[8px] uppercase tracking-wider text-[var(--text-muted)]">
               yakında
             </span>
           </span>
@@ -332,19 +332,19 @@ export default function TopicEditor({ topics, onChange }: TopicEditorProps) {
       <button
         type="button"
         onClick={() => addRow()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/12 bg-white/[0.02] py-2.5 text-sm font-semibold text-white/45 transition-colors hover:border-[#7B2FFF]/30 hover:bg-[#7B2FFF]/5 hover:text-[#A78BFF]"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border)] bg-white/[0.02] py-2.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/5 hover:text-[var(--accent)]"
       >
         <Plus className="h-4 w-4" />
         Yeni Konu Ekle
       </button>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/35">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
         <span>
-          <span className="font-semibold text-white/55">{stats.count}</span> konu
-          <span className="mx-1.5 text-white/15">·</span>
-          <span className="font-semibold text-white/55">{stats.total}</span> soru
+          <span className="font-semibold text-[var(--text-secondary)]">{stats.count}</span> konu
+          <span className="mx-1.5 text-[var(--text-primary)]/15">·</span>
+          <span className="font-semibold text-[var(--text-secondary)]">{stats.total}</span> soru
         </span>
-        <span className="text-white/25">
+        <span className="text-[var(--text-muted)]">
           Enter: yeni satır · Ctrl+V: toplu yapıştır · Sürükle: sırala
         </span>
       </div>

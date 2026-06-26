@@ -77,28 +77,28 @@ export default async function ProgressPage() {
       {/* Başlık */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#4F7CFF]/15 border border-[#4F7CFF]/25 text-[#7AB3FF] text-[10px] font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary-2)]/15 border border-[var(--primary-2)]/25 text-[var(--accent)] text-[10px] font-bold uppercase tracking-widest mb-3">
             <Sparkles className="w-3 h-3" />
             Konu Takip Çizelgesi
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <MapPin className="w-7 h-7 text-[#4F7CFF]" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-3">
+            <MapPin className="w-7 h-7 text-[var(--primary-2)]" />
             Müfredat ve Konu İlerlemem
           </h2>
-          <p className="text-white/40 text-sm mt-1.5">
+          <p className="text-[var(--text-muted)] text-sm mt-1.5">
             Her konunun durumunu güncelle — DORA durumuna göre kaynak önerir.
           </p>
         </div>
 
         {/* Hızlı özet pill */}
         <div className="shrink-0 flex gap-3">
-          <div className="px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-center">
-            <p className="text-white font-black text-xl">{completedTopics}</p>
-            <p className="text-white/30 text-[10px] uppercase tracking-wider">Bitti</p>
+          <div className="px-4 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+            <p className="text-[var(--text-primary)] font-black text-xl">{completedTopics}</p>
+            <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider">Bitti</p>
           </div>
-          <div className="px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-center">
-            <p className="text-white font-black text-xl">{totalTopics}</p>
-            <p className="text-white/30 text-[10px] uppercase tracking-wider">Toplam</p>
+          <div className="px-4 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+            <p className="text-[var(--text-primary)] font-black text-xl">{totalTopics}</p>
+            <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider">Toplam</p>
           </div>
         </div>
       </div>

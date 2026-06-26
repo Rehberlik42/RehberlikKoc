@@ -37,34 +37,34 @@ export default async function ProgramPage() {
       {/* Başlık */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#7B2FFF]/15 border border-[#7B2FFF]/25 text-[#A78BFF] text-[10px] font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/15 border border-[var(--primary)]/25 text-[var(--accent)] text-[10px] font-bold uppercase tracking-widest mb-3">
             <Sparkles className="w-3 h-3" />
             Faz 2 · Aktif Modül
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <CalendarDays className="w-7 h-7 text-[#7B2FFF]" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-3">
+            <CalendarDays className="w-7 h-7 text-[var(--primary)]" />
             Çalışma Programım ve Veri Girişi
           </h2>
-          <p className="text-white/40 text-sm mt-1.5">
+          <p className="text-[var(--text-muted)] text-sm mt-1.5">
             Her çalıştığında veri gir — DORA performansını analiz eder, zayıf
             konularına kaynak önerir.
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <div className="px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-center">
-            <p className="text-white font-black text-xl">{subjects.length}</p>
-            <p className="text-white/30 text-[10px] uppercase tracking-wider">Ders</p>
+          <div className="px-4 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+            <p className="text-[var(--text-primary)] font-black text-xl">{subjects.length}</p>
+            <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider">Ders</p>
           </div>
           <ProgramExportBar />
         </div>
       </div>
 
       {/* İpucu banner */}
-      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-[#4F7CFF]/8 border border-[#4F7CFF]/20 text-white/50 text-xs leading-relaxed">
-        <Sparkles className="w-3.5 h-3.5 text-[#7AB3FF] shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-[var(--primary-2)]/8 border border-[var(--primary-2)]/20 text-[var(--text-secondary)] text-xs leading-relaxed">
+        <Sparkles className="w-3.5 h-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
         <span>
-          <strong className="text-white/70">İpucu:</strong> Dersi seçtikten
+          <strong className="text-[var(--text-secondary)]">İpucu:</strong> Dersi seçtikten
           sonra konu listesi otomatik güncellenir. Neti sistem hesaplar.
           Kaydet butonuna bastığında liste anında yenilenir.
         </span>

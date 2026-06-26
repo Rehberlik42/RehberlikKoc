@@ -43,12 +43,12 @@ export default function PdfExportButton({
       type="button"
       onClick={handleExport}
       disabled={loading}
-      className="pdf-export-hide print-hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#7B2FFF]/20 to-[#4F7CFF]/15 border border-[#7B2FFF]/35 text-white text-sm font-semibold shadow-md shadow-[#7B2FFF]/15 hover:border-[#7B2FFF]/50 hover:shadow-[#7B2FFF]/25 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shrink-0"
+      className="pdf-export-hide print-hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--primary)]/20 to-[var(--primary-2)]/15 border border-[var(--primary)]/35 text-[var(--text-primary)] text-sm font-semibold shadow-md shadow-[var(--primary)]/15 hover:border-[var(--primary)]/50 hover:shadow-[var(--primary)]/25 hover:scale-[1.02] active:scale-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shrink-0"
     >
       {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-[#A78BFF]" />
+        <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
       ) : (
-        <Download className="w-4 h-4 text-[#A78BFF]" />
+        <Download className="w-4 h-4 text-[var(--accent)]" />
       )}
       {loading ? "Hazırlanıyor…" : label}
     </button>

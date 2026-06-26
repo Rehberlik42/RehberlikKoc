@@ -161,10 +161,10 @@ export default async function RecommendationsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
-        <h2 className="text-2xl sm:text-3xl font-black text-white">
+        <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
           DORA&apos;nın Senin İçin Seçtikleri
         </h2>
-        <p className="text-white/40 text-sm mt-1">
+        <p className="text-[var(--text-muted)] text-sm mt-1">
           Son çalışmalarına göre kişiselleştirilmiş kaynak önerileri.
         </p>
       </div>

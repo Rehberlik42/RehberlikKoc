@@ -17,7 +17,7 @@ function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
       ? "bg-[#0d1f0d] border-green-500/30 text-green-400"
       : toast.type === "error"
       ? "bg-[#1f0d0d] border-red-500/30 text-red-400"
-      : "bg-[#0d0d2b] border-[#7B2FFF]/30 text-[#A78BFF]";
+      : "bg-[var(--surface)] border-[var(--primary)]/30 text-[var(--accent)]";
 
   return (
     <div

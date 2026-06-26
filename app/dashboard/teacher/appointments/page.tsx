@@ -66,15 +66,15 @@ export default async function TeacherAppointmentsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#4F7CFF]/15 border border-[#4F7CFF]/25 text-[#7AB3FF] text-[10px] font-bold uppercase tracking-widest">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--primary-2)]/15 border border-[var(--primary-2)]/25 text-[var(--accent)] text-[10px] font-bold uppercase tracking-widest">
             <Sparkles className="w-3 h-3" />
             Trello tarzı koçluk takvimi
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
-            <CalendarCheck className="w-7 h-7 text-[#A78BFF]" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-2">
+            <CalendarCheck className="w-7 h-7 text-[var(--accent)]" />
             Randevu Takvimim
           </h2>
-          <p className="text-white/40 text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             Kartları sürükleyip bırakarak randevuların durumunu güncelleyebilirsin.
             Değişiklikler anında kaydedilir.
           </p>

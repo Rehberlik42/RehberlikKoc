@@ -54,7 +54,7 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
 
   const ctaClass =
     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all " +
-    "bg-white/5 border-white/10 text-white hover:scale-[1.02] active:scale-100";
+    "bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)] hover:scale-[1.02] active:scale-100";
 
   const ctaStyle = {
     borderColor: `${meta.accent}40`,
@@ -62,9 +62,9 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
   } as React.CSSProperties;
 
   return (
-    <article className="group relative rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md overflow-hidden hover:border-white/15 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+    <article className="group relative rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md overflow-hidden hover:border-[var(--border)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
       {/* Kapak */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-[#0d0d2b]">
+      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--surface)]">
         {item.cover_image_url ? (
           <Image
             src={item.cover_image_url}
@@ -79,7 +79,7 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
             style={{ background: fallbackCoverStyle(item.content_type) }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#07070f] via-[#07070f]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/60 to-transparent" />
         <div
           className="absolute top-3 right-3 w-9 h-9 rounded-xl border flex items-center justify-center backdrop-blur-md"
           style={{
@@ -92,7 +92,7 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
           <Icon className="w-4 h-4" />
         </div>
         {exam && (
-          <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white text-[10px] font-bold">
+          <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm border border-[var(--border)] text-[var(--text-primary)] text-[10px] font-bold">
             {exam}
           </span>
         )}
@@ -120,16 +120,16 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
         >
           {meta.label}
         </p>
-        <h3 className="text-white text-base font-bold leading-snug line-clamp-2 group-hover:text-[#A78BFF] transition-colors">
+        <h3 className="text-[var(--text-primary)] text-base font-bold leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors">
           {item.title}
         </h3>
         {item.description && (
-          <p className="text-white/40 text-xs mt-2 leading-relaxed line-clamp-2">
+          <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed line-clamp-2">
             {item.description}
           </p>
         )}
 
-        <div className="mt-4 pt-3 border-t border-white/5">
+        <div className="mt-4 pt-3 border-t border-[var(--border)]">
           {item.content_type === "blog" && (
             <Link
               href={`/dashboard/student/guidance/${item.id}`}

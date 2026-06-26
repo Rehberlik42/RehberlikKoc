@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   // Kullanicinin profilini cek (RLS: profiles_select_own politikasi gerekli)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, full_name, role, avatar_url")
+    .select("id, full_name, role, avatar_url, theme")
     .eq("id", user.id)
     .single();
 

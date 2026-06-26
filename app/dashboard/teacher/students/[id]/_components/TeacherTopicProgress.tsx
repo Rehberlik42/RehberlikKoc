@@ -89,14 +89,14 @@ function SubjectAccordion({
     topics.length === 0 ? 0 : Math.round((completedCount / topics.length) * 100);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/6 transition-all duration-200 hover:border-white/10">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] transition-all duration-200 hover:border-[var(--border)]">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-4 bg-[#0d0d2b]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[#0d0d2b]/90"
+        className="flex w-full items-center gap-4 bg-[var(--surface)]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[var(--surface)]/90"
       >
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)]"
           style={{
             background: subject.color
               ? `${subject.color}22`
@@ -111,22 +111,22 @@ function SubjectAccordion({
         </div>
 
         <div className="min-w-0 flex-1">
-          <span className="text-sm font-semibold text-white">{subject.name}</span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">{subject.name}</span>
           <div className="mt-1.5 flex items-center gap-2">
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/6">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] shadow-[0_0_8px_rgba(123,47,255,0.35)] transition-[width] duration-700 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] shadow-[0_0_8px_rgba(123,47,255,0.35)] transition-[width] duration-700 ease-out"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="shrink-0 text-[10px] font-semibold text-white/30">
+            <span className="shrink-0 text-[10px] font-semibold text-[var(--text-muted)]">
               {completedCount}/{topics.length}
             </span>
           </div>
         </div>
 
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-white/30 transition-transform duration-300 ${
+          className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -137,9 +137,9 @@ function SubjectAccordion({
         style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="divide-y divide-white/3 bg-[#07070f]/40">
+          <div className="divide-y divide-white/3 bg-[var(--bg)]/40">
             {topics.length === 0 ? (
-              <p className="px-5 py-4 text-xs italic text-white/20">
+              <p className="px-5 py-4 text-xs italic text-[var(--text-muted)]">
                 Bu derse ait konu bulunamadı.
               </p>
             ) : (
@@ -231,9 +231,9 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
 
   if (subjects.length === 0) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 p-8 text-center backdrop-blur-md">
-        <BookOpen className="mx-auto mb-3 h-8 w-8 text-white/20" />
-        <p className="text-sm font-semibold text-white/50">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-8 text-center backdrop-blur-md">
+        <BookOpen className="mx-auto mb-3 h-8 w-8 text-[var(--text-muted)]" />
+        <p className="text-sm font-semibold text-[var(--text-secondary)]">
           Müfredat verisi bulunamadı
         </p>
       </div>
@@ -241,30 +241,30 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 backdrop-blur-md">
-      <div className="border-b border-white/5 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md">
+      <div className="border-b border-[var(--border)] px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#7B2FFF]/25 bg-gradient-to-br from-[#7B2FFF]/25 to-[#4F7CFF]/15">
-              <MapPin className="h-4 w-4 text-[#A78BFF]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--primary)]/25 to-[var(--primary-2)]/15">
+              <MapPin className="h-4 w-4 text-[var(--accent)]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Konu İlerlemesi</h3>
-              <p className="text-[11px] text-white/30">
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">Konu İlerlemesi</h3>
+              <p className="text-[11px] text-[var(--text-muted)]">
                 Öğrencinin konu durumunu güncelleyebilirsiniz
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2 text-center">
-              <p className="text-lg font-black text-white">{completedTopics}</p>
-              <p className="text-[10px] uppercase tracking-wider text-white/30">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-center">
+              <p className="text-lg font-black text-[var(--text-primary)]">{completedTopics}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 Bitti
               </p>
             </div>
-            <div className="rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2 text-center">
-              <p className="text-lg font-black text-white">{totalTopics}</p>
-              <p className="text-[10px] uppercase tracking-wider text-white/30">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-center">
+              <p className="text-lg font-black text-[var(--text-primary)]">{totalTopics}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 Toplam
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
           ).map(([key, cfg]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className={cfg.color}>{cfg.icon}</span>
-              <span className="text-xs text-white/30">{cfg.label}</span>
+              <span className="text-xs text-[var(--text-muted)]">{cfg.label}</span>
             </div>
           ))}
         </div>

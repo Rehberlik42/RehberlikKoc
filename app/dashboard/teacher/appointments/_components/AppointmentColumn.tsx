@@ -32,7 +32,7 @@ export default function AppointmentColumn({ column, appointments }: Props) {
       className={`relative flex min-h-[60vh] flex-col rounded-2xl border p-3 backdrop-blur-md transition-all duration-300 ${
         isOver
           ? `${column.ring} ring-2 ring-offset-0 shadow-lg`
-          : "border-white/8 bg-slate-900/40"
+          : "border-[var(--border)] bg-[var(--surface)]/40"
       }`}
       style={
         isOver
@@ -54,10 +54,10 @@ export default function AppointmentColumn({ column, appointments }: Props) {
       />
 
       {/* Header */}
-      <div className="relative mb-3 flex items-center justify-between border-b border-white/5 px-2 pb-3">
+      <div className="relative mb-3 flex items-center justify-between border-b border-[var(--border)] px-2 pb-3">
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-7 w-7 items-center justify-center rounded-lg border bg-white/[0.04] transition-all duration-300 ${column.accent} ${column.ring} ${
+            className={`flex h-7 w-7 items-center justify-center rounded-lg border bg-[var(--surface-2)] transition-all duration-300 ${column.accent} ${column.ring} ${
               isOver ? "scale-110 shadow-lg" : "scale-100"
             }`}
             style={
@@ -88,12 +88,12 @@ export default function AppointmentColumn({ column, appointments }: Props) {
             className={`rounded-xl border border-dashed px-3 py-8 text-center transition-all duration-300 ${
               isOver
                 ? `${column.ring} animate-pulse`
-                : "border-white/8"
+                : "border-[var(--border)]"
             }`}
           >
             <p
               className={`text-xs font-semibold ${
-                isOver ? column.accent : "text-white/30"
+                isOver ? column.accent : "text-[var(--text-muted)]"
               }`}
             >
               {isOver ? "Buraya bırak…" : "Bu kolonda randevu yok"}

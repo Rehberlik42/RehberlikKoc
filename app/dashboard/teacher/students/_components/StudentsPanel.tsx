@@ -62,7 +62,7 @@ function isNewStudent(createdAt: string | null): boolean {
 
 function StudentAvatar({ name }: { name: string | null }) {
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] text-[11px] font-black text-white shadow-sm shadow-[#7B2FFF]/20">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-[11px] font-black text-[var(--text-primary)] shadow-sm shadow-[var(--primary)]/20">
       {initialsFromName(name)}
     </div>
   );
@@ -70,7 +70,7 @@ function StudentAvatar({ name }: { name: string | null }) {
 
 function DateCell({ createdAt }: { createdAt: string | null }) {
   if (!createdAt) {
-    return <span className="text-white/50">—</span>;
+    return <span className="text-[var(--text-secondary)]">—</span>;
   }
 
   const full = new Date(createdAt).toLocaleDateString("tr-TR", {
@@ -81,7 +81,7 @@ function DateCell({ createdAt }: { createdAt: string | null }) {
 
   return (
     <span className="inline-flex items-center gap-2" title={full}>
-      <span className="text-white/50">{formatRelativeTime(createdAt)}</span>
+      <span className="text-[var(--text-secondary)]">{formatRelativeTime(createdAt)}</span>
       {isNewStudent(createdAt) ? (
         <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300">
           Yeni
@@ -113,7 +113,7 @@ export default function StudentsPanel({
       ? "bg-red-500"
       : quotaPercent >= 70
         ? "bg-gradient-to-r from-amber-500 to-amber-400"
-        : "bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF]";
+        : "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)]";
 
   const filteredStudents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -170,10 +170,10 @@ export default function StudentsPanel({
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
             Öğrenci Yönetimi
           </h1>
-          <p className="mt-1 text-sm text-white/40">
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
             Kendi öğrencilerinizi ekleyin ve yönetin.
           </p>
         </div>
@@ -182,17 +182,17 @@ export default function StudentsPanel({
           type="button"
           onClick={openModal}
           disabled={quotaFull}
-          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#7B2FFF]/20 transition-all hover:shadow-[#7B2FFF]/30 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/20 transition-all hover:shadow-[var(--primary)]/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <UserPlus className="h-4 w-4" />
           Yeni Öğrenci Ekle
         </button>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-5">
         <div className="mb-3 flex items-center justify-between gap-4 text-sm">
-          <span className="font-medium text-white/80">Kota Durumu</span>
-          <span className="tabular-nums text-white">
+          <span className="font-medium text-[var(--text-secondary)]">Kota Durumu</span>
+          <span className="tabular-nums text-[var(--text-primary)]">
             {currentCount} / {maxStudents} Öğrenci
           </span>
         </div>
@@ -207,21 +207,21 @@ export default function StudentsPanel({
             Öğrenci kotanız dolmuştur. Lütfen paketinizi yükseltin.
           </p>
         ) : (
-          <p className="mt-2 text-xs text-white/40">
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
             {remainingSlots} kontenjan kaldı
           </p>
         )}
       </div>
 
       {students.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#7B2FFF]/25 bg-gradient-to-br from-white/[0.03] to-[#0d0d2b]/40 px-6 py-14 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/10">
-            <Users className="h-7 w-7 text-[#A78BFF]" />
+        <div className="rounded-2xl border border-dashed border-[var(--primary)]/25 bg-gradient-to-br from-white/[0.03] to-[var(--surface)]/40 px-6 py-14 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+            <Users className="h-7 w-7 text-[var(--accent)]" />
           </div>
-          <p className="text-lg font-semibold text-white/80">
+          <p className="text-lg font-semibold text-[var(--text-secondary)]">
             Henüz öğrenciniz yok
           </p>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-white/40">
+          <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--text-muted)]">
             İlk öğrencinizi ekleyerek çalışma takibi, deneme sonuçları ve
             rehberlik sürecini başlatın.
           </p>
@@ -229,7 +229,7 @@ export default function StudentsPanel({
             type="button"
             onClick={openModal}
             disabled={quotaFull}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#7B2FFF]/20 transition-all hover:shadow-[#7B2FFF]/30 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/20 transition-all hover:shadow-[var(--primary)]/30 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <UserPlus className="h-4 w-4" />
             İlk Öğrenciyi Ekle
@@ -238,39 +238,39 @@ export default function StudentsPanel({
       ) : (
         <>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="İsim veya telefon ara..."
-              className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/30 transition-all focus:border-[#7B2FFF]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all focus:border-[var(--primary)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25"
             />
           </div>
 
           {filteredStudents.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center">
-              <p className="text-sm font-medium text-white/50">
+            <div className="rounded-xl border border-dashed border-[var(--border)] bg-white/[0.02] px-6 py-10 text-center">
+              <p className="text-sm font-medium text-[var(--text-secondary)]">
                 Aramayla eşleşen öğrenci yok
               </p>
-              <p className="mt-1 text-xs text-white/30">
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
                 Farklı bir arama deneyin veya aramayı temizleyin.
               </p>
             </div>
           ) : (
             <>
               {/* Masaüstü tablo */}
-              <div className="hidden overflow-x-auto rounded-xl border border-white/10 md:block">
+              <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] md:block">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.03]">
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                    <tr className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                         Öğrenci
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                         Telefon
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                         Eklenme Tarihi
                       </th>
                     </tr>
@@ -294,17 +294,17 @@ export default function StudentsPanel({
                         }}
                         tabIndex={0}
                         role="link"
-                        className="cursor-pointer transition-colors hover:bg-white/[0.04] focus:bg-white/[0.04] focus:outline-none"
+                        className="cursor-pointer transition-colors hover:bg-[var(--surface-2)] focus:bg-[var(--surface-2)] focus:outline-none"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <StudentAvatar name={student.full_name} />
-                            <span className="font-medium text-white">
+                            <span className="font-medium text-[var(--text-primary)]">
                               {student.full_name ?? "İsimsiz Öğrenci"}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-white/70">
+                        <td className="px-6 py-4 text-[var(--text-secondary)]">
                           {student.phone ?? "—"}
                         </td>
                         <td className="px-6 py-4">
@@ -322,12 +322,12 @@ export default function StudentsPanel({
                   <Link
                     key={student.id}
                     href={`/dashboard/teacher/students/${student.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-[#7B2FFF]/25 hover:bg-white/[0.05]"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 transition-colors hover:border-[var(--primary)]/25 hover:bg-white/[0.05]"
                   >
                     <StudentAvatar name={student.full_name} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate font-semibold text-white">
+                        <p className="truncate font-semibold text-[var(--text-primary)]">
                           {student.full_name ?? "İsimsiz Öğrenci"}
                         </p>
                         {isNewStudent(student.created_at) ? (
@@ -336,12 +336,12 @@ export default function StudentsPanel({
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-white/50">
+                      <p className="mt-0.5 truncate text-xs text-[var(--text-secondary)]">
                         {student.phone ?? "Telefon yok"}
                       </p>
                       {student.created_at ? (
                         <p
-                          className="mt-1 text-[11px] text-white/35"
+                          className="mt-1 text-[11px] text-[var(--text-muted)]"
                           title={new Date(student.created_at).toLocaleDateString(
                             "tr-TR"
                           )}
@@ -350,7 +350,7 @@ export default function StudentsPanel({
                         </p>
                       ) : null}
                     </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
                   </Link>
                 ))}
               </div>
@@ -368,18 +368,18 @@ export default function StudentsPanel({
 
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className="w-full max-w-md animate-in fade-in zoom-in-95 fill-mode-both rounded-xl border border-white/10 bg-[#0f0f23] shadow-2xl duration-200"
+              className="w-full max-w-md animate-in fade-in zoom-in-95 fill-mode-both rounded-xl border border-[var(--border)] bg-[#0f0f23] shadow-2xl duration-200"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-                <h2 className="text-lg font-bold text-white">
+              <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">
                   Yeni Öğrenci Ekle
                 </h2>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={isPending}
-                  className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                  className="rounded-lg p-1 text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)] disabled:opacity-50"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -387,35 +387,35 @@ export default function StudentsPanel({
 
               <form onSubmit={handleSubmit} className="space-y-4 p-6">
                 <div>
-                  <label className="mb-2 flex items-center gap-1.5 text-sm text-white/80">
-                    <User className="h-3.5 w-3.5 text-[#A78BFF]" />
+                  <label className="mb-2 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <User className="h-3.5 w-3.5 text-[var(--accent)]" />
                     Ad Soyad *
                   </label>
                   <input
                     name="full_name"
                     required
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white transition-all focus:border-[#7B2FFF]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)] transition-all focus:border-[var(--primary)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25"
                     placeholder="Öğrenci adı"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 flex items-center gap-1.5 text-sm text-white/80">
-                    <Mail className="h-3.5 w-3.5 text-[#A78BFF]" />
+                  <label className="mb-2 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <Mail className="h-3.5 w-3.5 text-[var(--accent)]" />
                     E-posta *
                   </label>
                   <input
                     name="email"
                     type="email"
                     required
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white transition-all focus:border-[#7B2FFF]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)] transition-all focus:border-[var(--primary)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25"
                     placeholder="ogrenci@ornek.com"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 flex items-center gap-1.5 text-sm text-white/80">
-                    <Lock className="h-3.5 w-3.5 text-[#A78BFF]" />
+                  <label className="mb-2 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <Lock className="h-3.5 w-3.5 text-[var(--accent)]" />
                     Şifre *
                   </label>
                   <input
@@ -423,20 +423,20 @@ export default function StudentsPanel({
                     type="password"
                     minLength={6}
                     required
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white transition-all focus:border-[#7B2FFF]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)] transition-all focus:border-[var(--primary)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25"
                     placeholder="En az 6 karakter"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 flex items-center gap-1.5 text-sm text-white/80">
-                    <Phone className="h-3.5 w-3.5 text-[#A78BFF]" />
+                  <label className="mb-2 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                    <Phone className="h-3.5 w-3.5 text-[var(--accent)]" />
                     Telefon
                   </label>
                   <input
                     name="phone"
                     type="tel"
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white transition-all focus:border-[#7B2FFF]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/25"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)] transition-all focus:border-[var(--primary)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25"
                     placeholder="05XX XXX XX XX"
                   />
                 </div>
@@ -452,14 +452,14 @@ export default function StudentsPanel({
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     disabled={isPending}
-                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50"
+                    className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-[var(--text-secondary)] transition-colors hover:bg-white/10 disabled:opacity-50"
                   >
                     İptal
                   </button>
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-4 py-2 font-medium text-white transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 font-medium text-[var(--text-primary)] transition-all disabled:opacity-50"
                   >
                     {isPending ? (
                       <>

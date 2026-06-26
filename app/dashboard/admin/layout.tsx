@@ -29,7 +29,7 @@ export default async function AdminLayout({
   // ─── Get user profile ─────────────────────────────────────────────────────
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url")
+    .select("id, full_name, avatar_url, theme")
     .eq("id", user.id)
     .single();
 
@@ -42,6 +42,7 @@ export default async function AdminLayout({
     full_name: profile.full_name,
     role: "admin",
     avatar_url: profile.avatar_url,
+    theme: profile.theme,
   };
 
   return (

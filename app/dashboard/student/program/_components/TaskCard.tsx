@@ -96,7 +96,7 @@ export default function TaskCard({
       className={`relative overflow-hidden rounded-xl border p-3 transition-all duration-300 ${
         task.is_completed
           ? "border-green-500/25 bg-green-500/[0.06] opacity-75"
-          : "border-white/8 bg-[#0d0d2b]/80 hover:border-white/12"
+          : "border-[var(--border)] bg-[var(--surface)]/80 hover:border-[var(--ring)]/25"
       } ${animate ? "animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300" : ""}`}
     >
       <div
@@ -116,11 +116,11 @@ export default function TaskCard({
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
             task.is_completed
               ? "border-green-500 bg-green-500 text-white shadow-[0_0_12px_rgba(34,197,94,0.35)]"
-              : "border-white/25 bg-white/[0.04] text-transparent hover:border-[#7B2FFF] hover:bg-[#7B2FFF]/15"
+              : "border-white/25 bg-white/[0.04] text-transparent hover:border-[var(--primary)] hover:bg-[var(--primary)]/15"
           } disabled:opacity-50`}
         >
           {toggling ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-white/60" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-secondary)]" />
           ) : (
             <Check className={`h-3.5 w-3.5 ${task.is_completed ? "text-white" : ""}`} />
           )}
@@ -139,7 +139,7 @@ export default function TaskCard({
               {badge.label}
             </span>
             {linked && task.resource?.name && (
-              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#A78BFF]">
+              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
                 <BookMarked className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">{task.resource.name}</span>
               </span>
@@ -149,15 +149,15 @@ export default function TaskCard({
           <p
             className={`mt-1.5 text-sm font-semibold leading-snug transition-all duration-300 ${
               task.is_completed
-                ? "text-white/55 line-through decoration-green-500/40"
-                : "text-white"
+                ? "text-[var(--text-secondary)] line-through decoration-green-500/40"
+                : "text-[var(--text-primary)]"
             }`}
           >
             {task.title}
           </p>
 
           {linked && task.resourceTopic?.name && (
-            <p className="mt-1 text-[10px] text-[#A78BFF]/70">
+            <p className="mt-1 text-[10px] text-[var(--accent)]/70">
               {task.resourceTopic.name}
             </p>
           )}
@@ -165,7 +165,7 @@ export default function TaskCard({
           {metaParts.length > 0 && (
             <p
               className={`mt-1 text-[11px] ${
-                task.is_completed ? "text-white/30" : "text-white/40"
+                task.is_completed ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"
               }`}
             >
               {metaParts.join(" · ")}
@@ -173,10 +173,10 @@ export default function TaskCard({
           )}
 
           {showSolutionSummary && (
-            <p className="mt-1.5 text-[10px] font-medium text-white/45">
+            <p className="mt-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
               {task.solved_count} soru · {task.correct_count ?? 0}D {task.wrong_count ?? 0}Y
               {task.correct_count != null && task.wrong_count != null && (
-                <span className="text-white/30">
+                <span className="text-[var(--text-muted)]">
                   {" "}
                   · Net {calcTaskNet(task.correct_count, task.wrong_count).toFixed(2)}
                 </span>
@@ -185,16 +185,16 @@ export default function TaskCard({
           )}
 
           {hasTime && task.start_time && task.end_time && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-white/45">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
               <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3 shrink-0 text-[#7AB3FF]" />
+                <Clock className="h-3 w-3 shrink-0 text-[var(--primary-2)]" />
                 {formatTimeTR(task.start_time)} – {formatTimeTR(task.end_time)}
                 {duration != null && (
-                  <span className="text-white/30">· {duration} dk</span>
+                  <span className="text-[var(--text-muted)]">· {duration} dk</span>
                 )}
               </span>
               {task.break_minutes != null && task.break_minutes > 0 && (
-                <span className="rounded-full border border-[#70E6FF]/25 bg-[#70E6FF]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#70E6FF]">
+                <span className="rounded-full border border-[var(--primary-3)]/25 bg-[var(--primary-3)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--primary-3)]">
                   {task.break_minutes} dk mola
                 </span>
               )}
@@ -204,39 +204,39 @@ export default function TaskCard({
       </div>
 
       {entryOpen && !task.is_completed && (
-        <div className="mt-3 border-t border-white/8 pt-3 pl-8 animate-in fade-in slide-in-from-top-1 duration-200">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+        <div className="mt-3 border-t border-[var(--border)] pt-3 pl-8 animate-in fade-in slide-in-from-top-1 duration-200">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Çözüm girişi
           </p>
           <div className="grid grid-cols-3 gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-[9px] text-white/35">Çözülen</span>
+              <span className="text-[9px] text-[var(--text-muted)]">Çözülen</span>
               <input
                 type="number"
                 min={0}
                 value={solved}
                 onChange={(e) => setSolved(e.target.value)}
-                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+                className="w-full rounded-lg border border-[var(--border)] bg-white/[0.04] px-2 py-1.5 text-center text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[9px] text-white/35">Doğru</span>
+              <span className="text-[9px] text-[var(--text-muted)]">Doğru</span>
               <input
                 type="number"
                 min={0}
                 value={correct}
                 onChange={(e) => setCorrect(e.target.value)}
-                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+                className="w-full rounded-lg border border-[var(--border)] bg-white/[0.04] px-2 py-1.5 text-center text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[9px] text-white/35">Yanlış</span>
+              <span className="text-[9px] text-[var(--text-muted)]">Yanlış</span>
               <input
                 type="number"
                 min={0}
                 value={wrong}
                 onChange={(e) => setWrong(e.target.value)}
-                className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B2FFF]/40"
+                className="w-full rounded-lg border border-[var(--border)] bg-white/[0.04] px-2 py-1.5 text-center text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
               />
             </label>
           </div>
@@ -248,7 +248,7 @@ export default function TaskCard({
           )}
 
           {netPreview != null && (
-            <p className="mt-2 text-[10px] text-white/40">
+            <p className="mt-2 text-[10px] text-[var(--text-muted)]">
               Net önizleme:{" "}
               <span
                 className={`font-semibold ${
@@ -265,7 +265,7 @@ export default function TaskCard({
             <button
               type="button"
               onClick={() => setEntryOpen(false)}
-              className="flex-1 rounded-lg border border-white/10 bg-white/[0.04] py-1.5 text-xs font-semibold text-white/50 transition-colors hover:text-white"
+              className="flex-1 rounded-lg border border-[var(--border)] bg-white/[0.04] py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
             >
               Vazgeç
             </button>
@@ -273,7 +273,7 @@ export default function TaskCard({
               type="button"
               onClick={handleSubmitEntry}
               disabled={toggling}
-              className="flex-1 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               Tamamla
             </button>

@@ -181,7 +181,7 @@ function TaskCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border border-white/8 bg-[#0d0d2b]/80 p-3 transition-all duration-200 hover:border-white/12 ${
+      className={`group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]/80 p-3 transition-all duration-200 hover:border-[var(--border)] ${
         task.is_completed ? "opacity-60" : ""
       } ${animate ? "animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300" : ""}`}
     >
@@ -226,7 +226,7 @@ function TaskCard({
         </div>
 
         <p
-          className={`mt-1.5 text-sm font-semibold leading-snug text-white ${
+          className={`mt-1.5 text-sm font-semibold leading-snug text-[var(--text-primary)] ${
             task.is_completed ? "line-through decoration-white/30" : ""
           }`}
         >
@@ -234,20 +234,20 @@ function TaskCard({
         </p>
 
         {metaParts.length > 0 && (
-          <p className="mt-1 text-[11px] text-white/40">{metaParts.join(" · ")}</p>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">{metaParts.join(" · ")}</p>
         )}
 
         {hasTime && task.start_time && task.end_time && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-white/45">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
             <span className="inline-flex items-center gap-1">
-              <Clock className="h-3 w-3 shrink-0 text-[#7AB3FF]" />
+              <Clock className="h-3 w-3 shrink-0 text-[var(--accent)]" />
               {formatTimeTR(task.start_time)} – {formatTimeTR(task.end_time)}
               {duration != null && (
-                <span className="text-white/30">· {duration} dk</span>
+                <span className="text-[var(--text-muted)]">· {duration} dk</span>
               )}
             </span>
             {task.break_minutes != null && task.break_minutes > 0 && (
-              <span className="rounded-full border border-[#70E6FF]/25 bg-[#70E6FF]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#70E6FF]">
+              <span className="rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
                 {task.break_minutes} dk mola
               </span>
             )}
@@ -422,16 +422,16 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
         />
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/50">
-        <div className="border-b border-white/5 px-4 py-4 sm:px-6">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
+        <div className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#4F7CFF]/20 bg-gradient-to-br from-[#4F7CFF]/30 to-[#00D4FF]/20">
-                <Calendar className="h-4 w-4 text-[#7AB3FF]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary-2)]/20 bg-gradient-to-br from-[var(--primary-2)]/30 to-[var(--primary-3)]/20">
+                <Calendar className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Haftalık Program</h3>
-                <p className="text-[11px] text-white/30">
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">Haftalık Program</h3>
+                <p className="text-[11px] text-[var(--text-muted)]">
                   {tasks.length > 0 ? `${tasks.length} görev bu hafta` : "Bu hafta görev yok"}
                 </p>
               </div>
@@ -441,18 +441,18 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
               <button
                 type="button"
                 onClick={goToPrevWeek}
-                className="rounded-lg border border-white/8 bg-white/[0.04] p-2 text-white/50 transition-colors hover:border-[#7B2FFF]/30 hover:text-white"
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
                 aria-label="Önceki hafta"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="min-w-[10rem] text-center text-sm font-semibold text-white sm:min-w-[12rem]">
+              <span className="min-w-[10rem] text-center text-sm font-semibold text-[var(--text-primary)] sm:min-w-[12rem]">
                 {formatWeekRange(weekStart)}
               </span>
               <button
                 type="button"
                 onClick={goToNextWeek}
-                className="rounded-lg border border-white/8 bg-white/[0.04] p-2 text-white/50 transition-colors hover:border-[#7B2FFF]/30 hover:text-white"
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
                 aria-label="Sonraki hafta"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -460,7 +460,7 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
               <button
                 type="button"
                 onClick={goToThisWeek}
-                className="rounded-lg border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-3 py-2 text-xs font-semibold text-[#A78BFF] transition-colors hover:bg-[#7B2FFF]/20"
+                className="rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
               >
                 Bu Hafta
               </button>
@@ -470,7 +470,7 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
 
         <div className="p-4">
           {tasksLoading ? (
-            <div className="flex items-center justify-center py-16 text-white/30">
+            <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : (
@@ -485,30 +485,30 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                     key={dateStr}
                     className={`flex min-h-[8rem] flex-col rounded-xl border p-2.5 transition-colors duration-300 ${
                       todayCol
-                        ? "border-[#7B2FFF]/30 bg-[#7B2FFF]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
-                        : "border-white/6 bg-white/[0.02]"
+                        ? "border-[var(--primary)]/30 bg-[var(--primary)]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
+                        : "border-[var(--border)] bg-white/[0.02]"
                     }`}
                   >
-                    <div className="mb-2 border-b border-white/5 pb-2">
+                    <div className="mb-2 border-b border-[var(--border)] pb-2">
                       <p
                         className={`text-xs font-bold ${
-                          todayCol ? "text-[#A78BFF]" : "text-white/70"
+                          todayCol ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"
                         }`}
                       >
                         {DAY_LABELS_FULL[colIndex]}
                       </p>
-                      <p className="text-[10px] text-white/35">
+                      <p className="text-[10px] text-[var(--text-muted)]">
                         {formatColumnDate(day)}
                         {todayCol && (
-                          <span className="ml-1.5 text-[#7B2FFF]">· Bugün</span>
+                          <span className="ml-1.5 text-[var(--primary)]">· Bugün</span>
                         )}
                       </p>
                     </div>
 
                     <div className="flex flex-1 flex-col gap-2">
                       {dayTasks.length === 0 ? (
-                        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-white/8 px-2 py-6">
-                          <p className="text-center text-[10px] text-white/25">görev yok</p>
+                        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--border)] px-2 py-6">
+                          <p className="text-center text-[10px] text-[var(--text-muted)]">görev yok</p>
                         </div>
                       ) : (
                         dayTasks.map((task) => (
@@ -526,7 +526,7 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                     <button
                       type="button"
                       onClick={() => openAddModal(day, colIndex)}
-                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/10 py-2 text-[11px] font-semibold text-white/30 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#7B2FFF]/40 hover:bg-[#7B2FFF]/[0.06] hover:text-[#A78BFF]"
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--border)] py-2 text-[11px] font-semibold text-[var(--text-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)]/40 hover:bg-[var(--primary)]/[0.06] hover:text-[var(--accent)]"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Görev Ekle
@@ -537,7 +537,7 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-white/5 pt-4 text-[10px] text-white/40">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] text-[var(--text-muted)]">
             {(Object.entries(TASK_TYPE_BADGE) as [TaskType, { label: string; color: string }][]).map(
               ([type, { label, color }]) => (
                 <span key={type} className="inline-flex items-center gap-1.5">

@@ -5,7 +5,7 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-semibold text-white">
+        <strong key={i} className="font-semibold text-[var(--text-primary)]">
           {part.slice(2, -2)}
         </strong>
       );
@@ -34,7 +34,7 @@ export default function BlogBody({ body }: { body: string }) {
     blocks.push(
       <ul
         key={key++}
-        className={`my-5 list-outside list-disc space-y-2.5 pl-5 text-base leading-loose text-white/80 marker:text-[#A78BFF]/70 ${BLOCK_ANIM}`}
+        className={`my-5 list-outside list-disc space-y-2.5 pl-5 text-base leading-loose text-[var(--text-secondary)] marker:text-[var(--accent)]/70 ${BLOCK_ANIM}`}
         style={blockDelay(idx)}
       >
         {listItems.map((li, i) => (
@@ -59,7 +59,7 @@ export default function BlogBody({ body }: { body: string }) {
       blocks.push(
         <h3
           key={key++}
-          className={`mb-3 mt-9 text-lg font-bold tracking-tight text-white first:mt-0 ${BLOCK_ANIM}`}
+          className={`mb-3 mt-9 text-lg font-bold tracking-tight text-[var(--text-primary)] first:mt-0 ${BLOCK_ANIM}`}
           style={blockDelay(idx)}
         >
           {trimmed.slice(4)}
@@ -73,7 +73,7 @@ export default function BlogBody({ body }: { body: string }) {
       blocks.push(
         <h2
           key={key++}
-          className={`mb-4 mt-11 border-b border-white/10 pb-2.5 text-xl font-black tracking-tight text-white first:mt-0 sm:text-2xl ${BLOCK_ANIM}`}
+          className={`mb-4 mt-11 border-b border-[var(--border)] pb-2.5 text-xl font-black tracking-tight text-[var(--text-primary)] first:mt-0 sm:text-2xl ${BLOCK_ANIM}`}
           style={blockDelay(idx)}
         >
           {trimmed.slice(3)}
@@ -87,7 +87,7 @@ export default function BlogBody({ body }: { body: string }) {
       blocks.push(
         <blockquote
           key={key++}
-          className={`my-6 rounded-r-xl border-l-[3px] border-[#7B2FFF]/55 bg-[#7B2FFF]/[0.06] py-3 pl-5 pr-4 text-base leading-relaxed text-[#A78BFF]/95 ${BLOCK_ANIM}`}
+          className={`my-6 rounded-r-xl border-l-[3px] border-[var(--primary)]/55 bg-[var(--primary)]/[0.06] py-3 pl-5 pr-4 text-base leading-relaxed text-[var(--accent)]/95 ${BLOCK_ANIM}`}
           style={blockDelay(idx)}
         >
           <span className="italic">{renderInline(trimmed.slice(2))}</span>
@@ -104,7 +104,7 @@ export default function BlogBody({ body }: { body: string }) {
     blocks.push(
       <p
         key={key++}
-        className={`my-4 text-base leading-loose text-white/80 ${BLOCK_ANIM}`}
+        className={`my-4 text-base leading-loose text-[var(--text-secondary)] ${BLOCK_ANIM}`}
         style={blockDelay(idx)}
       >
         {renderInline(trimmed)}

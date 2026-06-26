@@ -59,9 +59,9 @@ export default function ContentTable({
           onClick={handleOpenAddModal}
           className="
             inline-flex items-center gap-2 px-4 py-2 
-            bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] 
-            text-white text-sm font-semibold rounded-lg
-            hover:shadow-lg hover:shadow-[#7B2FFF]/30
+            bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] 
+            text-[var(--text-primary)] text-sm font-semibold rounded-lg
+            hover:shadow-lg hover:shadow-[var(--primary)]/30
             transition-all duration-200
           "
         >
@@ -71,26 +71,26 @@ export default function ContentTable({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 bg-white/3">
-              <th className="px-6 py-3 text-left font-semibold text-white/60 text-xs uppercase tracking-wider">
+            <tr className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+              <th className="px-6 py-3 text-left font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 Kapak Görseli
               </th>
-              <th className="px-6 py-3 text-left font-semibold text-white/60 text-xs uppercase tracking-wider">
+              <th className="px-6 py-3 text-left font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 Başlık
               </th>
-              <th className="px-6 py-3 text-left font-semibold text-white/60 text-xs uppercase tracking-wider">
+              <th className="px-6 py-3 text-left font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 Tür
               </th>
-              <th className="px-6 py-3 text-left font-semibold text-white/60 text-xs uppercase tracking-wider">
+              <th className="px-6 py-3 text-left font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 Hedef Sınav
               </th>
-              <th className="px-6 py-3 text-left font-semibold text-white/60 text-xs uppercase tracking-wider">
+              <th className="px-6 py-3 text-left font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 Oluşturma Tarihi
               </th>
-              <th className="px-6 py-3 text-right font-semibold text-white/60 text-xs uppercase tracking-wider">
+              <th className="px-6 py-3 text-right font-semibold text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 İşlemler
               </th>
             </tr>
@@ -99,7 +99,7 @@ export default function ContentTable({
             {contents.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center">
-                  <p className="text-white/40">
+                  <p className="text-[var(--text-muted)]">
                     Henüz içerik eklenmemiş. İlk içeriği eklemek için buton
                     kullanın.
                   </p>
@@ -112,7 +112,7 @@ export default function ContentTable({
                 return (
                   <tr
                     key={content.id}
-                    className="hover:bg-white/3 transition-colors"
+                    className="hover:bg-[var(--surface-2)] transition-colors"
                   >
                     {/* Cover Image */}
                     <td className="px-6 py-4">
@@ -136,7 +136,7 @@ export default function ContentTable({
 
                     {/* Title */}
                     <td className="px-6 py-4">
-                      <p className="text-white font-medium truncate max-w-xs">
+                      <p className="text-[var(--text-primary)] font-medium truncate max-w-xs">
                         {content.title}
                       </p>
                     </td>
@@ -158,17 +158,17 @@ export default function ContentTable({
                     {/* Target Exam */}
                     <td className="px-6 py-4">
                       {examLabel ? (
-                        <span className="text-white/70 text-xs font-medium">
+                        <span className="text-[var(--text-secondary)] text-xs font-medium">
                           {examLabel}
                         </span>
                       ) : (
-                        <span className="text-white/30 text-xs">-</span>
+                        <span className="text-[var(--text-muted)] text-xs">-</span>
                       )}
                     </td>
 
                     {/* Created Date */}
                     <td className="px-6 py-4">
-                      <span className="text-white/50 text-xs">
+                      <span className="text-[var(--text-secondary)] text-xs">
                         {new Date(content.created_at).toLocaleDateString(
                           "tr-TR",
                           {
@@ -187,7 +187,7 @@ export default function ContentTable({
                           onClick={() => handleOpenEditModal(content)}
                           title="Düzenle"
                           className="
-                            p-2 rounded-lg text-[#4F7CFF] hover:bg-[#4F7CFF]/10
+                            p-2 rounded-lg text-[var(--primary-2)] hover:bg-[var(--primary-2)]/10
                             transition-colors
                           "
                         >

@@ -30,9 +30,9 @@ function useAnimatedNumber(target: number, active: boolean, duration = 600) {
 }
 
 const ACCENT_GLOW: Record<string, string> = {
-  "text-[#A78BFF]": "group-hover:shadow-[0_0_14px_rgba(167,139,255,0.35)]",
-  "text-[#7AB3FF]": "group-hover:shadow-[0_0_14px_rgba(122,179,255,0.35)]",
-  "text-[#70E6FF]": "group-hover:shadow-[0_0_14px_rgba(112,230,255,0.35)]",
+  "text-[var(--accent)]": "group-hover:shadow-[0_0_14px_rgba(167,139,255,0.35)]",
+  "text-[var(--primary-2)]": "group-hover:shadow-[0_0_14px_rgba(122,179,255,0.35)]",
+  "text-[var(--primary-3)]": "group-hover:shadow-[0_0_14px_rgba(112,230,255,0.35)]",
 };
 
 export default function MetricCard({
@@ -51,18 +51,18 @@ export default function MetricCard({
   const glowClass = ACCENT_GLOW[accent] ?? "group-hover:shadow-[0_0_14px_rgba(123,47,255,0.25)]";
 
   return (
-    <div className="group rounded-2xl border border-white/8 bg-slate-900/50 p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/12 hover:shadow-lg hover:shadow-black/20">
+    <div className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--border)] hover:shadow-lg hover:shadow-black/20">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
           {label}
         </p>
         <div
-          className={`flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] transition-shadow duration-300 ${accent} ${glowClass}`}
+          className={`flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] transition-shadow duration-300 ${accent} ${glowClass}`}
         >
           {icon}
         </div>
       </div>
-      <p className="text-3xl font-black tabular-nums text-white">
+      <p className="text-3xl font-black tabular-nums text-[var(--text-primary)]">
         {isNumber ? Math.round(animated) : value}
       </p>
     </div>

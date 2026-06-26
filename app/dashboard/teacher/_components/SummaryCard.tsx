@@ -57,7 +57,7 @@ export default function SummaryCard({
   return (
     <Link
       href={href}
-      className="group relative block animate-in fade-in fill-mode-both overflow-hidden rounded-2xl border border-white/8 bg-slate-900/50 p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15"
+      className="group relative block animate-in fade-in fill-mode-both overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--border)]"
     >
       <div
         className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-60 blur-[50px] transition-opacity duration-500 group-hover:opacity-100"
@@ -66,23 +66,23 @@ export default function SummaryCard({
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             {label}
           </p>
-          <p className="text-3xl font-black tabular-nums text-white">
+          <p className="text-3xl font-black tabular-nums text-[var(--text-primary)]">
             {displayValue}
           </p>
-          <p className="mt-1 text-xs text-white/30">{sub}</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">{sub}</p>
         </div>
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] ${accent}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] ${accent}`}
         >
           {icon}
         </div>
       </div>
 
-      <div className="relative mt-4 flex items-center justify-between border-t border-white/5 pt-4 text-xs">
-        <span className="font-medium text-white/40">{ctaLabel}</span>
+      <div className="relative mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4 text-xs">
+        <span className="font-medium text-[var(--text-muted)]">{ctaLabel}</span>
         <ArrowRight
           className={`h-3.5 w-3.5 ${accent} transition-transform group-hover:translate-x-0.5`}
         />

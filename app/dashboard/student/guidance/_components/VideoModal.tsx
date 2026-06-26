@@ -46,12 +46,12 @@ export default function VideoModal({ item, onClose }: Props) {
         className="absolute inset-0 animate-in fade-in duration-300 bg-black/90 backdrop-blur-md"
       />
 
-      <div className="relative w-full max-w-5xl animate-in fade-in zoom-in-95 fill-mode-both overflow-hidden rounded-2xl border border-[#7B2FFF]/20 bg-[#07070f] shadow-2xl shadow-[#7B2FFF]/25 duration-300">
+      <div className="relative w-full max-w-5xl animate-in fade-in zoom-in-95 fill-mode-both overflow-hidden rounded-2xl border border-[var(--primary)]/20 bg-[var(--bg)] shadow-2xl shadow-[var(--primary)]/25 duration-300">
         {/* Minimal başlık */}
-        <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#0d0d2b]/80 px-3 py-2.5 sm:px-4">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)]/80 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <PlayCircle className="h-4 w-4 shrink-0 text-red-400" />
-            <p className="truncate text-sm font-semibold text-white/90">
+            <p className="truncate text-sm font-semibold text-[var(--text-secondary)]">
               {item.title}
             </p>
           </div>
@@ -59,7 +59,7 @@ export default function VideoModal({ item, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Videoyu kapat"
-            className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="shrink-0 rounded-lg p-2 text-[var(--text-secondary)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -78,8 +78,8 @@ export default function VideoModal({ item, onClose }: Props) {
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-                <PlayCircle className="h-10 w-10 text-white/20" />
-                <p className="text-sm text-white/45">
+                <PlayCircle className="h-10 w-10 text-[var(--text-muted)]" />
+                <p className="text-sm text-[var(--text-muted)]">
                   Video bağlantısı bulunamadı.
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default function VideoModal({ item, onClose }: Props) {
         </div>
 
         {item.description && (
-          <p className="border-t border-white/[0.06] px-4 py-2.5 text-xs leading-relaxed text-white/45 sm:text-sm">
+          <p className="border-t border-[var(--border)] px-4 py-2.5 text-xs leading-relaxed text-[var(--text-muted)] sm:text-sm">
             {item.description}
           </p>
         )}

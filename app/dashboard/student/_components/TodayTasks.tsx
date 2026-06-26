@@ -57,10 +57,10 @@ function DailyProgressRing({
   const offset = circ * (1 - pct / 100);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-[#0d0d2b]/60 p-6">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#7B2FFF]/10 blur-[50px]" />
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)]/60 p-6">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--primary)]/10 blur-[50px]" />
 
-      <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-white/40">
+      <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
         Günlük İlerleme
       </p>
 
@@ -69,9 +69,9 @@ function DailyProgressRing({
           <svg width="140" height="140" viewBox="0 0 130 130" className="-rotate-90">
             <defs>
               <linearGradient id="todayRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7B2FFF" />
-                <stop offset="50%" stopColor="#4F7CFF" />
-                <stop offset="100%" stopColor="#00D4FF" />
+                <stop offset="0%" stopColor="var(--primary)" />
+                <stop offset="50%" stopColor="var(--primary-2)" />
+                <stop offset="100%" stopColor="var(--primary-3)" />
               </linearGradient>
             </defs>
             <circle
@@ -100,7 +100,7 @@ function DailyProgressRing({
               className={`text-3xl font-black ${
                 allDone
                   ? "text-green-400"
-                  : "bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] bg-clip-text text-transparent"
+                  : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] bg-clip-text text-transparent"
               }`}
             >
               %{displayPct}
@@ -108,10 +108,10 @@ function DailyProgressRing({
           </div>
         </div>
 
-        <p className="mt-4 text-center text-sm text-white/50">
-          <span className="font-bold text-white">{completed}</span>
-          <span className="text-white/30"> / </span>
-          <span className="font-bold text-white">{total}</span>
+        <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
+          <span className="font-bold text-[var(--text-primary)]">{completed}</span>
+          <span className="text-[var(--text-muted)]"> / </span>
+          <span className="font-bold text-[var(--text-primary)]">{total}</span>
           {" "}görev tamamlandı
         </p>
       </div>
@@ -121,40 +121,40 @@ function DailyProgressRing({
 
 function TodayGoalCard({ total }: { total: number }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-[#0d0d2b]/60 p-6">
-      <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-[#4F7CFF]/10 blur-[40px]" />
-      <p className="text-xs font-semibold uppercase tracking-widest text-white/40">
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)]/60 p-6">
+      <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-[var(--primary-2)]/10 blur-[40px]" />
+      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
         Bugünkü Hedefin
       </p>
       <div className="relative mt-4 flex items-end gap-2">
-        <span className="bg-gradient-to-r from-[#7B2FFF] via-[#4F7CFF] to-[#00D4FF] bg-clip-text text-5xl font-black text-transparent">
+        <span className="bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] bg-clip-text text-5xl font-black text-transparent">
           {total}
         </span>
-        <span className="mb-2 text-lg font-semibold text-white/50">görev</span>
+        <span className="mb-2 text-lg font-semibold text-[var(--text-secondary)]">görev</span>
       </div>
-      <p className="mt-2 text-sm text-white/35">Planla, odaklan, ilerle!</p>
+      <p className="mt-2 text-sm text-[var(--text-muted)]">Planla, odaklan, ilerle!</p>
     </div>
   );
 }
 
 function MotivationCard() {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-[#7B2FFF]/25 bg-gradient-to-br from-[#0d0d2b]/80 to-[#07070f]/80 p-6">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#7B2FFF]/15 blur-[50px]" />
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--primary)]/25 bg-gradient-to-br from-[var(--surface)]/80 to-[var(--bg)]/80 p-6">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[var(--primary)]/15 blur-[50px]" />
       <div className="relative flex gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#7B2FFF]/30 bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20">
-          <Flag className="h-5 w-5 text-[#A78BFF]" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/30 bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-2)]/20">
+          <Flag className="h-5 w-5 text-[var(--accent)]" />
         </div>
         <div className="min-w-0">
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#A78BFF]">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[var(--accent)]">
             <Sparkles className="h-3 w-3" />
             DORA
           </div>
-          <blockquote className="text-sm font-semibold leading-relaxed text-white/80">
+          <blockquote className="text-sm font-semibold leading-relaxed text-[var(--text-secondary)]">
             &ldquo;Başarıya giden yol, bugün attığın adımlarda gizlidir. Her tamamladığın görev,
             hedefine bir adım daha yaklaşmanı sağlar.&rdquo;
           </blockquote>
-          <p className="mt-2 text-[11px] text-white/30">– DORA</p>
+          <p className="mt-2 text-[11px] text-[var(--text-muted)]">– DORA</p>
         </div>
       </div>
     </div>
@@ -248,24 +248,24 @@ export default function TodayTasks({
         {/* Sol kolon */}
         <div className="space-y-5 lg:col-span-2">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#7B2FFF]/20 bg-gradient-to-br from-[#7B2FFF]/25 to-[#4F7CFF]/15">
-              <Calendar className="h-4 w-4 text-[#A78BFF]" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/20 bg-gradient-to-br from-[var(--primary)]/25 to-[var(--primary-2)]/15">
+              <Calendar className="h-4 w-4 text-[var(--accent)]" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">
                 Bugün · {todayDayName}
               </h3>
-              <p className="text-sm text-white/35">{todayDateLong}</p>
+              <p className="text-sm text-[var(--text-muted)]">{todayDateLong}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             {tasks.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-12 text-center">
-                <p className="text-sm text-white/40">Bugün için planlanmış görev yok</p>
+              <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-12 text-center">
+                <p className="text-sm text-[var(--text-muted)]">Bugün için planlanmış görev yok</p>
                 <Link
                   href="/dashboard/student/program"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#A78BFF] transition-colors hover:text-[#C4B5FF]"
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent)]"
                 >
                   Haftalık Programa Git
                   <ArrowRight className="h-4 w-4" />
@@ -285,7 +285,7 @@ export default function TodayTasks({
           </div>
 
           {tasks.length > 0 && (
-            <div className="flex flex-wrap items-center gap-4 border-t border-white/5 pt-4 text-[10px] text-white/40">
+            <div className="flex flex-wrap items-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] text-[var(--text-muted)]">
               {(Object.entries(TASK_TYPE_BADGE) as [TaskType, { label: string; color: string }][]).map(
                 ([type, { label, color }]) => (
                   <span key={type} className="inline-flex items-center gap-1.5">
@@ -302,7 +302,7 @@ export default function TodayTasks({
 
           <Link
             href="/dashboard/student/program"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-4 py-2.5 text-sm font-semibold text-[#A78BFF] transition-colors hover:bg-[#7B2FFF]/20"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
           >
             Haftalık Programı Gör
             <ArrowRight className="h-4 w-4" />

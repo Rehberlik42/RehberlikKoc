@@ -1,2 +1,2 @@
-/** PDF yakalama arka plani — dark tema kaymasini onler */
-export const PDF_EXPORT_BG = "#0f172a";
+/** PDF yakalama arka planı — açık/beyaz, modern rapor görünümü */
+export const PDF_EXPORT_BG = "#FFFFFF";

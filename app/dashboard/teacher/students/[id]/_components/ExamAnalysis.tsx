@@ -101,7 +101,7 @@ function SuccessRing({
         </defs>
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[11px] font-black tabular-nums text-white">
+        <span className="text-[11px] font-black tabular-nums text-[var(--text-primary)]">
           %{pct}
         </span>
       </div>
@@ -119,7 +119,7 @@ function FilterButtonGroup<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-xl border border-white/8 bg-white/[0.03] p-1">
+    <div className="flex flex-wrap gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-1">
       {options.map((opt) => {
         const active = opt.id === value;
         return (
@@ -129,8 +129,8 @@ function FilterButtonGroup<T extends string | number>({
             onClick={() => onChange(opt.id)}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               active
-                ? "bg-[#7B2FFF]/20 text-white shadow-[0_0_12px_rgba(123,47,255,0.2)]"
-                : "text-white/40 hover:text-white/70"
+                ? "bg-[var(--primary)]/20 text-[var(--text-primary)] shadow-[0_0_12px_rgba(123,47,255,0.2)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             }`}
           >
             {opt.label}
@@ -144,12 +144,12 @@ function FilterButtonGroup<T extends string | number>({
 function ExamGroupBadge({ group }: { group: string }) {
   const styles =
     group === "TYT"
-      ? "border-[#4F7CFF]/30 bg-[#4F7CFF]/15 text-[#7AB3FF]"
+      ? "border-[var(--primary-2)]/30 bg-[var(--primary-2)]/15 text-[var(--accent)]"
       : group === "AYT"
-        ? "border-[#7B2FFF]/30 bg-[#7B2FFF]/15 text-[#A78BFF]"
+        ? "border-[var(--primary)]/30 bg-[var(--primary)]/15 text-[var(--accent)]"
         : group === "LGS"
           ? "border-green-500/30 bg-green-500/15 text-green-400"
-          : "border-white/10 bg-white/5 text-white/50";
+          : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]";
 
   return (
     <span
@@ -249,29 +249,29 @@ export default function ExamAnalysis({
           <button
             type="button"
             onClick={() => setSelectedSubject(null)}
-            className="font-semibold text-[#A78BFF] transition-colors hover:text-white"
+            className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)]"
           >
             ← Deneme Analizi
           </button>
-          <span className="text-white/25">/</span>
-          <span className="font-semibold text-white">{selectedSubject.name}</span>
+          <span className="text-[var(--text-muted)]">/</span>
+          <span className="font-semibold text-[var(--text-primary)]">{selectedSubject.name}</span>
           {selectedSubject.examGroup && (
-            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/50">
+            <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--text-secondary)]">
               {selectedSubject.examGroup}
             </span>
           )}
         </nav>
       )}
 
-      <div className="rounded-2xl border border-white/8 bg-[#0d0d2b]/60 p-4 sm:p-5">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#7B2FFF]/25 bg-[#7B2FFF]/15">
-              <BarChart3 className="h-4 w-4 text-[#A78BFF]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/15">
+              <BarChart3 className="h-4 w-4 text-[var(--accent)]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Deneme Analizi</h3>
-              <p className="text-[11px] text-white/35">
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">Deneme Analizi</h3>
+              <p className="text-[11px] text-[var(--text-muted)]">
                 {selectedSubject
                   ? "Konu bazlı hata performansı"
                   : "Ders bazlı net ortalaması ve başarı oranı"}
@@ -282,7 +282,7 @@ export default function ExamAnalysis({
             <button
               type="button"
               onClick={() => setAddExamOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all hover:scale-[1.02] hover:shadow-[#7B2FFF]/40"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all hover:scale-[1.02] hover:shadow-[var(--primary)]/40"
             >
               <Plus className="h-3.5 w-3.5" />
               Deneme Ekle
@@ -292,7 +292,7 @@ export default function ExamAnalysis({
 
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               Sınav Türü
             </p>
             <FilterButtonGroup
@@ -302,7 +302,7 @@ export default function ExamAnalysis({
             />
           </div>
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               Kapsam
             </p>
             <FilterButtonGroup
@@ -336,12 +336,12 @@ export default function ExamAnalysis({
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     {item.label}
                   </p>
-                  <p className="mt-1 text-lg font-black text-white">
+                  <p className="mt-1 text-lg font-black text-[var(--text-primary)]">
                     {item.value}
                   </p>
                 </div>
@@ -350,18 +350,18 @@ export default function ExamAnalysis({
           )}
 
           {filteredExams.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
-              <BarChart3 className="mx-auto h-10 w-10 text-white/15" />
-              <p className="mt-4 text-sm text-white/40">
+            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-14 text-center">
+              <BarChart3 className="mx-auto h-10 w-10 text-[var(--text-primary)]/15" />
+              <p className="mt-4 text-sm text-[var(--text-muted)]">
                 Bu kriterlerde deneme yok
               </p>
-              <p className="mt-1 text-xs text-white/25">
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
                 Farklı sınav türü veya deneme aralığı seçmeyi deneyin
               </p>
             </div>
           ) : subjectRows.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d0d2b]/40 px-6 py-14 text-center">
-              <p className="text-sm text-white/40">
+            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-14 text-center">
+              <p className="text-sm text-[var(--text-muted)]">
                 Seçili denemelerde ders sonucu bulunamadı
               </p>
             </div>
@@ -379,7 +379,7 @@ export default function ExamAnalysis({
                     key={row.subjectId}
                     type="button"
                     onClick={() => openSubjectDetail(row)}
-                    className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both w-full rounded-2xl border border-white/8 bg-[#0d0d2b]/60 px-4 py-3.5 text-left transition-all duration-300 hover:border-[#7B2FFF]/35 hover:shadow-[0_0_20px_rgba(123,47,255,0.12)]"
+                    className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3.5 text-left transition-all duration-300 hover:border-[var(--primary)]/35 hover:shadow-[0_0_20px_rgba(123,47,255,0.12)]"
                     style={{ animationDelay: `${Math.min(idx * 40, 240)}ms` }}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
@@ -389,7 +389,7 @@ export default function ExamAnalysis({
                             className="h-4 w-1 shrink-0 rounded-full"
                             style={{ background: barColor }}
                           />
-                          <p className="truncate text-sm font-semibold text-white">
+                          <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                             {row.subjectName}
                           </p>
                           {row.examGroup && (
@@ -397,20 +397,20 @@ export default function ExamAnalysis({
                           )}
                         </div>
                         {row.topicCount > 0 && (
-                          <p className="mt-0.5 pl-3 text-[11px] text-white/35">
+                          <p className="mt-0.5 pl-3 text-[11px] text-[var(--text-muted)]">
                             {row.topicCount} konu
                           </p>
                         )}
                       </div>
 
                       <div className="hidden min-w-0 flex-[1.4] sm:block">
-                        <p className="text-[11px] text-white/45">
+                        <p className="text-[11px] text-[var(--text-muted)]">
                           Net Ortalaması{" "}
-                          <span className="font-bold text-white">
+                          <span className="font-bold text-[var(--text-primary)]">
                             {row.avgNet.toFixed(1)}
                           </span>
-                          <span className="text-white/25"> / </span>
-                          <span className="text-white/60">
+                          <span className="text-[var(--text-muted)]"> / </span>
+                          <span className="text-[var(--text-secondary)]">
                             {row.avgTotalQuestions.toFixed(0)}
                           </span>
                         </p>
@@ -423,7 +423,7 @@ export default function ExamAnalysis({
                             }}
                           />
                         </div>
-                        <p className="mt-1 text-[10px] text-white/30">
+                        <p className="mt-1 text-[10px] text-[var(--text-muted)]">
                           {row.examCount} deneme ortalaması
                         </p>
                       </div>
@@ -434,17 +434,17 @@ export default function ExamAnalysis({
                         ringId={String(row.subjectId)}
                       />
 
-                      <ChevronRight className="hidden h-4 w-4 shrink-0 text-white/30 sm:block" />
+                      <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--text-muted)] sm:block" />
                     </div>
 
                     <div className="mt-3 sm:hidden">
-                      <p className="text-[11px] text-white/45">
+                      <p className="text-[11px] text-[var(--text-muted)]">
                         Net Ortalaması{" "}
-                        <span className="font-bold text-white">
+                        <span className="font-bold text-[var(--text-primary)]">
                           {row.avgNet.toFixed(1)}
                         </span>
-                        <span className="text-white/25"> / </span>
-                        <span className="text-white/60">
+                        <span className="text-[var(--text-muted)]"> / </span>
+                        <span className="text-[var(--text-secondary)]">
                           {row.avgTotalQuestions.toFixed(0)}
                         </span>
                       </p>
@@ -464,7 +464,7 @@ export default function ExamAnalysis({
             </div>
           )}
 
-          <p className="text-center text-[11px] text-white/25">
+          <p className="text-center text-[11px] text-[var(--text-muted)]">
             Net ortalamaları {lastNLabel.toLowerCase()} denemeye göre
             hesaplanmıştır.
           </p>

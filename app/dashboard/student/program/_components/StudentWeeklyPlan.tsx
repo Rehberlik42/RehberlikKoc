@@ -154,18 +154,18 @@ export default function StudentWeeklyPlan() {
           },
         }}
       />
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0d0d2b]/50">
-        <div className="border-b border-white/5 px-4 py-4 sm:px-6">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
+        <div className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#7B2FFF]/20 bg-gradient-to-br from-[#7B2FFF]/30 to-[#4F7CFF]/20">
-                <ListTodo className="h-4 w-4 text-[#A78BFF]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary)]/20 bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-2)]/20">
+                <ListTodo className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">
                   Öğretmenimden Görevler
                 </h3>
-                <p className="text-[11px] text-white/30">
+                <p className="text-[11px] text-[var(--text-muted)]">
                   {tasks.length > 0
                     ? `${completedCount}/${tasks.length} tamamlandı bu hafta`
                     : "Bu hafta atanmış görev yok"}
@@ -176,18 +176,18 @@ export default function StudentWeeklyPlan() {
               <button
                 type="button"
                 onClick={goToPrevWeek}
-                className="rounded-lg border border-white/8 bg-white/[0.04] p-2 text-white/50 transition-colors hover:border-[#7B2FFF]/30 hover:text-white"
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
                 aria-label="Önceki hafta"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="min-w-[10rem] text-center text-sm font-semibold text-white sm:min-w-[12rem]">
+              <span className="min-w-[10rem] text-center text-sm font-semibold text-[var(--text-primary)] sm:min-w-[12rem]">
                 {formatWeekRange(weekStart)}
               </span>
               <button
                 type="button"
                 onClick={goToNextWeek}
-                className="rounded-lg border border-white/8 bg-white/[0.04] p-2 text-white/50 transition-colors hover:border-[#7B2FFF]/30 hover:text-white"
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
                 aria-label="Sonraki hafta"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -195,7 +195,7 @@ export default function StudentWeeklyPlan() {
               <button
                 type="button"
                 onClick={goToThisWeek}
-                className="rounded-lg border border-[#7B2FFF]/25 bg-[#7B2FFF]/10 px-3 py-2 text-xs font-semibold text-[#A78BFF] transition-colors hover:bg-[#7B2FFF]/20"
+                className="rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
               >
                 Bu Hafta
               </button>
@@ -204,7 +204,7 @@ export default function StudentWeeklyPlan() {
         </div>
         <div className="p-4">
           {tasksLoading ? (
-            <div className="flex items-center justify-center py-16 text-white/30">
+            <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : (
@@ -218,29 +218,29 @@ export default function StudentWeeklyPlan() {
                     key={dateStr}
                     className={`flex min-h-[8rem] flex-col rounded-xl border p-2.5 transition-colors duration-300 ${
                       todayCol
-                        ? "border-[#7B2FFF]/30 bg-[#7B2FFF]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
-                        : "border-white/6 bg-white/[0.02]"
+                        ? "border-[var(--primary)]/30 bg-[var(--primary)]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
+                        : "border-[var(--border)] bg-white/[0.02]"
                     }`}
                   >
-                    <div className="mb-2 border-b border-white/5 pb-2">
+                    <div className="mb-2 border-b border-[var(--border)] pb-2">
                       <p
                         className={`text-xs font-bold ${
-                          todayCol ? "text-[#A78BFF]" : "text-white/70"
+                          todayCol ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"
                         }`}
                       >
                         {DAY_LABELS_FULL[colIndex]}
                       </p>
-                      <p className="text-[10px] text-white/35">
+                      <p className="text-[10px] text-[var(--text-muted)]">
                         {formatColumnDate(day)}
                         {todayCol && (
-                          <span className="ml-1.5 text-[#7B2FFF]">· Bugün</span>
+                          <span className="ml-1.5 text-[var(--primary)]">· Bugün</span>
                         )}
                       </p>
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
                       {dayTasks.length === 0 ? (
-                        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-white/8 px-2 py-6">
-                          <p className="text-center text-[10px] text-white/25">
+                        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--border)] px-2 py-6">
+                          <p className="text-center text-[10px] text-[var(--text-muted)]">
                             görev yok
                           </p>
                         </div>
@@ -261,7 +261,7 @@ export default function StudentWeeklyPlan() {
               })}
             </div>
           )}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-white/5 pt-4 text-[10px] text-white/40">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] text-[var(--text-muted)]">
             {(
               Object.entries(TASK_TYPE_BADGE) as [
                 TaskType,

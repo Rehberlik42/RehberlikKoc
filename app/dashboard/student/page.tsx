@@ -48,10 +48,10 @@ export default async function StudentDashboardPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-white sm:text-3xl">
+        <h2 className="text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
           Merhaba, {firstName}! 👋
         </h2>
-        <p className="mt-1 text-sm text-white/40">
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Bugün planına sadık kal — her görev seni hedefine bir adım daha yaklaştırır.
         </p>
       </div>
@@ -62,7 +62,7 @@ export default async function StudentDashboardPage() {
         todayDateLong={todayDateLong}
       />
 
-      <div className="rounded-2xl border border-white/5 bg-[#0d0d2b]/40 px-4 py-3 text-center text-xs text-white/35">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 px-4 py-3 text-center text-xs text-[var(--text-muted)]">
         Unutma: Küçük adımlar büyük sonuçlar doğurur. Bugünkü görevlerini tamamlamak için
         kendine güven!
       </div>
