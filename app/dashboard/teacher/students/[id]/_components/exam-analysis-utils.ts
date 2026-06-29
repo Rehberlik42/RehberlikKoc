@@ -426,6 +426,134 @@ export function computeSubjectAnalysis(
   });
 }
 
+// ─── Net–topic correlation (subject detail) ───────────────────────────────────
+
+export type NetTrendDirection = "up" | "down" | "flat";
+
+export interface SubjectNetTrend {
+  netSeries: number[];
+  labels: string[];
+  firstNet: number;
+  lastNet: number;
+  delta: number;
+  direction: NetTrendDirection;
+  avgNet: number;
+  examCount: number;
+}
+
+export type NetTopicScenario =
+  | "decline_explained"
+  | "decline_unexplained"
+  | "improve_consistent"
+  | "improve_but_watch"
+  | "stable";
+
+export interface NetTopicInsight {
+  scenario: NetTopicScenario;
+  contributors: TopicErrorAnalysisRow[];
+  headline: string;
+}
+
+export function computeSubjectNetTrend(
+  exams: NormalizedExam[],
+  subjectId: number
+): SubjectNetTrend {
+  const chronological = [...exams].sort(
+    (a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+  );
+
+  const netSeries: number[] = [];
+  const labels: string[] = [];
+
+  for (const exam of chronological) {
+    const result = exam.results.find((r) => r.subjectId === subjectId);
+    if (!result) continue;
+    netSeries.push(result.net);
+    labels.push(formatExamShortDate(exam.exam_date));
+  }
+
+  const examCount = netSeries.length;
+  const firstNet = examCount > 0 ? netSeries[0] : 0;
+  const lastNet = examCount > 0 ? netSeries[examCount - 1] : 0;
+  const delta = lastNet - firstNet;
+  const avgNet =
+    examCount > 0 ? netSeries.reduce((s, n) => s + n, 0) / examCount : 0;
+
+  let direction: NetTrendDirection = "flat";
+  if (examCount >= 2) {
+    if (delta > 0.5) direction = "up";
+    else if (delta < -0.5) direction = "down";
+  }
+
+  return {
+    netSeries,
+    labels,
+    firstNet,
+    lastNet,
+    delta,
+    direction,
+    avgNet,
+    examCount,
+  };
+}
+
+export function buildNetTopicInsight(
+  netTrend: SubjectNetTrend,
+  topicRows: TopicErrorAnalysisRow[]
+): NetTopicInsight {
+  const worseningTopics = topicRows
+    .filter((t) => t.trend === "worsening")
+    .sort((a, b) => b.avgWrong - a.avgWrong);
+  const improvingTopics = topicRows
+    .filter((t) => t.trend === "improving")
+    .sort((a, b) => b.avgWrong - a.avgWrong);
+
+  const topWorsening = worseningTopics.slice(0, 3);
+  const topImproving = improvingTopics.slice(0, 3);
+
+  if (netTrend.direction === "down" && worseningTopics.length > 0) {
+    return {
+      scenario: "decline_explained",
+      contributors: topWorsening,
+      headline:
+        "Net düşüyor; şu konulardaki yanlış artışı muhtemel sebep olabilir.",
+    };
+  }
+
+  if (netTrend.direction === "down") {
+    return {
+      scenario: "decline_unexplained",
+      contributors: [],
+      headline:
+        "Net düşüyor ancak konu yanlışları artmıyor — boş bırakma veya dikkat faktörü olabilir.",
+    };
+  }
+
+  if (netTrend.direction === "up" && improvingTopics.length > 0) {
+    return {
+      scenario: "improve_consistent",
+      contributors: topImproving,
+      headline:
+        "Net yükseliyor; şu konulardaki düzelme katkı veriyor olabilir.",
+    };
+  }
+
+  if (netTrend.direction === "up" && worseningTopics.length > 0) {
+    return {
+      scenario: "improve_but_watch",
+      contributors: topWorsening,
+      headline:
+        "Net yükseliyor ancak şu konularda bozulma var; gözden kaçırmayın.",
+    };
+  }
+
+  return {
+    scenario: "stable",
+    contributors: [],
+    headline: "Net ve konu hataları genel olarak dengeli seyrediyor.",
+  };
+}
+
 // ─── Focus priority engine (v2) ───────────────────────────────────────────────
 // Pure scoring: frequency + intensity + direction + recency → level.
 // Logic sanity:

@@ -18,6 +18,7 @@ import MockExamForm from "./MockExamForm";
 import MockExamChart from "./MockExamChart";
 import MockExamsList from "./MockExamsList";
 import StudentFocusCard from "./StudentFocusCard";
+import StudentExamAnalysis from "./StudentExamAnalysis";
 import {
   buildFocusRecommendations,
   buildTopicErrorAnalysis,
@@ -178,6 +179,15 @@ export default function MockExamsClient({
   const [focusLoading, setFocusLoading] = useState(true);
   const [focusRecommendations, setFocusRecommendations] =
     useState<FocusRecommendations | null>(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data: { user } }) => {
+        if (user) setStudentId(user.id);
+      });
+  }, []);
 
   // Yeni deneme eklendikten sonra listeyi yenile
   const refresh = useCallback(async () => {
@@ -424,6 +434,10 @@ export default function MockExamsClient({
         recommendations={focusRecommendations}
         loading={focusLoading}
       />
+
+      {studentId && (
+        <StudentExamAnalysis studentId={studentId} analysisExams={filteredExams} />
+      )}
 
       {/* ── Form (PDF disinda) ─────────────────────────────────────────── */}
       <div className="pdf-export-hide print-hidden max-w-xl">

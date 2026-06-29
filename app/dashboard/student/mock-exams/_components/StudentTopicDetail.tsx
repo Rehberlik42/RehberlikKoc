@@ -17,13 +17,13 @@ import {
   topicSeverityBg,
   topicSeverityColor,
   topicTrendColor,
-  type LastNFilter,
+  type NetTopicScenario,
   type NetTrendDirection,
   type NormalizedExam,
   type RawTopicErrorRecord,
   type TopicErrorAnalysisRow,
   type TopicTrend,
-} from "./exam-analysis-utils";
+} from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
 
 interface SelectedSubject {
   id: number;
@@ -36,7 +36,21 @@ interface Props {
   studentId: string;
   subject: SelectedSubject;
   filteredExams: NormalizedExam[];
-  lastN: LastNFilter;
+}
+
+export function studentScenarioSentence(scenario: NetTopicScenario): string {
+  switch (scenario) {
+    case "decline_explained":
+      return "Bu derste netin düşüyor — en çok şu konular zorluyor seni. Bu hafta bunlara ağırlık ver. 💪";
+    case "decline_unexplained":
+      return "Netin düşmüş ama konularda büyük hata yok — sınavda zaman/dikkat ya da boş bırakma olabilir. Deneme stratejine bak.";
+    case "improve_consistent":
+      return "Harika, netin yükseliyor! Şu konulardaki gelişme işe yarıyor, böyle devam. 👏";
+    case "improve_but_watch":
+      return "Netin yükseliyor ama şu konularda hâlâ takılıyorsun — onları da toparlarsan uçarsın.";
+    case "stable":
+      return "Netin sabit. Zayıf konulara yüklenerek bir sonraki seviyeye geçebilirsin.";
+  }
 }
 
 function TrendBadge({ trend }: { trend: TopicTrend }) {
@@ -44,10 +58,7 @@ function TrendBadge({ trend }: { trend: TopicTrend }) {
 
   if (trend === "improving") {
     return (
-      <span
-        className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
-        style={{ color }}
-      >
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold" style={{ color }}>
         <TrendingUp className="h-3 w-3" />
         İyileşiyor
       </span>
@@ -55,20 +66,14 @@ function TrendBadge({ trend }: { trend: TopicTrend }) {
   }
   if (trend === "worsening") {
     return (
-      <span
-        className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
-        style={{ color }}
-      >
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold" style={{ color }}>
         <TrendingUp className="h-3 w-3" />
         Kötüleşiyor
       </span>
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
-      style={{ color }}
-    >
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold" style={{ color }}>
       <Minus className="h-3 w-3" />
       Sabit
     </span>
@@ -136,114 +141,6 @@ function netTrendLabel(direction: NetTrendDirection): string {
   }
 }
 
-function NetTrendSection({
-  netTrend,
-}: {
-  netTrend: ReturnType<typeof computeSubjectNetTrend>;
-}) {
-  const trendColor = netTrendColor(netTrend.direction);
-  const deltaPrefix = netTrend.delta > 0 ? "+" : "";
-
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-        Ders Net Trendi
-      </p>
-      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-xs text-[var(--text-muted)]">
-            Net Ortalaması{" "}
-            <span className="font-bold text-[var(--text-primary)]">
-              {netTrend.avgNet.toFixed(2)}
-            </span>
-          </p>
-          <p className="mt-1 text-lg font-black tabular-nums text-[var(--text-primary)]">
-            {netTrend.firstNet.toFixed(2)}
-            <span className="mx-2 text-[var(--text-muted)]">→</span>
-            {netTrend.lastNet.toFixed(2)}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span
-              className="text-sm font-bold tabular-nums"
-              style={{ color: trendColor }}
-            >
-              {deltaPrefix}
-              {netTrend.delta.toFixed(2)}
-            </span>
-            <span
-              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-              style={{
-                color: trendColor,
-                borderColor: `${trendColor}44`,
-                backgroundColor: `${trendColor}14`,
-              }}
-            >
-              {netTrend.direction === "up" && <TrendingUp className="h-3 w-3" />}
-              {netTrend.direction === "down" && (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {netTrend.direction === "flat" && <Minus className="h-3 w-3" />}
-              {netTrendLabel(netTrend.direction)}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <MiniSparkline
-            values={netTrend.netSeries}
-            color={trendColor}
-            width={96}
-            height={36}
-          />
-          <p className="text-[10px] text-[var(--text-muted)]">
-            {netTrend.examCount} deneme
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NetTopicInsightCard({
-  insight,
-}: {
-  insight: ReturnType<typeof buildNetTopicInsight>;
-}) {
-  const showContributors = insight.contributors.length > 0;
-
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/80 p-4">
-      <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-        {insight.headline}
-      </p>
-      {showContributors && (
-        <div className="mt-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Katkı veren konular
-          </p>
-          <ul className="mt-2 space-y-2">
-            {insight.contributors.map((row) => (
-              <li
-                key={row.topicId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-2"
-              >
-                <span className="text-sm font-semibold text-[var(--text-primary)]">
-                  {row.topicName}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[var(--text-muted)]">
-                    ort. {row.avgWrong.toFixed(1)} yanlış
-                  </span>
-                  <TrendBadge trend={row.trend} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function cellTone(wrong: number): string {
   if (wrong <= 0) return "text-[var(--text-muted)]";
   if (wrong === 1) return "text-yellow-400";
@@ -256,11 +153,10 @@ function cellBg(wrong: number): string {
   return "bg-red-500/10";
 }
 
-export default function ExamTopicDetail({
+export default function StudentTopicDetail({
   studentId,
   subject,
   filteredExams,
-  lastN,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -320,13 +216,16 @@ export default function ExamTopicDetail({
     [netTrend, analysis.rows]
   );
 
+  const studentHeadline = studentScenarioSentence(netTopicInsight.scenario);
   const subjectColor = subject.color ?? "#4F7CFF";
+  const trendColor = netTrendColor(netTrend.direction);
+  const deltaPrefix = netTrend.delta > 0 ? "+" : "";
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 px-6 py-16">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
-        <p className="mt-3 text-sm text-[var(--text-muted)]">Konu analizi yükleniyor…</p>
+        <p className="mt-3 text-sm text-[var(--text-muted)]">Konu analizin yükleniyor…</p>
       </div>
     );
   }
@@ -342,80 +241,86 @@ export default function ExamTopicDetail({
 
   return (
     <div className="animate-in fade-in slide-in-from-right-2 fill-mode-both space-y-5 duration-300">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)]"
-            style={{ background: `${subjectColor}22` }}
-          >
-            <BookOpen className="h-5 w-5" style={{ color: subjectColor }} />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">{subject.name}</h3>
-              {subject.examGroup && (
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                    subject.examGroup === "TYT"
-                      ? "border-[var(--primary-2)]/30 bg-[var(--primary-2)]/15 text-[var(--accent)]"
-                      : subject.examGroup === "AYT"
-                        ? "border-[var(--primary)]/30 bg-[var(--primary)]/15 text-[var(--accent)]"
-                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {subject.examGroup}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-[var(--text-muted)]">
-              {subject.name} dersi konu bazlı deneme performansı
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)]"
+          style={{ background: `${subjectColor}22` }}
+        >
+          <BookOpen className="h-5 w-5" style={{ color: subjectColor }} />
+        </div>
+        <div>
+          <h3 className="text-base font-bold text-[var(--text-primary)]">{subject.name}</h3>
+          <p className="text-[11px] text-[var(--text-muted)]">
+            Son 5 denemene göre konu performansın
+          </p>
         </div>
       </div>
 
-      {analysis.topicCount > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Hatalı Konu", value: String(analysis.topicCount) },
-            {
-              label: "Ort. Yanlış/Deneme",
-              value: analysis.avgWrongPerExam.toFixed(1),
-            },
-            {
-              label: "Gelişime Açık",
-              value: analysis.worstTopic?.topicName ?? "—",
-              small: true,
-            },
-            {
-              label: "En Temiz Konu",
-              value: analysis.bestTopic?.topicName ?? "—",
-              small: true,
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                {item.label}
-              </p>
-              <p
-                className={`mt-1 font-black text-[var(--text-primary)] ${
-                  item.small ? "text-sm leading-snug" : "text-lg"
-                }`}
-              >
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {netTrend.examCount >= 2 && (
         <div className="space-y-3">
-          <NetTrendSection netTrend={netTrend} />
-          <NetTopicInsightCard insight={netTopicInsight} />
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              {subject.name} netin
+            </p>
+            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-lg font-black tabular-nums text-[var(--text-primary)]">
+                  {netTrend.firstNet.toFixed(2)}
+                  <span className="mx-2 text-[var(--text-muted)]">→</span>
+                  {netTrend.lastNet.toFixed(2)}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span
+                    className="text-sm font-bold tabular-nums"
+                    style={{ color: trendColor }}
+                  >
+                    {deltaPrefix}
+                    {netTrend.delta.toFixed(2)}
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                    style={{
+                      color: trendColor,
+                      borderColor: `${trendColor}44`,
+                      backgroundColor: `${trendColor}14`,
+                    }}
+                  >
+                    {netTrend.direction === "up" && <TrendingUp className="h-3 w-3" />}
+                    {netTrend.direction === "down" && <TrendingDown className="h-3 w-3" />}
+                    {netTrend.direction === "flat" && <Minus className="h-3 w-3" />}
+                    {netTrendLabel(netTrend.direction)}
+                  </span>
+                </div>
+              </div>
+              <MiniSparkline
+                values={netTrend.netSeries}
+                color={trendColor}
+                width={96}
+                height={36}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-2)]/90 to-[var(--primary)]/5 p-4">
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+              {studentHeadline}
+            </p>
+            {netTopicInsight.contributors.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {netTopicInsight.contributors.map((row) => (
+                  <li
+                    key={row.topicId}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-2"
+                  >
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">
+                      {row.topicName}
+                    </span>
+                    <TrendBadge trend={row.trend} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
 
@@ -423,17 +328,16 @@ export default function ExamTopicDetail({
         <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-6 py-14 text-center">
           <BookOpen className="mx-auto h-10 w-10 text-[var(--text-primary)]/15" />
           <p className="mt-4 text-sm text-[var(--text-muted)]">
-            Bu derste henüz konu bazlı hata verisi yok.
+            Bu derste henüz konu bazlı hata verin yok.
           </p>
           <p className="mt-2 text-xs text-[var(--text-muted)]">
-            Deneme girişinde zayıf konuları işaretleyince burada analiz görünür.
+            Deneme girerken yanlış yaptığın konuları seç; analiz burada görünecek.
           </p>
         </div>
       ) : (
         <>
           <p className="text-xs text-[var(--text-muted)]">
-            {analysis.topicCount} konuda hata tespit edildi
-            {lastN !== "all" ? ` (son ${lastN} deneme)` : ""}
+            {analysis.topicCount} konuda gelişim alanın var (son 5 deneme)
           </p>
 
           <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60">
@@ -475,21 +379,6 @@ export default function ExamTopicDetail({
           </div>
         </>
       )}
-
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-[var(--text-muted)]">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
-          Yeşil: az hata (≤0.5 ort.)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-yellow-500" />
-          Sarı: orta (0.5–1.5)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-red-500" />
-          Kırmızı: sık/çok hata (&gt;1.5)
-        </span>
-      </div>
     </div>
   );
 }
@@ -517,9 +406,6 @@ function TopicTableRow({
           />
           <span className="font-semibold text-[var(--text-primary)]">{row.topicName}</span>
         </div>
-        <p className="mt-0.5 pl-3 text-[10px] text-[var(--text-muted)]">
-          ort. {row.avgWrong.toFixed(1)} yanlış
-        </p>
       </td>
       {examColumns.map((col) => {
         const wrong = row.wrongByExamId[col.mockExamId] ?? 0;
@@ -534,20 +420,14 @@ function TopicTableRow({
         );
       })}
       <td className="px-3 py-3 text-center">
-        <span
-          className="text-sm font-black tabular-nums"
-          style={{ color: severityColor }}
-        >
+        <span className="text-sm font-black tabular-nums" style={{ color: severityColor }}>
           {row.avgWrong.toFixed(1)}
         </span>
       </td>
       <td className="px-3 py-3">
         <div className="flex flex-col items-center gap-1">
           <TrendBadge trend={row.trend} />
-          <MiniSparkline
-            values={row.wrongsChronological}
-            color={trendColor}
-          />
+          <MiniSparkline values={row.wrongsChronological} color={trendColor} />
         </div>
       </td>
     </tr>
