@@ -19,10 +19,12 @@ import MockExamChart from "./MockExamChart";
 import MockExamsList from "./MockExamsList";
 import StudentFocusCard from "./StudentFocusCard";
 import StudentExamAnalysis from "./StudentExamAnalysis";
+import StudentTargets from "./StudentTargets";
 import {
   buildFocusRecommendations,
   buildTopicErrorAnalysis,
   computeSubjectAnalysis,
+  computeSubjectNetTrend,
   filterExamsForAnalysis,
   normalizeAnalysisExams,
   type FocusRecommendations,
@@ -161,16 +163,22 @@ function totalNetFor(mockExam: MockExamWithResults): number {
 }
 
 // ─── Client ───────────────────────────────────────────────────────────────────
+interface ExistingTarget {
+  target_net: number;
+}
+
 interface Props {
   initialMockExams: MockExamWithResults[];
   exams: ExamOption[];
   subjects: SubjectOption[];
+  existingTargets: Record<number, ExistingTarget>;
 }
 
 export default function MockExamsClient({
   initialMockExams,
   exams,
   subjects,
+  existingTargets,
 }: Props) {
   const router = useRouter();
   const supabase = createClient();
@@ -305,6 +313,21 @@ export default function MockExamsClient({
     [filteredExams]
   );
 
+  const currentNets = useMemo(
+    () => Object.fromEntries(subjectRows.map((row) => [row.subjectId, row.avgNet])),
+    [subjectRows]
+  );
+
+  const netSeriesBySubjectId = useMemo(() => {
+    const ids = Object.keys(existingTargets).map(Number);
+    return Object.fromEntries(
+      ids.map((subjectId) => [
+        subjectId,
+        computeSubjectNetTrend(filteredExams, subjectId).netSeries,
+      ])
+    );
+  }, [existingTargets, filteredExams]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -438,6 +461,13 @@ export default function MockExamsClient({
       {studentId && (
         <StudentExamAnalysis studentId={studentId} analysisExams={filteredExams} />
       )}
+
+      <StudentTargets
+        subjects={subjects}
+        existingTargets={existingTargets}
+        currentNets={currentNets}
+        netSeriesBySubjectId={netSeriesBySubjectId}
+      />
 
       {/* ── Form (PDF disinda) ─────────────────────────────────────────── */}
       <div className="pdf-export-hide print-hidden max-w-xl">

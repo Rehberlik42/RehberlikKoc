@@ -3,9 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { Loader2, Target } from "lucide-react";
+import { Loader2, Minus, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { examGroupFromName } from "./exam-analysis-utils";
+import {
+  computeOverallTargetProgress,
+  computeTargetProgress,
+  examGroupFromName,
+  targetStatusColor,
+  targetStatusLabel,
+  type NetTrendDirection,
+  type TargetProgress,
+} from "./exam-analysis-utils";
 
 interface SubjectOption {
   id: number;
@@ -24,6 +32,7 @@ interface Props {
   studentId: string;
   subjects: SubjectOption[];
   currentNets: Record<number, number>;
+  netSeriesBySubjectId: Record<number, number[]>;
   existingTargets: Record<number, ExistingTarget>;
 }
 
@@ -36,10 +45,86 @@ function groupLabel(group: string): string {
   return "Diğer";
 }
 
+function parseTargetInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  const parsed = parseFloat(trimmed.replace(",", "."));
+  if (Number.isNaN(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+function TrendArrow({ direction }: { direction: NetTrendDirection }) {
+  if (direction === "up") {
+    return <TrendingUp className="h-3.5 w-3.5 text-green-500" aria-hidden />;
+  }
+  if (direction === "down") {
+    return <TrendingDown className="h-3.5 w-3.5 text-orange-500" aria-hidden />;
+  }
+  return <Minus className="h-3.5 w-3.5 text-[var(--text-muted)]" aria-hidden />;
+}
+
+function SubjectProgressPanel({ progress }: { progress: TargetProgress }) {
+  const statusColor = targetStatusColor(progress.status);
+  const statusLabel = targetStatusLabel(progress.status);
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-[var(--border)] pt-3 pl-3">
+      {progress.hasCurrent && progress.targetNet != null && (
+        <p className="text-[11px] text-[var(--text-muted)]">
+          Şu an{" "}
+          <span className="font-semibold text-[var(--text-primary)]">
+            {progress.currentNet!.toFixed(1)}
+          </span>
+          <span className="text-[var(--text-muted)]"> / Hedef </span>
+          <span className="font-semibold text-[var(--text-primary)]">
+            {progress.targetNet.toFixed(1)}
+          </span>
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {progress.reached ? (
+          <span className="text-xs font-semibold text-green-500">Hedefe ulaştın ✓</span>
+        ) : progress.remaining != null ? (
+          <span className="text-xs font-semibold tabular-nums text-[var(--text-secondary)]">
+            {progress.remaining.toFixed(1)} net kaldı
+          </span>
+        ) : null}
+
+        {statusLabel && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+            style={{
+              color: statusColor,
+              borderColor: `${statusColor}44`,
+              backgroundColor: `${statusColor}14`,
+            }}
+          >
+            <TrendArrow direction={progress.trendDirection} />
+            {statusLabel}
+          </span>
+        )}
+      </div>
+
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${
+            progress.reached
+              ? "bg-green-500"
+              : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
+          }`}
+          style={{ width: `${Math.max(progress.fillPct, progress.fillPct > 0 ? 2 : 0)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function StudentTargets({
   studentId,
   subjects,
   currentNets,
+  netSeriesBySubjectId,
   existingTargets,
 }: Props) {
   const router = useRouter();
@@ -70,6 +155,26 @@ export default function StudentTargets({
       ),
     }));
   }, [subjects]);
+
+  const progressBySubjectId = useMemo(() => {
+    const map = new Map<number, TargetProgress>();
+    for (const subject of subjects) {
+      const targetNet = parseTargetInput(values[subject.id] ?? "");
+      const progress = computeTargetProgress({
+        subjectId: subject.id,
+        currentNet: currentNets[subject.id] ?? null,
+        targetNet,
+        netSeries: netSeriesBySubjectId[subject.id],
+      });
+      map.set(subject.id, progress);
+    }
+    return map;
+  }, [subjects, values, currentNets, netSeriesBySubjectId]);
+
+  const overallProgress = useMemo(
+    () => computeOverallTargetProgress([...progressBySubjectId.values()]),
+    [progressBySubjectId]
+  );
 
   function handleChange(subjectId: number, value: string) {
     setValues((prev) => ({ ...prev, [subjectId]: value }));
@@ -196,6 +301,40 @@ export default function StudentTargets({
         </div>
       </div>
 
+      {overallProgress.targetCount > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Genel İlerleme
+          </p>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            Genel:{" "}
+            <span className="font-bold text-[var(--text-primary)]">
+              {overallProgress.reachedCount}/{overallProgress.targetCount}
+            </span>{" "}
+            derste hedefe ulaştın
+            {overallProgress.overallRemaining > 0 ? (
+              <>
+                {" "}
+                ·{" "}
+                <span className="font-semibold tabular-nums">
+                  {overallProgress.overallRemaining.toFixed(1)} net kaldı
+                </span>
+              </>
+            ) : overallProgress.overallRemaining <= 0 && overallProgress.targetCount > 0 ? (
+              <span className="font-semibold text-green-500"> · Toplam hedefe ulaşıldı</span>
+            ) : null}
+          </p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/8">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] transition-all duration-300"
+              style={{
+                width: `${Math.max(overallProgress.overallFillPct, overallProgress.overallFillPct > 0 ? 2 : 0)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-6">
         {groupedSubjects.map(({ group, subjects: groupSubjects }) => (
           <div key={group}>
@@ -207,46 +346,41 @@ export default function StudentTargets({
                 const barColor = subject.color ?? "#4F7CFF";
                 const current = currentNets[subject.id];
                 const rawValue = values[subject.id] ?? "";
-                const targetNum =
-                  rawValue.trim() !== ""
-                    ? parseFloat(rawValue.replace(",", "."))
-                    : null;
-                const gap =
-                  targetNum != null && !Number.isNaN(targetNum) && current != null
-                    ? targetNum - current
-                    : null;
+                const progress = progressBySubjectId.get(subject.id)!;
 
                 return (
                   <div
                     key={subject.id}
-                    className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 sm:flex-row sm:items-center"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-4 w-1 shrink-0 rounded-full"
-                          style={{ background: barColor }}
-                        />
-                        <p className="text-sm font-semibold text-[var(--text-primary)]">
-                          {subject.name}
-                        </p>
-                      </div>
-                      <p className="mt-1 pl-3 text-[11px] text-[var(--text-muted)]">
-                        {current != null ? (
-                          <>
-                            Şu an:{" "}
-                            <span className="font-semibold text-[var(--text-secondary)]">
-                              {current.toFixed(1)} net
-                            </span>
-                          </>
-                        ) : (
-                          "Henüz veri yok"
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-4 w-1 shrink-0 rounded-full"
+                            style={{ background: barColor }}
+                          />
+                          <p className="text-sm font-semibold text-[var(--text-primary)]">
+                            {subject.name}
+                          </p>
+                        </div>
+                        {!progress.hasTarget && (
+                          <p className="mt-1 pl-3 text-[11px] text-[var(--text-muted)]">
+                            {current != null ? (
+                              <>
+                                Şu an:{" "}
+                                <span className="font-semibold text-[var(--text-secondary)]">
+                                  {current.toFixed(1)} net
+                                </span>
+                              </>
+                            ) : (
+                              "Henüz veri yok"
+                            )}
+                          </p>
                         )}
-                      </p>
-                    </div>
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 sm:shrink-0">
                         <label
                           htmlFor={`target-${subject.id}`}
                           className="text-[11px] font-medium text-[var(--text-muted)]"
@@ -265,20 +399,9 @@ export default function StudentTargets({
                           className="w-24 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-semibold tabular-nums text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--primary)]/50"
                         />
                       </div>
-                      {gap != null && (
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
-                            gap > 0
-                              ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-500"
-                              : gap < 0
-                                ? "border-green-500/30 bg-green-500/10 text-green-500"
-                                : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]"
-                          }`}
-                        >
-                          {gap > 0 ? `+${gap.toFixed(1)}` : gap.toFixed(1)} net
-                        </span>
-                      )}
                     </div>
+
+                    {progress.hasTarget && <SubjectProgressPanel progress={progress} />}
                   </div>
                 );
               })}

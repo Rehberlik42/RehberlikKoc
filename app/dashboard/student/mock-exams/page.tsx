@@ -50,6 +50,16 @@ export default async function MockExamsPage() {
   const examOptions = (exams ?? []) as ExamOption[];
   const subjectOptions = (subjects ?? []) as unknown as SubjectOption[];
 
+  const { data: rawStudentTargets } = await supabase
+    .from("student_targets")
+    .select("subject_id, target_net")
+    .eq("student_id", user.id);
+
+  const existingTargets: Record<number, { target_net: number }> = {};
+  for (const row of rawStudentTargets ?? []) {
+    existingTargets[row.subject_id] = { target_net: Number(row.target_net) };
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header + PDF */}
@@ -69,6 +79,7 @@ export default async function MockExamsPage() {
         initialMockExams={mockExams}
         exams={examOptions}
         subjects={subjectOptions}
+        existingTargets={existingTargets}
       />
     </div>
   );

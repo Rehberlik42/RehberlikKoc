@@ -739,3 +739,155 @@ export function priorityLevelColor(level: TopicPriorityLevel): string {
       return "#22c55e";
   }
 }
+
+// ─── Target progress engine ───────────────────────────────────────────────────
+
+export type TargetProgressStatus =
+  | "reached"
+  | "approaching"
+  | "drifting"
+  | "stalled"
+  | "no_target";
+
+export interface TargetProgressInput {
+  subjectId: number;
+  currentNet: number | null;
+  targetNet: number | null;
+  netSeries?: number[];
+}
+
+export interface TargetProgress {
+  subjectId: number;
+  currentNet: number | null;
+  targetNet: number | null;
+  remaining: number | null;
+  reached: boolean;
+  fillPct: number;
+  trendDirection: NetTrendDirection;
+  status: TargetProgressStatus;
+  hasTarget: boolean;
+  hasCurrent: boolean;
+}
+
+export interface OverallTargetProgress {
+  totalTarget: number;
+  totalCurrent: number;
+  overallRemaining: number;
+  overallFillPct: number;
+  reachedCount: number;
+  targetCount: number;
+}
+
+function clampPercent(value: number): number {
+  return Math.min(100, Math.max(0, value));
+}
+
+function netSeriesTrendDirection(netSeries?: number[]): NetTrendDirection {
+  if (!netSeries || netSeries.length < 2) return "flat";
+  const delta = netSeries[netSeries.length - 1] - netSeries[0];
+  if (delta > 0.5) return "up";
+  if (delta < -0.5) return "down";
+  return "flat";
+}
+
+export function computeTargetProgress(input: TargetProgressInput): TargetProgress {
+  const hasTarget = input.targetNet != null && input.targetNet > 0;
+  const hasCurrent = input.currentNet != null;
+  const currentNet = hasCurrent ? input.currentNet : null;
+  const targetNet = hasTarget ? input.targetNet : null;
+
+  const remaining =
+    hasTarget && hasCurrent && targetNet != null && currentNet != null
+      ? targetNet - currentNet
+      : null;
+
+  const reached =
+    hasTarget &&
+    hasCurrent &&
+    currentNet != null &&
+    targetNet != null &&
+    currentNet >= targetNet;
+
+  const fillPct =
+    hasTarget && hasCurrent && targetNet != null && currentNet != null
+      ? clampPercent((currentNet / targetNet) * 100)
+      : 0;
+
+  const trendDirection = netSeriesTrendDirection(input.netSeries);
+
+  let status: TargetProgressStatus = "no_target";
+  if (hasTarget) {
+    if (reached) status = "reached";
+    else if (trendDirection === "up") status = "approaching";
+    else if (trendDirection === "down") status = "drifting";
+    else status = "stalled";
+  }
+
+  return {
+    subjectId: input.subjectId,
+    currentNet,
+    targetNet,
+    remaining,
+    reached,
+    fillPct,
+    trendDirection,
+    status,
+    hasTarget,
+    hasCurrent,
+  };
+}
+
+export function computeOverallTargetProgress(
+  items: TargetProgress[]
+): OverallTargetProgress {
+  const withTarget = items.filter((item) => item.hasTarget);
+  const targetCount = withTarget.length;
+  const reachedCount = withTarget.filter((item) => item.reached).length;
+  const totalTarget = withTarget.reduce((sum, item) => sum + (item.targetNet ?? 0), 0);
+  const totalCurrent = withTarget.reduce(
+    (sum, item) => sum + (item.hasCurrent ? (item.currentNet ?? 0) : 0),
+    0
+  );
+  const overallRemaining = totalTarget - totalCurrent;
+  const overallFillPct =
+    totalTarget > 0 ? clampPercent((totalCurrent / totalTarget) * 100) : 0;
+
+  return {
+    totalTarget,
+    totalCurrent,
+    overallRemaining,
+    overallFillPct,
+    reachedCount,
+    targetCount,
+  };
+}
+
+export function targetStatusLabel(status: TargetProgressStatus): string {
+  switch (status) {
+    case "reached":
+      return "Hedefe ulaştın";
+    case "approaching":
+      return "Yaklaşıyorsun";
+    case "drifting":
+      return "Uzaklaşıyorsun";
+    case "stalled":
+      return "Sabit, hızlanmalı";
+    case "no_target":
+      return "";
+  }
+}
+
+export function targetStatusColor(status: TargetProgressStatus): string {
+  switch (status) {
+    case "reached":
+      return "#22c55e";
+    case "approaching":
+      return "#22c55e";
+    case "drifting":
+      return "#f97316";
+    case "stalled":
+      return "#eab308";
+    case "no_target":
+      return "#9ca3af";
+  }
+}

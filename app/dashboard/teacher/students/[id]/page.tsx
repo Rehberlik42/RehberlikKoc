@@ -33,6 +33,7 @@ import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
 import {
   computeSubjectAnalysis,
+  computeSubjectNetTrend,
   filterExamsForAnalysis,
   normalizeAnalysisExams,
   type NormalizedExam,
@@ -314,6 +315,13 @@ export default async function StudentDetailPage({
     )
   );
 
+  const netSeriesBySubjectId: Record<number, number[]> = Object.fromEntries(
+    subjectFormOptions.map((subject) => [
+      subject.id,
+      computeSubjectNetTrend(filteredExamsForNets, subject.id).netSeries,
+    ])
+  );
+
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
 
@@ -462,6 +470,7 @@ export default async function StudentDetailPage({
             studentId={id}
             subjects={subjectFormOptions}
             currentNets={currentNets}
+            netSeriesBySubjectId={netSeriesBySubjectId}
             existingTargets={existingTargets}
           />
         }
