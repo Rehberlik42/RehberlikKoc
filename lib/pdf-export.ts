@@ -11,80 +11,6 @@ export interface PdfExportOptions {
   scale?: number;
 }
 
-/** Tailwind v4 — clone uzerinde yedek stil (html2canvas-pro oklab destekler) */
-function prepareCloneForCanvas(
-  originalRoot: HTMLElement,
-  clonedDoc: Document,
-  clonedRoot: HTMLElement
-) {
-  clonedDoc.querySelectorAll("style, link[rel='stylesheet']").forEach((node) => {
-    node.remove();
-  });
-
-  const mirror = (original: Element, clone: Element) => {
-    if (!(original instanceof HTMLElement && clone instanceof HTMLElement)) {
-      return;
-    }
-
-    const computed = window.getComputedStyle(original);
-    const style = clone.style;
-
-    style.color = computed.color;
-    style.backgroundColor =
-      computed.backgroundColor === "rgba(0, 0, 0, 0)"
-        ? "transparent"
-        : computed.backgroundColor;
-
-    style.borderTopColor = computed.borderTopColor;
-    style.borderRightColor = computed.borderRightColor;
-    style.borderBottomColor = computed.borderBottomColor;
-    style.borderLeftColor = computed.borderLeftColor;
-    style.borderTopWidth = computed.borderTopWidth;
-    style.borderRightWidth = computed.borderRightWidth;
-    style.borderBottomWidth = computed.borderBottomWidth;
-    style.borderLeftWidth = computed.borderLeftWidth;
-    style.borderTopStyle = computed.borderTopStyle;
-    style.borderRightStyle = computed.borderRightStyle;
-    style.borderBottomStyle = computed.borderBottomStyle;
-    style.borderLeftStyle = computed.borderLeftStyle;
-    style.borderRadius = computed.borderRadius;
-
-    style.fontSize = computed.fontSize;
-    style.fontWeight = computed.fontWeight;
-    style.fontFamily = computed.fontFamily;
-    style.lineHeight = computed.lineHeight;
-    style.textAlign = computed.textAlign;
-
-    style.display = computed.display;
-    style.flexDirection = computed.flexDirection;
-    style.flexWrap = computed.flexWrap;
-    style.alignItems = computed.alignItems;
-    style.justifyContent = computed.justifyContent;
-    style.gap = computed.gap;
-    style.gridTemplateColumns = computed.gridTemplateColumns;
-
-    style.width = computed.width;
-    style.height = computed.height;
-    style.minHeight = computed.minHeight;
-    style.maxWidth = computed.maxWidth;
-    style.padding = computed.padding;
-    style.margin = computed.margin;
-    style.boxSizing = "border-box";
-    style.opacity = computed.opacity;
-
-    const origChildren = original.children;
-    const cloneChildren = clone.children;
-    for (let i = 0; i < origChildren.length; i++) {
-      if (cloneChildren[i]) {
-        mirror(origChildren[i], cloneChildren[i]);
-      }
-    }
-  };
-
-  clonedRoot.style.backgroundColor = PDF_EXPORT_BG;
-  mirror(originalRoot, clonedRoot);
-}
-
 /**
  * Verilen HTML elementini (HTMLElement, element id veya ref) PNG'ye cevirip
  * cok sayfali PDF olarak indirir. Yalnizca tarayicida calisir.
@@ -121,9 +47,9 @@ export async function exportElementToPdf(
     ignoreElements: (node) =>
       node.classList.contains("pdf-export-hide") ||
       node.classList.contains("print-hidden"),
-    onclone: (clonedDoc, clonedRoot) => {
+    onclone: (_clonedDoc, clonedRoot) => {
       if (clonedRoot instanceof HTMLElement) {
-        prepareCloneForCanvas(el, clonedDoc, clonedRoot);
+        clonedRoot.style.backgroundColor = PDF_EXPORT_BG;
       }
     },
   });

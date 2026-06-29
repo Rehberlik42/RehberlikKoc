@@ -17,6 +17,16 @@ import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import MockExamForm from "./MockExamForm";
 import MockExamChart from "./MockExamChart";
 import MockExamsList from "./MockExamsList";
+import StudentFocusCard from "./StudentFocusCard";
+import {
+  buildFocusRecommendations,
+  buildTopicErrorAnalysis,
+  computeSubjectAnalysis,
+  filterExamsForAnalysis,
+  normalizeAnalysisExams,
+  type FocusRecommendations,
+  type RawTopicErrorRecord,
+} from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
 
 // ─── Types (paylasilan) ───────────────────────────────────────────────────────
 export interface ExamOption {
@@ -165,6 +175,9 @@ export default function MockExamsClient({
   const supabase = createClient();
   const [mockExams, setMockExams] = useState<MockExamWithResults[]>(initialMockExams);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [focusLoading, setFocusLoading] = useState(true);
+  const [focusRecommendations, setFocusRecommendations] =
+    useState<FocusRecommendations | null>(null);
 
   // Yeni deneme eklendikten sonra listeyi yenile
   const refresh = useCallback(async () => {
@@ -251,6 +264,108 @@ export default function MockExamsClient({
       }));
   }, [mockExams]);
 
+  const analysisExams = useMemo(
+    () =>
+      normalizeAnalysisExams(
+        mockExams.map((m) => ({
+          id: m.id,
+          exam_date: m.exam_date,
+          title: m.title,
+          exam: m.exam,
+          results: m.results.map((r) => ({
+            subject_id: r.subject_id,
+            correct_count: r.correct_count,
+            wrong_count: r.wrong_count,
+            empty_count: r.empty_count,
+            net: r.net,
+            subject: r.subject,
+          })),
+        }))
+      ),
+    [mockExams]
+  );
+
+  const filteredExams = useMemo(
+    () => filterExamsForAnalysis(analysisExams, "TYT+AYT", 5),
+    [analysisExams]
+  );
+
+  const subjectRows = useMemo(
+    () => computeSubjectAnalysis(filteredExams, {}),
+    [filteredExams]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (filteredExams.length === 0) {
+        setFocusRecommendations({ top3: [], subjectWeakest: [], hasData: false });
+        setFocusLoading(false);
+        return;
+      }
+
+      setFocusLoading(true);
+
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const { data, error: fetchError } = await supabase
+        .from("mock_exam_topic_errors")
+        .select(
+          `topic_id, wrong_count,
+           topic:topics(id, name, order_index),
+           result:mock_exam_results!inner(
+             id, subject_id, mock_exam_id,
+             mock_exam:mock_exams!inner(id, exam_date, title, student_id)
+           )`
+        )
+        .eq("result.mock_exam.student_id", user.id);
+
+      if (cancelled) return;
+
+      if (fetchError) {
+        setFocusRecommendations({ top3: [], subjectWeakest: [], hasData: false });
+        setFocusLoading(false);
+        return;
+      }
+
+      const rawErrors = (data ?? []) as RawTopicErrorRecord[];
+      const bySubject = new Map<number, RawTopicErrorRecord[]>();
+
+      for (const row of rawErrors) {
+        const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+        if (!resultRaw) continue;
+        const subjectId = resultRaw.subject_id;
+        const list = bySubject.get(subjectId) ?? [];
+        list.push(row);
+        bySubject.set(subjectId, list);
+      }
+
+      const subjectTopicAnalyses = subjectRows.map((row) => ({
+        subjectId: row.subjectId,
+        subjectName: row.subjectName,
+        color: row.color,
+        analysis: buildTopicErrorAnalysis(
+          bySubject.get(row.subjectId) ?? [],
+          filteredExams
+        ),
+      }));
+
+      setFocusRecommendations(
+        buildFocusRecommendations(subjectTopicAnalyses, filteredExams.length)
+      );
+      setFocusLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredExams, subjectRows]);
+
   return (
     <>
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
@@ -304,6 +419,11 @@ export default function MockExamsClient({
 
         <MockExamChart data={chartData} />
       </div>
+
+      <StudentFocusCard
+        recommendations={focusRecommendations}
+        loading={focusLoading}
+      />
 
       {/* ── Form (PDF disinda) ─────────────────────────────────────────── */}
       <div className="pdf-export-hide print-hidden max-w-xl">

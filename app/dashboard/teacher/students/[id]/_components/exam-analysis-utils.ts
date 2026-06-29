@@ -425,3 +425,189 @@ export function computeSubjectAnalysis(
     return a.subjectName.localeCompare(b.subjectName, "tr-TR");
   });
 }
+
+// ─── Focus priority engine (v2) ───────────────────────────────────────────────
+// Pure scoring: frequency + intensity + direction + recency → level.
+// Logic sanity:
+//   - Chronic + worsening topic → high score (critical).
+//   - One-off + improving topic → low score (watch); improving never critical.
+
+export type TopicPriorityLevel = "critical" | "secondary" | "watch";
+
+export interface TopicPriority {
+  topicId: number;
+  topicName: string;
+  score: number;
+  level: TopicPriorityLevel;
+  frequency: number;
+  intensity: number;
+  direction: number;
+  recency: number;
+  avgWrong: number;
+  trend: TopicTrend;
+  severity: TopicSeverity;
+  examsCount: number;
+  hitCount: number;
+  lastWrong: number;
+}
+
+export interface FocusItem {
+  subjectId: number;
+  subjectName: string;
+  color: string | null;
+  priority: TopicPriority;
+}
+
+export interface FocusRecommendations {
+  top3: FocusItem[];
+  subjectWeakest: FocusItem[];
+  hasData: boolean;
+}
+
+export interface SubjectTopicAnalysisInput {
+  subjectId: number;
+  subjectName: string;
+  color: string | null;
+  analysis: TopicErrorAnalysis;
+}
+
+function directionSignal(trend: TopicTrend): number {
+  switch (trend) {
+    case "worsening":
+      return 1;
+    case "stable":
+      return 0.5;
+    case "improving":
+      return 0.15;
+  }
+}
+
+function recencySignal(wrongsChronological: number[]): number {
+  if (wrongsChronological.length === 0) return 0.2;
+
+  const last = wrongsChronological[wrongsChronological.length - 1] ?? 0;
+  if (last > 0) return 1;
+
+  if (wrongsChronological.length >= 2) {
+    const prev = wrongsChronological[wrongsChronological.length - 2] ?? 0;
+    if (prev === 0) return 0.2;
+  }
+
+  return 0.5;
+}
+
+function scoreToLevel(score: number, trend: TopicTrend): TopicPriorityLevel {
+  let level: TopicPriorityLevel;
+  if (score >= 0.6) level = "critical";
+  else if (score >= 0.35) level = "secondary";
+  else level = "watch";
+
+  if (trend === "improving" && level === "critical") {
+    return "secondary";
+  }
+
+  return level;
+}
+
+export function computeTopicPriority(
+  row: TopicErrorAnalysisRow,
+  examCount: number
+): TopicPriority {
+  const safeExamCount = Math.max(examCount, 1);
+  const hitCount = row.wrongsChronological.filter((w) => w > 0).length;
+  const frequency = hitCount / safeExamCount;
+  const intensity = Math.min(1, row.avgWrong / 3);
+  const direction = directionSignal(row.trend);
+  const recency = recencySignal(row.wrongsChronological);
+
+  const score =
+    0.35 * frequency + 0.25 * intensity + 0.25 * direction + 0.15 * recency;
+
+  const lastWrong =
+    row.wrongsChronological[row.wrongsChronological.length - 1] ?? 0;
+
+  return {
+    topicId: row.topicId,
+    topicName: row.topicName,
+    score,
+    level: scoreToLevel(score, row.trend),
+    frequency,
+    intensity,
+    direction,
+    recency,
+    avgWrong: row.avgWrong,
+    trend: row.trend,
+    severity: row.severity,
+    examsCount: examCount,
+    hitCount,
+    lastWrong,
+  };
+}
+
+export function buildFocusRecommendations(
+  subjectTopicAnalyses: SubjectTopicAnalysisInput[],
+  examCount: number
+): FocusRecommendations {
+  const allItems: FocusItem[] = [];
+  const subjectWeakest: FocusItem[] = [];
+
+  for (const subject of subjectTopicAnalyses) {
+    if (subject.analysis.rows.length === 0) continue;
+
+    const priorities = subject.analysis.rows.map((row) =>
+      computeTopicPriority(row, examCount)
+    );
+
+    priorities.sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.avgWrong - a.avgWrong ||
+        a.topicName.localeCompare(b.topicName, "tr-TR")
+    );
+
+    const weakest = priorities[0];
+    if (weakest) {
+      subjectWeakest.push({
+        subjectId: subject.subjectId,
+        subjectName: subject.subjectName,
+        color: subject.color,
+        priority: weakest,
+      });
+    }
+
+    for (const priority of priorities) {
+      allItems.push({
+        subjectId: subject.subjectId,
+        subjectName: subject.subjectName,
+        color: subject.color,
+        priority,
+      });
+    }
+  }
+
+  const top3 = [...allItems]
+    .sort(
+      (a, b) =>
+        b.priority.score - a.priority.score ||
+        b.priority.avgWrong - a.priority.avgWrong ||
+        a.priority.topicName.localeCompare(b.priority.topicName, "tr-TR")
+    )
+    .slice(0, 3);
+
+  return {
+    top3,
+    subjectWeakest,
+    hasData: allItems.length > 0,
+  };
+}
+
+export function priorityLevelColor(level: TopicPriorityLevel): string {
+  switch (level) {
+    case "critical":
+      return "#ef4444";
+    case "secondary":
+      return "#eab308";
+    case "watch":
+      return "#22c55e";
+  }
+}

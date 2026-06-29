@@ -1,21 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { BarChart3, ChevronRight, Plus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import AddExamModal from "./AddExamModal";
 import ExamTopicDetail from "./ExamTopicDetail";
+import FocusCard from "./FocusCard";
 import type {
   ExamOption,
   SubjectOption,
 } from "@/app/dashboard/student/mock-exams/_components/MockExamsClient";
 import {
+  buildFocusRecommendations,
+  buildTopicErrorAnalysis,
   computeSubjectAnalysis,
   filterExamsForAnalysis,
   type ExamTypeFilter,
+  type FocusRecommendations,
   type LastNFilter,
   type NormalizedExam,
+  type RawTopicErrorRecord,
 } from "./exam-analysis-utils";
 
 interface SelectedSubject {
@@ -175,6 +181,9 @@ export default function ExamAnalysis({
     null
   );
   const [addExamOpen, setAddExamOpen] = useState(false);
+  const [focusLoading, setFocusLoading] = useState(false);
+  const [focusRecommendations, setFocusRecommendations] =
+    useState<FocusRecommendations | null>(null);
 
   const filteredExams = useMemo(
     () => filterExamsForAnalysis(analysisExams, examTypeFilter, lastN),
@@ -202,6 +211,74 @@ export default function ExamAnalysis({
 
   const lastNLabel =
     LAST_N_OPTIONS.find((o) => o.id === lastN)?.label ?? `Son ${lastN}`;
+
+  useEffect(() => {
+    if (selectedSubject) return;
+
+    let cancelled = false;
+
+    (async () => {
+      if (filteredExams.length === 0) {
+        setFocusRecommendations({ top3: [], subjectWeakest: [], hasData: false });
+        setFocusLoading(false);
+        return;
+      }
+
+      setFocusLoading(true);
+
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("mock_exam_topic_errors")
+        .select(
+          `topic_id, wrong_count,
+           topic:topics(id, name, order_index),
+           result:mock_exam_results!inner(
+             id, subject_id, mock_exam_id,
+             mock_exam:mock_exams!inner(id, exam_date, title, student_id)
+           )`
+        )
+        .eq("result.mock_exam.student_id", studentId);
+
+      if (cancelled) return;
+
+      if (fetchError) {
+        setFocusRecommendations({ top3: [], subjectWeakest: [], hasData: false });
+        setFocusLoading(false);
+        return;
+      }
+
+      const rawErrors = (data ?? []) as RawTopicErrorRecord[];
+      const bySubject = new Map<number, RawTopicErrorRecord[]>();
+
+      for (const row of rawErrors) {
+        const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+        if (!resultRaw) continue;
+        const subjectId = resultRaw.subject_id;
+        const list = bySubject.get(subjectId) ?? [];
+        list.push(row);
+        bySubject.set(subjectId, list);
+      }
+
+      const subjectTopicAnalyses = subjectRows.map((row) => ({
+        subjectId: row.subjectId,
+        subjectName: row.subjectName,
+        color: row.color,
+        analysis: buildTopicErrorAnalysis(
+          bySubject.get(row.subjectId) ?? [],
+          filteredExams
+        ),
+      }));
+
+      setFocusRecommendations(
+        buildFocusRecommendations(subjectTopicAnalyses, filteredExams.length)
+      );
+      setFocusLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId, filteredExams, subjectRows, selectedSubject]);
 
   const openSubjectDetail = (row: {
     subjectId: number;
@@ -323,6 +400,12 @@ export default function ExamAnalysis({
         />
       ) : (
         <>
+          <FocusCard
+            recommendations={focusRecommendations}
+            lastNLabel={lastNLabel}
+            loading={focusLoading}
+          />
+
           {summary && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
