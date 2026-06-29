@@ -30,7 +30,10 @@ import TeacherTopicProgress, {
 import StudentDetailTabs from "./_components/StudentDetailTabs";
 import TeacherWeeklyPlan from "./_components/TeacherWeeklyPlan";
 import ExamAnalysis from "./_components/ExamAnalysis";
+import StudentTargets from "./_components/StudentTargets";
 import {
+  computeSubjectAnalysis,
+  filterExamsForAnalysis,
   normalizeAnalysisExams,
   type NormalizedExam,
 } from "./_components/exam-analysis-utils";
@@ -85,6 +88,7 @@ export default async function StudentDetailPage({
     { data: rawSubjects },
     { data: rawExams },
     { data: progressRecords },
+    { data: rawStudentTargets },
   ] = await Promise.all([
     supabase
       .from("mock_exams")
@@ -137,6 +141,10 @@ export default async function StudentDetailPage({
     supabase
       .from("topic_progress")
       .select("topic_id, status, completion_percentage")
+      .eq("student_id", id),
+    supabase
+      .from("student_targets")
+      .select("subject_id, target_net, note")
       .eq("student_id", id),
   ]);
 
@@ -284,6 +292,28 @@ export default async function StudentDetailPage({
     };
   });
 
+  const existingTargets: Record<
+    number,
+    { target_net: number; note: string | null }
+  > = {};
+  for (const row of rawStudentTargets ?? []) {
+    existingTargets[row.subject_id] = {
+      target_net: Number(row.target_net),
+      note: row.note,
+    };
+  }
+
+  const filteredExamsForNets = filterExamsForAnalysis(
+    analysisExams,
+    "TYT+AYT",
+    5
+  );
+  const currentNets: Record<number, number> = Object.fromEntries(
+    computeSubjectAnalysis(filteredExamsForNets, topicCountBySubjectId).map(
+      (row) => [row.subjectId, row.avgNet]
+    )
+  );
+
   const exam = gradeToExam(student.grade);
   const colors = targetExamColors(exam);
 
@@ -425,6 +455,14 @@ export default async function StudentDetailPage({
             topicCountBySubjectId={topicCountBySubjectId}
             examFormOptions={examFormOptions}
             subjectFormOptions={subjectFormOptions}
+          />
+        }
+        targets={
+          <StudentTargets
+            studentId={id}
+            subjects={subjectFormOptions}
+            currentNets={currentNets}
+            existingTargets={existingTargets}
           />
         }
       />

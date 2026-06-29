@@ -2,21 +2,28 @@
 
 import { useState } from "react";
 
-type TabId = "overview" | "program" | "analysis";
+type TabId = "overview" | "program" | "analysis" | "targets";
 
 interface Props {
   overview: React.ReactNode;
   program: React.ReactNode;
   analysis: React.ReactNode;
+  targets?: React.ReactNode;
 }
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Genel Bakış" },
   { id: "program", label: "Haftalık Program" },
   { id: "analysis", label: "Deneme Analizi" },
+  { id: "targets", label: "Hedefler" },
 ];
 
-export default function StudentDetailTabs({ overview, program, analysis }: Props) {
+export default function StudentDetailTabs({
+  overview,
+  program,
+  analysis,
+  targets,
+}: Props) {
   const [active, setActive] = useState<TabId>("overview");
 
   return (
@@ -59,7 +66,9 @@ export default function StudentDetailTabs({ overview, program, analysis }: Props
           ? overview
           : active === "program"
             ? program
-            : analysis}
+            : active === "analysis"
+              ? analysis
+              : targets}
       </div>
     </div>
   );
