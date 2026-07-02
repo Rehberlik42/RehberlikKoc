@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import StudentResourcesClient, {
   type StudentAssignedResource,
 } from "./_components/StudentResourcesClient";
+import type {
+  ExamOption,
+  SubjectOption,
+} from "@/app/dashboard/teacher/resources/_components/resource-types";
 
 export const dynamic = "force-dynamic";
 
@@ -121,13 +125,13 @@ export default async function StudentResourcesPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, can_add_resources, teacher_id")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "student") redirect("/dashboard/teacher");
 
-  const [assignmentsRes, progressRes] = await Promise.all([
+  const [assignmentsRes, progressRes, examsRes, subjectsRes] = await Promise.all([
     supabase
       .from("resource_assignments")
       .select(
@@ -141,6 +145,11 @@ export default async function StudentResourcesPage() {
       .eq("is_completed", true)
       .not("study_resource_id", "is", null)
       .not("solved_count", "is", null),
+    supabase.from("exams").select("id, name").order("name"),
+    supabase
+      .from("subjects")
+      .select("id, name, exam_id, exam:exams(name)")
+      .order("order_index"),
   ]);
 
   const progressByResource = groupProgressByResource(progressRes.data ?? []);
@@ -158,7 +167,33 @@ export default async function StudentResourcesPage() {
     .filter((r): r is StudentAssignedResource => r != null)
     .sort((a, b) => a.name.localeCompare(b.name, "tr"));
 
+  const examOptions: ExamOption[] = (examsRes.data ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+  }));
+
+  const subjectOptions: SubjectOption[] = (subjectsRes.data ?? []).map((s) => {
+    const examRaw = s.exam;
+    const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
+    return {
+      id: s.id,
+      name: s.name,
+      exam_id: s.exam_id,
+      examName:
+        exam && typeof exam === "object" && "name" in exam
+          ? (exam.name as string)
+          : null,
+    };
+  });
+
   return (
-    <StudentResourcesClient initialResources={initialResources} studentId={user.id} />
+    <StudentResourcesClient
+      initialResources={initialResources}
+      studentId={user.id}
+      canAddResources={profile?.can_add_resources === true}
+      teacherId={profile?.teacher_id ?? null}
+      examOptions={examOptions}
+      subjectOptions={subjectOptions}
+    />
   );
 }

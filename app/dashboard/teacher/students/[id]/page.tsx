@@ -31,6 +31,7 @@ import StudentDetailTabs from "./_components/StudentDetailTabs";
 import TeacherWeeklyPlan from "./_components/TeacherWeeklyPlan";
 import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
+import ResourcePermissionToggle from "./_components/ResourcePermissionToggle";
 import {
   computeSubjectAnalysis,
   computeSubjectNetTrend,
@@ -51,6 +52,7 @@ interface StudentDetail {
   phone: string | null;
   bio: string | null;
   created_at: string | null;
+  can_add_resources: boolean;
 }
 
 export default async function StudentDetailPage({
@@ -69,7 +71,7 @@ export default async function StudentDetailPage({
   // ─── Bu öğrenci bu öğretmene ait mi? ─────────────────────────────────────
   const { data: rawStudent } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, grade, school, phone, bio, created_at")
+    .select("id, full_name, avatar_url, grade, school, phone, bio, created_at, can_add_resources")
     .eq("id", id)
     .eq("teacher_id", user.id)
     .eq("role", "student")
@@ -405,6 +407,11 @@ export default async function StudentDetailPage({
           </div>
         </div>
       </div>
+
+      <ResourcePermissionToggle
+        studentId={student.id}
+        initialCanAddResources={student.can_add_resources ?? false}
+      />
 
       <StudentDetailTabs
         overview={
