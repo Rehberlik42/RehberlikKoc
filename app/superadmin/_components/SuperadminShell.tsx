@@ -10,16 +10,16 @@ export default function SuperadminShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-white/10 bg-[#0a0a18]/80 backdrop-blur-sm">
-        <div className="border-b border-white/10 px-5 py-6">
+    <div className="flex min-h-screen bg-[#f3f5fc] text-[#161a3a]">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-[#d9def0] bg-white shadow-[1px_0_0_rgba(22,26,58,0.02)]">
+        <div className="border-b border-[#d9def0] px-5 py-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b4dff] to-[#4f7cff] shadow-md shadow-[#6b4dff]/25">
               <Shield className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold tracking-wide text-white">MINDORA</p>
-              <p className="text-[10px] uppercase tracking-widest text-[#00D4FF]/70">
+              <p className="text-sm font-bold tracking-wide text-[#161a3a]">MINDORA</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#6b4dff]">
                 Superadmin
               </p>
             </div>
@@ -29,18 +29,18 @@ export default function SuperadminShell({
         <nav className="flex-1 space-y-1 px-3 py-4">
           <Link
             href="/superadmin"
-            className="flex items-center gap-2.5 rounded-lg bg-[#7B2FFF]/15 px-3 py-2.5 text-sm font-medium text-[#c4b5ff] ring-1 ring-[#7B2FFF]/25"
+            className="flex items-center gap-2.5 rounded-xl bg-[#6b4dff]/10 px-3 py-2.5 text-sm font-semibold text-[#6b4dff] ring-1 ring-[#6b4dff]/15"
           >
             <Building2 className="h-4 w-4" />
             Müşteriler
           </Link>
         </nav>
 
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t border-[#d9def0] p-3">
           <form action={logoutSuperadmin}>
             <button
               type="submit"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-[#5a628c] transition-colors hover:bg-[#fef2f2] hover:text-red-600"
             >
               <LogOut className="h-4 w-4" />
               Çıkış Yap
@@ -49,8 +49,9 @@ export default function SuperadminShell({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
+      <main className="relative flex-1 overflow-auto">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(107,77,255,0.08),transparent)]" />
+        <div className="relative mx-auto max-w-7xl px-6 py-8">{children}</div>
       </main>
     </div>
   );

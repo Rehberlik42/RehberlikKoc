@@ -16,19 +16,19 @@ const statusStyles: Record<
   { bg: string; text: string; border: string }
 > = {
   trial: {
-    bg: "bg-yellow-500/15",
-    text: "text-yellow-400",
-    border: "border-yellow-500/30",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
   },
   active: {
-    bg: "bg-green-500/15",
-    text: "text-green-400",
-    border: "border-green-500/30",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
   },
   expired: {
-    bg: "bg-red-500/15",
-    text: "text-red-400",
-    border: "border-red-500/30",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
   },
 };
 
@@ -66,8 +66,10 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">SaaS Müşteri Yönetimi</h1>
-          <p className="mt-1 text-sm text-white/40">
+          <h1 className="text-3xl font-bold tracking-tight text-[#161a3a]">
+            SaaS Müşteri Yönetimi
+          </h1>
+          <p className="mt-1 text-sm text-[#5a628c]">
             Okul ve öğretmen aboneliklerini yönetin.
           </p>
         </div>
@@ -77,7 +79,7 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
             setEditingClient(null);
             setIsModalOpen(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all hover:shadow-[#7B2FFF]/40"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#6b4dff] to-[#4f7cff] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#6b4dff]/25 transition-all hover:shadow-[#6b4dff]/35"
         >
           <Plus className="h-4 w-4" />
           Yeni Müşteri Ekle
@@ -90,94 +92,98 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
         activeCount={activeCount}
       />
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 bg-white/[0.03]">
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
-                Kurum / Kişi Adı
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
-                İletişim
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
-                Abonelik Durumu
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
-                Öğrenci Kotası
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
-                Bitiş Tarihi
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/50">
-                Aksiyonlar
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {clients.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-white/40">
-                  Henüz müşteri eklenmemiş. İlk müşteriyi eklemek için yukarıdaki
-                  butonu kullanın.
-                </td>
+      <div className="overflow-hidden rounded-2xl border border-[#d9def0] bg-white shadow-sm shadow-[#161a3a]/[0.03]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#d9def0] bg-[#f8f9fd]">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Kurum / Kişi Adı
+                </th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  İletişim
+                </th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Abonelik Durumu
+                </th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Öğrenci Kotası
+                </th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Bitiş Tarihi
+                </th>
+                <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Aksiyonlar
+                </th>
               </tr>
-            ) : (
-              clients.map((client) => {
-                const style = statusStyles[client.subscription_status];
-                return (
-                  <tr
-                    key={client.id}
-                    className="transition-colors hover:bg-white/[0.02]"
-                  >
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-white">{client.company_name}</p>
-                    </td>
-                    <td className="px-6 py-4 text-white/70">
-                      {client.contact_name}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${style.bg} ${style.text} ${style.border}`}
-                      >
-                        {SUBSCRIPTION_LABELS[client.subscription_status]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-white/70">
-                      {client.max_students}
-                    </td>
-                    <td className="px-6 py-4 text-white/50">
-                      {formatDate(client.expires_at)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          title="Düzenle"
-                          onClick={() => {
-                            setEditingClient(client);
-                            setIsModalOpen(true);
-                          }}
-                          className="rounded-lg p-2 text-[#4F7CFF] transition-colors hover:bg-[#4F7CFF]/10"
+            </thead>
+            <tbody className="divide-y divide-[#eef0f8]">
+              {clients.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-[#8b93b8]">
+                    Henüz müşteri eklenmemiş. İlk müşteriyi eklemek için yukarıdaki
+                    butonu kullanın.
+                  </td>
+                </tr>
+              ) : (
+                clients.map((client) => {
+                  const style = statusStyles[client.subscription_status];
+                  return (
+                    <tr
+                      key={client.id}
+                      className="transition-colors hover:bg-[#f8f9fd]"
+                    >
+                      <td className="px-6 py-4 align-middle">
+                        <p className="font-semibold text-[#161a3a]">
+                          {client.company_name}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 align-middle text-[#5a628c]">
+                        {client.contact_name}
+                      </td>
+                      <td className="px-6 py-4 align-middle">
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${style.bg} ${style.text} ${style.border}`}
                         >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          title="Sil"
-                          onClick={() => setDeleteTarget(client)}
-                          className="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-500/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {SUBSCRIPTION_LABELS[client.subscription_status]}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 align-middle tabular-nums text-[#5a628c]">
+                        {client.max_students}
+                      </td>
+                      <td className="px-6 py-4 align-middle tabular-nums text-[#8b93b8]">
+                        {formatDate(client.expires_at)}
+                      </td>
+                      <td className="px-6 py-4 align-middle">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            title="Düzenle"
+                            onClick={() => {
+                              setEditingClient(client);
+                              setIsModalOpen(true);
+                            }}
+                            className="rounded-lg p-2 text-[#4f7cff] transition-colors hover:bg-[#4f7cff]/10"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            title="Sil"
+                            onClick={() => setDeleteTarget(client)}
+                            className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ClientModal

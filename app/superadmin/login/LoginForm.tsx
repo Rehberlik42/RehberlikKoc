@@ -17,15 +17,15 @@ export default function LoginForm() {
 
   return (
     <div className="relative w-full max-w-md">
-      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#7B2FFF]/40 via-[#4F7CFF]/30 to-[#00D4FF]/40 blur-xl opacity-70" />
+      <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#6b4dff]/30 via-[#4f7cff]/25 to-[#7aa2ff]/30 blur-2xl opacity-80" />
 
-      <div className="relative rounded-2xl border border-white/10 bg-[#0a0a18]/95 p-8 shadow-2xl shadow-[#7B2FFF]/10 backdrop-blur-xl">
+      <div className="relative rounded-3xl border border-[#d9def0] bg-white/95 p-8 shadow-2xl shadow-[#6b4dff]/10 backdrop-blur-xl">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#7B2FFF] to-[#4F7CFF] shadow-lg shadow-[#7B2FFF]/30">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6b4dff] to-[#4f7cff] shadow-lg shadow-[#6b4dff]/30">
             <Shield className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">MINDORA Superadmin</h1>
-          <p className="mt-2 text-sm text-white/40">
+          <h1 className="text-2xl font-bold text-[#161a3a]">MINDORA Superadmin</h1>
+          <p className="mt-2 text-sm text-[#5a628c]">
             SaaS müşteri yönetim paneline giriş
           </p>
         </div>
@@ -34,19 +34,19 @@ export default function LoginForm() {
           <div>
             <label
               htmlFor="username"
-              className="mb-2 block text-sm font-medium text-white/70"
+              className="mb-1.5 block text-sm font-medium text-[#161a3a]"
             >
               Kullanıcı Adı
             </label>
             <div className="relative">
-              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7B2FFF]/70" />
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b4dff]/70" />
               <input
                 id="username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 text-white placeholder:text-white/25 focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                className="sa-input pl-10"
                 placeholder="Kullanıcı adınızı girin"
               />
             </div>
@@ -55,26 +55,26 @@ export default function LoginForm() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-white/70"
+              className="mb-1.5 block text-sm font-medium text-[#161a3a]"
             >
               Şifre
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4F7CFF]/70" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f7cff]/70" />
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 text-white placeholder:text-white/25 focus:border-[#4F7CFF]/50 focus:outline-none focus:ring-1 focus:ring-[#4F7CFF]/30"
+                className="sa-input pl-10"
                 placeholder="Şifrenizi girin"
               />
             </div>
           </div>
 
           {state?.error ? (
-            <div className="rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2 text-sm text-red-400">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {state.error}
             </div>
           ) : null}
@@ -82,7 +82,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#7B2FFF]/25 transition-all hover:shadow-[#7B2FFF]/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-r from-[#6b4dff] to-[#4f7cff] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#6b4dff]/25 transition-all hover:shadow-[#6b4dff]/35 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>

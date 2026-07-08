@@ -4,7 +4,10 @@ export default function SuperadminRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#050510] text-white antialiased">
+    <div
+      data-sa-theme="light"
+      className="min-h-screen bg-[#f3f5fc] text-[#161a3a] antialiased"
+    >
       {children}
     </div>
   );

@@ -109,22 +109,22 @@ export default function ClientModal({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-[#161a3a]/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-white/10 bg-[#0f0f23] shadow-2xl shadow-black/50"
+          className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#d9def0] bg-white shadow-2xl shadow-[#161a3a]/15"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 flex items-center justify-between border-b border-white/10 bg-[#0f0f23]/95 px-6 py-4">
+          <div className="sticky top-0 flex items-center justify-between border-b border-[#d9def0] bg-white/95 px-6 py-4 backdrop-blur-sm">
             <div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-[#161a3a]">
                 {isEditing ? "Müşteri Düzenle" : "Yeni Müşteri Ekle"}
               </h2>
               {!isEditing ? (
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-[#8b93b8]">
                   Auth hesabı, öğretmen rolü ve müşteri kaydı otomatik oluşturulur.
                 </p>
               ) : null}
@@ -132,15 +132,15 @@ export default function ClientModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1 text-white/40 transition-colors hover:text-white"
+              className="rounded-lg p-1.5 text-[#8b93b8] transition-colors hover:bg-[#f0f2fb] hover:text-[#161a3a]"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 p-6" autoComplete="off">
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 Kurum / Kişi Adı *
               </label>
               <input
@@ -150,13 +150,14 @@ export default function ClientModal({
                   setForm((prev) => ({ ...prev, company_name: e.target.value }))
                 }
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white placeholder:text-white/30 focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                autoComplete="organization"
+                className="sa-input"
                 placeholder="Okul veya kurum adı"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 İletişim Kişisi *
               </label>
               <input
@@ -166,13 +167,14 @@ export default function ClientModal({
                   setForm((prev) => ({ ...prev, contact_name: e.target.value }))
                 }
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white placeholder:text-white/30 focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                autoComplete="name"
+                className="sa-input"
                 placeholder="Ad Soyad"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 E-posta {isEditing ? "" : "*"}
               </label>
               <input
@@ -183,13 +185,14 @@ export default function ClientModal({
                   setForm((prev) => ({ ...prev, email: e.target.value }))
                 }
                 required={!isEditing}
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white placeholder:text-white/30 focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                autoComplete="off"
+                className="sa-input"
                 placeholder="ornek@okul.edu.tr"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 Telefon Numarası
               </label>
               <input
@@ -199,14 +202,15 @@ export default function ClientModal({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, phone: e.target.value }))
                 }
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white placeholder:text-white/30 focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                autoComplete="tel"
+                className="sa-input"
                 placeholder="05XX XXX XX XX"
               />
             </div>
 
             {!isEditing ? (
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                   Geçici Şifre *
                 </label>
                 <input
@@ -218,17 +222,18 @@ export default function ClientModal({
                     setForm((prev) => ({ ...prev, password: e.target.value }))
                   }
                   required
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white placeholder:text-white/30 focus:border-[#4F7CFF]/50 focus:outline-none focus:ring-1 focus:ring-[#4F7CFF]/30"
+                  autoComplete="new-password"
+                  className="sa-input"
                   placeholder="En az 6 karakter"
                 />
-                <p className="mt-1.5 text-xs text-white/35">
+                <p className="mt-1.5 text-xs text-[#8b93b8]">
                   Öğretmen ilk girişinde bu şifreyi kullanacaktır.
                 </p>
               </div>
             ) : null}
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 Öğrenci Kotası *
               </label>
               <input
@@ -240,12 +245,12 @@ export default function ClientModal({
                   setForm((prev) => ({ ...prev, max_students: e.target.value }))
                 }
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                className="sa-input"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 Abonelik Tipi *
               </label>
               <select
@@ -257,7 +262,7 @@ export default function ClientModal({
                     subscription_status: e.target.value,
                   }))
                 }
-                className="w-full cursor-pointer rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                className="sa-input"
               >
                 {SUBSCRIPTION_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -268,7 +273,7 @@ export default function ClientModal({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">
+              <label className="mb-1.5 block text-sm font-medium text-[#161a3a]">
                 Bitiş Tarihi
               </label>
               <input
@@ -278,12 +283,12 @@ export default function ClientModal({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, expires_at: e.target.value }))
                 }
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-white focus:border-[#7B2FFF]/50 focus:outline-none focus:ring-1 focus:ring-[#7B2FFF]/30"
+                className="sa-input"
               />
             </div>
 
             {error ? (
-              <div className="rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2 text-xs text-red-400">
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                 {error}
               </div>
             ) : null}
@@ -293,14 +298,14 @@ export default function ClientModal({
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50"
+                className="rounded-xl border border-[#d9def0] bg-white px-4 py-2 text-sm font-medium text-[#5a628c] transition-colors hover:bg-[#f0f2fb] disabled:opacity-50"
               >
                 İptal
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="rounded-lg bg-gradient-to-r from-[#7B2FFF] to-[#4F7CFF] px-4 py-2 font-medium text-white transition-all hover:shadow-lg hover:shadow-[#7B2FFF]/30 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-[#6b4dff] to-[#4f7cff] px-4 py-2 text-sm font-semibold text-white shadow-md shadow-[#6b4dff]/20 transition-all hover:shadow-[#6b4dff]/30 disabled:opacity-50"
               >
                 {isPending
                   ? isEditing
@@ -317,10 +322,10 @@ export default function ClientModal({
 
       {toast ? (
         <div
-          className={`fixed bottom-4 right-4 z-[60] rounded-lg px-4 py-3 text-sm font-medium transition-all duration-300 ${
+          className={`fixed bottom-4 right-4 z-[60] rounded-xl px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 ${
             toast.type === "success"
-              ? "border border-green-500/50 bg-green-900/50 text-green-300"
-              : "border border-red-500/50 bg-red-900/50 text-red-300"
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border border-red-200 bg-red-50 text-red-800"
           }`}
         >
           {toast.message}

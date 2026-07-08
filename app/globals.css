@@ -523,3 +523,64 @@ body {
     overflow: visible;
   }
 }
+
+/* ─── Superadmin light panel theme ─────────────────────────────────────────── */
+[data-sa-theme="light"] {
+  --sa-bg: #f3f5fc;
+  --sa-bg-deep: #e9ecf8;
+  --sa-surface: #ffffff;
+  --sa-surface-2: #f0f2fb;
+  --sa-sidebar: #ffffff;
+  --sa-text: #161a3a;
+  --sa-text-2: #5a628c;
+  --sa-text-3: #8b93b8;
+  --sa-border: #d9def0;
+  --sa-primary: #6b4dff;
+  --sa-primary-2: #4f7cff;
+  --sa-accent: #5b8cff;
+  --sa-ring: rgba(107, 77, 255, 0.28);
+}
+
+[data-sa-theme="light"] .sa-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--sa-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+[data-sa-theme="light"] .sa-input::placeholder {
+  color: var(--sa-text-3);
+}
+
+[data-sa-theme="light"] .sa-input:focus {
+  border-color: rgba(107, 77, 255, 0.55);
+  box-shadow: 0 0 0 3px var(--sa-ring);
+}
+
+[data-sa-theme="light"] select.sa-input {
+  cursor: pointer;
+  color-scheme: light;
+  background-color: var(--sa-surface);
+}
+
+[data-sa-theme="light"] select.sa-input option {
+  background-color: #ffffff;
+  color: #161a3a;
+}
+
+[data-sa-theme="light"] input.sa-input:-webkit-autofill,
+[data-sa-theme="light"] input.sa-input:-webkit-autofill:hover,
+[data-sa-theme="light"] input.sa-input:-webkit-autofill:focus,
+[data-sa-theme="light"] input.sa-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #161a3a !important;
+  caret-color: #161a3a;
+  border: 1px solid var(--sa-border);
+  transition: background-color 99999s ease-in-out 0s;
+}
