@@ -149,6 +149,11 @@ export default function StudentAddResourceModal({
 
     if (!name.trim() || !examId || !subjectId) return;
 
+    if (!teacherId) {
+      onError("Koç bilgisi bulunamadı. Kaynak eklenemez.");
+      return;
+    }
+
     const validTopics = topics
       .filter((t) => t.name.trim())
       .map((t) => ({
@@ -168,60 +173,113 @@ export default function StudentAddResourceModal({
       return;
     }
 
+    const resourcePayload = {
+      teacher_id: teacherId,
+      created_by: user.id,
+      name: name.trim(),
+      publisher: publisher.trim() || null,
+      exam_id: parseInt(examId, 10),
+      subject_id: parseInt(subjectId, 10),
+      cover_color: coverColor,
+      order_index: 0,
+    };
+
+    console.log("DEBUG payload:", JSON.stringify(resourcePayload));
+    console.log("DEBUG teacherId prop:", teacherId, "| user.id:", user.id);
+
     const { data: resource, error: resourceError } = await supabase
       .from("study_resources")
-      .insert({
-        teacher_id: teacherId,
-        created_by: user.id,
-        name: name.trim(),
-        publisher: publisher.trim() || null,
-        exam_id: parseInt(examId, 10),
-        subject_id: parseInt(subjectId, 10),
-        cover_color: coverColor,
-        order_index: 0,
-      })
+      .insert(resourcePayload)
       .select("id")
       .single();
 
     if (resourceError || !resource) {
+      if (resourceError) {
+        console.error("DEBUG RLS message:", resourceError.message);
+        console.error("DEBUG RLS details:", resourceError.details);
+        console.error("DEBUG RLS hint:", resourceError.hint);
+        console.error("DEBUG RLS code:", resourceError.code);
+      }
+      console.error("[StudentAddResource] study_resources INSERT failed", {
+        table: "study_resources",
+        payload: resourcePayload,
+        error: resourceError,
+        code: resourceError?.code,
+        message: resourceError?.message,
+        details: resourceError?.details,
+        hint: resourceError?.hint,
+      });
       setLoading(false);
       onError("Kaynak eklenemedi: " + (resourceError?.message ?? "bilinmeyen hata"));
       return;
     }
 
+    console.log("[StudentAddResource] study_resources INSERT ok", { id: resource.id });
+
     const resourceId = String(resource.id);
 
     if (validTopics.length > 0) {
-      const { error: topicsError } = await supabase.from("study_resource_topics").insert(
-        validTopics.map((t, i) => ({
-          resource_id: resourceId,
-          name: t.name,
-          target_count: t.target_count,
-          order_index: i,
-        }))
-      );
+      const topicsPayload = validTopics.map((t, i) => ({
+        resource_id: resourceId,
+        name: t.name,
+        target_count: t.target_count,
+        order_index: i,
+      }));
+
+      const { error: topicsError } = await supabase
+        .from("study_resource_topics")
+        .insert(topicsPayload);
 
       if (topicsError) {
+        console.error("[StudentAddResource] study_resource_topics INSERT failed", {
+          table: "study_resource_topics",
+          resourceId,
+          payload: topicsPayload,
+          error: topicsError,
+          code: topicsError.code,
+          message: topicsError.message,
+          details: topicsError.details,
+          hint: topicsError.hint,
+        });
         await supabase.from("study_resources").delete().eq("id", resourceId);
         setLoading(false);
         onError("Kaynak oluşturuldu ancak konular eklenemedi: " + topicsError.message);
         return;
       }
+
+      console.log("[StudentAddResource] study_resource_topics INSERT ok", {
+        count: topicsPayload.length,
+      });
     }
 
-    const { error: assignError } = await supabase.from("resource_assignments").insert({
+    const assignPayload = {
       study_resource_id: resourceId,
       student_id: studentId,
       assigned_by: user.id,
-    });
+    };
+
+    const { error: assignError } = await supabase
+      .from("resource_assignments")
+      .insert(assignPayload);
 
     if (assignError) {
+      console.error("[StudentAddResource] resource_assignments INSERT failed", {
+        table: "resource_assignments",
+        payload: assignPayload,
+        error: assignError,
+        code: assignError.code,
+        message: assignError.message,
+        details: assignError.details,
+        hint: assignError.hint,
+      });
       await supabase.from("study_resource_topics").delete().eq("resource_id", resourceId);
       await supabase.from("study_resources").delete().eq("id", resourceId);
       setLoading(false);
       onError("Kaynak oluşturuldu ancak atama yapılamadı: " + assignError.message);
       return;
     }
+
+    console.log("[StudentAddResource] resource_assignments INSERT ok");
 
     setLoading(false);
     onSuccess("Kaynağın eklendi ve listene atandı!");
@@ -384,7 +442,7 @@ export default function StudentAddResourceModal({
 
               <button
                 type="submit"
-                disabled={loading || !name.trim() || !examId || !subjectId}
+                disabled={loading || !teacherId || !name.trim() || !examId || !subjectId}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)] px-4 py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

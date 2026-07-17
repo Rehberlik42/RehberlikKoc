@@ -131,6 +131,8 @@ export default async function StudentResourcesPage() {
 
   if (profile?.role !== "student") redirect("/dashboard/teacher");
 
+  const teacherId = profile?.teacher_id ?? null;
+
   const [assignmentsRes, progressRes, examsRes, subjectsRes] = await Promise.all([
     supabase
       .from("resource_assignments")
@@ -145,10 +147,11 @@ export default async function StudentResourcesPage() {
       .eq("is_completed", true)
       .not("study_resource_id", "is", null)
       .not("solved_count", "is", null),
-    supabase.from("exams").select("id, name").order("name"),
+    supabase.from("exams").select("id, name").eq("is_active", true).order("id"),
     supabase
       .from("subjects")
-      .select("id, name, exam_id, exam:exams(name)")
+      .select("id, name, exam_id, order_index, color, exam:exams(name)")
+      .order("exam_id")
       .order("order_index"),
   ]);
 
@@ -191,7 +194,7 @@ export default async function StudentResourcesPage() {
       initialResources={initialResources}
       studentId={user.id}
       canAddResources={profile?.can_add_resources === true}
-      teacherId={profile?.teacher_id ?? null}
+      teacherId={teacherId}
       examOptions={examOptions}
       subjectOptions={subjectOptions}
     />
