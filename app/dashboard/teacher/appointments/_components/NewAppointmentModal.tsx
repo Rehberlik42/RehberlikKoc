@@ -11,6 +11,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  MEETING_TYPE_LABELS,
+  MEETING_FORMAT_LABELS,
+  type MeetingType,
+  type MeetingFormat,
+} from "@/lib/appointments";
 import type { AppointmentRow, StudentOption } from "../page";
 
 interface Props {
@@ -50,6 +56,8 @@ export default function NewAppointmentModal({
     defaultDatetimeLocal()
   );
   const [duration, setDuration] = useState<number>(45);
+  const [meetingType, setMeetingType] = useState<MeetingType>("student");
+  const [meetingFormat, setMeetingFormat] = useState<MeetingFormat>("online");
   const [notes, setNotes] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -65,6 +73,8 @@ export default function NewAppointmentModal({
       setStudentId(students[0]?.id ?? "");
       setAppointmentDate(defaultDatetimeLocal());
       setDuration(45);
+      setMeetingType("student");
+      setMeetingFormat("online");
       setNotes("");
     }
   }, [open, students]);
@@ -114,11 +124,16 @@ export default function NewAppointmentModal({
         teacher_id: teacherId,
         appointment_date: isoDate,
         duration_minutes: duration,
-        status: "pending",
+        meeting_type: meetingType,
+        meeting_format: meetingFormat,
+        // Öğretmenin oluşturduğu randevu onay gerektirmez
+        status: "confirmed",
         notes: notes.trim() || null,
+        created_by: teacherId,
       })
       .select(
-        `id, appointment_date, duration_minutes, status, notes, session_notes, created_at,
+        `id, appointment_date, duration_minutes, status, notes, meeting_type,
+         meeting_format, proposed_date, rejection_reason, started_at, completed_at, created_at,
          student:profiles!appointments_student_id_fkey(id, full_name, avatar_url, grade)`
       )
       .single();
@@ -224,6 +239,42 @@ export default function NewAppointmentModal({
               required
               className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--primary-2)]/50 focus:ring-2 focus:ring-[var(--primary-2)]/20 transition-colors [color-scheme:dark]"
             />
+          </div>
+
+          {/* Görüşme türü ve şekli */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider mb-1.5 block">
+                Görüşme Türü
+              </label>
+              <select
+                value={meetingType}
+                onChange={(e) => setMeetingType(e.target.value as MeetingType)}
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--primary)]/50 focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
+              >
+                {(Object.keys(MEETING_TYPE_LABELS) as MeetingType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {MEETING_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider mb-1.5 block">
+                Görüşme Şekli
+              </label>
+              <select
+                value={meetingFormat}
+                onChange={(e) => setMeetingFormat(e.target.value as MeetingFormat)}
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--primary)]/50 focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
+              >
+                {(Object.keys(MEETING_FORMAT_LABELS) as MeetingFormat[]).map((f) => (
+                  <option key={f} value={f}>
+                    {MEETING_FORMAT_LABELS[f]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Süre preset chip'leri */}

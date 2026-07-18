@@ -16,7 +16,7 @@ import {
   Users,
   FileBarChart,
   Library,
-  Bell,
+  MessageSquareText,
   LogOut,
   Menu,
   X,
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { resolveTheme } from "@/lib/themes";
+import NotificationsBell from "./NotificationsBell";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface UserProfile {
@@ -59,6 +60,7 @@ const teacherNav: NavItem[] = [
   { label: "Ana Sayfa",      href: "/dashboard/teacher",                  icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Öğrencilerim",   href: "/dashboard/teacher/students",         icon: <Users className="w-4.5 h-4.5" /> },
   { label: "Randevular",     href: "/dashboard/teacher/appointments",     icon: <CalendarCheck className="w-4.5 h-4.5" /> },
+  { label: "Görüşme Notları", href: "/dashboard/teacher/meetings",        icon: <MessageSquareText className="w-4.5 h-4.5" /> },
   { label: "Kaynak Takibi",  href: "/dashboard/teacher/resources",        icon: <Library className="w-4.5 h-4.5" /> },
   { label: "Test Sonuçları", href: "/dashboard/teacher/tests",            icon: <HeartPulse className="w-4.5 h-4.5" /> },
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
@@ -242,6 +244,8 @@ function Topbar({
       ogrenciler:     "Öğrencilerim",
       students:       "Öğrencilerim",
       appointments:   "Randevular",
+      availability:   "Müsaitlik Ayarları",
+      meetings:       "Görüşme Notları",
       resources:      "Kaynak Takibi",
       reports:        "Raporlar",
       raporlar:       "Raporlar",
@@ -265,10 +269,7 @@ function Topbar({
 
       {/* Right: bell + avatar */}
       <div className="flex items-center gap-3">
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-all">
-          <Bell className="w-4.5 h-4.5" />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--primary)] ring-2 ring-[var(--surface)]" />
-        </button>
+        <NotificationsBell userId={profile.id} role={profile.role} />
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] flex items-center justify-center text-white text-xs font-bold">
           {profile.full_name
             ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()

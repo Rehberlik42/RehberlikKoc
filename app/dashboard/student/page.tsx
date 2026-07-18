@@ -1,5 +1,16 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { CalendarCheck, Clock, Video, Users2, Phone, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import {
+  MEETING_TYPE_LABELS,
+  MEETING_FORMAT_LABELS,
+  STATUS_LABELS,
+  formatTimeTR,
+  type MeetingType,
+  type MeetingFormat,
+  type AppointmentStatus,
+} from "@/lib/appointments";
 import TodayTasks from "./_components/TodayTasks";
 import TargetSummaryCard, {
   type TargetHighlight,
@@ -90,11 +101,16 @@ export default async function StudentDashboardPage() {
     year: "numeric",
   });
 
+  // Bugün 00:00 – yarın 23:59 arası randevular
+  const rangeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const rangeEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+
   const [
     { data: todayTasksRaw },
     { data: rawStudentTargets },
     { data: rawMockExams },
     { data: rawSubjects },
+    { data: rawUpcomingAppointments },
   ] = await Promise.all([
     supabase
       .from("study_plan_tasks")
@@ -121,7 +137,24 @@ export default async function StudentDashboardPage() {
       .order("exam_date", { ascending: false })
       .limit(50),
     supabase.from("subjects").select("id, name").order("id"),
+    supabase
+      .from("appointments")
+      .select("id, appointment_date, duration_minutes, status, meeting_type, meeting_format")
+      .eq("student_id", user.id)
+      .in("status", ["pending", "proposed", "confirmed", "in_progress"])
+      .gte("appointment_date", rangeStart.toISOString())
+      .lt("appointment_date", rangeEnd.toISOString())
+      .order("appointment_date", { ascending: true }),
   ]);
+
+  const upcomingAppointments = (rawUpcomingAppointments ?? []) as {
+    id: number;
+    appointment_date: string;
+    duration_minutes: number;
+    status: AppointmentStatus;
+    meeting_type: MeetingType;
+    meeting_format: MeetingFormat;
+  }[];
 
   const initialTasks = (todayTasksRaw ?? []).map(mapStudyPlanTaskRow);
   const firstName = profile?.full_name?.split(" ")[0] ?? "Öğrenci";
@@ -214,6 +247,66 @@ export default async function StudentDashboardPage() {
           Bugün planına sadık kal — her görev seni hedefine bir adım daha yaklaştırır.
         </p>
       </div>
+
+      {upcomingAppointments.length > 0 && (
+        <div className="rounded-2xl border border-[var(--primary)]/25 bg-[var(--primary)]/10 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
+              <CalendarCheck className="h-4.5 w-4.5 text-[var(--accent)]" />
+              Yaklaşan Randevuların
+            </h3>
+            <Link
+              href="/dashboard/student/randevular"
+              className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--accent)] hover:opacity-80 transition-opacity"
+            >
+              Tümü
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {upcomingAppointments.map((a) => {
+              const d = new Date(a.appointment_date);
+              const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+              const FormatIcon =
+                a.meeting_format === "online" ? Video : a.meeting_format === "phone" ? Phone : Users2;
+              return (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                >
+                  <span
+                    className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                      isToday
+                        ? "bg-[var(--primary)]/20 text-[var(--accent)] border border-[var(--primary)]/40"
+                        : "bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)]"
+                    }`}
+                  >
+                    {isToday ? "Bugün" : "Yarın"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[var(--text-primary)]">
+                      {MEETING_TYPE_LABELS[a.meeting_type] ?? a.meeting_type}
+                    </p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--text-muted)]">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTimeTR(a.appointment_date)} · {a.duration_minutes} dk
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <FormatIcon className="h-3 w-3" />
+                        {MEETING_FORMAT_LABELS[a.meeting_format]}
+                      </span>
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    {STATUS_LABELS[a.status]}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <TodayTasks
         initialTasks={initialTasks}

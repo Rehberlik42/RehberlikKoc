@@ -1,11 +1,17 @@
 import { redirect } from "next/navigation";
-import { Sparkles, CalendarCheck } from "lucide-react";
+import Link from "next/link";
+import { CalendarCheck, Settings2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import AppointmentsBoard from "./_components/AppointmentsBoard";
+import type {
+  AppointmentStatus,
+  MeetingType,
+  MeetingFormat,
+} from "@/lib/appointments";
+import TeacherAppointmentsClient from "./_components/TeacherAppointmentsClient";
 
 export const dynamic = "force-dynamic";
 
-// ─── Server-side types (board'a aktarılır) ────────────────────────────────────
+// ─── Server-side types ────────────────────────────────────────────────────────
 export interface StudentOption {
   id: string;
   full_name: string | null;
@@ -17,9 +23,14 @@ export interface AppointmentRow {
   id: number;
   appointment_date: string;
   duration_minutes: number;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: AppointmentStatus;
   notes: string | null;
-  session_notes: string | null;
+  meeting_type: MeetingType;
+  meeting_format: MeetingFormat;
+  proposed_date: string | null;
+  rejection_reason: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   student: StudentOption | null;
 }
@@ -40,12 +51,12 @@ export default async function TeacherAppointmentsPage() {
 
   if (profile?.role === "student") redirect("/dashboard/student");
 
-  // ─── İlk veri yüklemesi (paralel) ──────────────────────────────────────────
   const [appointmentsRes, studentsRes] = await Promise.all([
     supabase
       .from("appointments")
       .select(
-        `id, appointment_date, duration_minutes, status, notes, session_notes, created_at,
+        `id, appointment_date, duration_minutes, status, notes, meeting_type,
+         meeting_format, proposed_date, rejection_reason, started_at, completed_at, created_at,
          student:profiles!appointments_student_id_fkey(id, full_name, avatar_url, grade)`
       )
       .eq("teacher_id", user.id)
@@ -62,26 +73,28 @@ export default async function TeacherAppointmentsPage() {
   const students = (studentsRes.data ?? []) as StudentOption[];
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-[1200px] mx-auto space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--primary-2)]/15 border border-[var(--primary-2)]/25 text-[var(--accent)] text-[10px] font-bold uppercase tracking-widest">
-            <Sparkles className="w-3 h-3" />
-            Trello tarzı koçluk takvimi
-          </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-2">
             <CalendarCheck className="w-7 h-7 text-[var(--accent)]" />
-            Randevu Takvimim
+            Randevular
           </h2>
           <p className="text-[var(--text-muted)] text-sm">
-            Kartları sürükleyip bırakarak randevuların durumunu güncelleyebilirsin.
-            Değişiklikler anında kaydedilir.
+            Gelen talepleri onayla, yeni saat öner ya da reddet. Tamamlanan
+            görüşmelere not ekle.
           </p>
         </div>
+        <Link
+          href="/dashboard/teacher/appointments/availability"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--primary)]/40 transition-all"
+        >
+          <Settings2 className="h-4 w-4" />
+          Müsaitlik Ayarları
+        </Link>
       </div>
 
-      <AppointmentsBoard
+      <TeacherAppointmentsClient
         initialAppointments={appointments}
         students={students}
         teacherId={user.id}
