@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
       // YouTube thumbnail'lari icin
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "img.youtube.com" },
-      // Rehberlik kapak gorselleri
-      { protocol: "https", hostname: "images.unsplash.com" },
+      // Rehberlik kapak gorselleri — CMS'ten herhangi bir https kaynagi girilebilir
+      { protocol: "https", hostname: "**" },
     ],
   },
 };

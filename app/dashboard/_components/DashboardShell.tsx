@@ -63,6 +63,7 @@ const teacherNav: NavItem[] = [
   { label: "Görüşme Notları", href: "/dashboard/teacher/meetings",        icon: <MessageSquareText className="w-4.5 h-4.5" /> },
   { label: "Kaynak Takibi",  href: "/dashboard/teacher/resources",        icon: <Library className="w-4.5 h-4.5" /> },
   { label: "Test Sonuçları", href: "/dashboard/teacher/tests",            icon: <HeartPulse className="w-4.5 h-4.5" /> },
+  { label: "Rehberlik",      href: "/dashboard/teacher/guidance",         icon: <Compass className="w-4.5 h-4.5" /> },
   { label: "Raporlar",       href: "/dashboard/teacher/reports",          icon: <FileBarChart className="w-4.5 h-4.5" /> },
   { label: "Ayarlar",        href: "/dashboard/settings",                 icon: <Settings className="w-4.5 h-4.5" /> },
 ];

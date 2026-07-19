@@ -9,9 +9,10 @@ import VideoModal from "./VideoModal";
 
 interface Props {
   initialContents: GuidanceContent[];
+  basePath?: string;
 }
 
-export default function GuidanceHub({ initialContents }: Props) {
+export default function GuidanceHub({ initialContents, basePath }: Props) {
   const [filter, setFilter] = useState<GuidanceFilter>("all");
   const [query, setQuery] = useState("");
   const [videoItem, setVideoItem] = useState<GuidanceContent | null>(null);
@@ -119,7 +120,11 @@ export default function GuidanceHub({ initialContents }: Props) {
                     : undefined
                 }
               >
-                <GuidanceCard item={item} onVideoOpen={setVideoItem} />
+                <GuidanceCard
+                  item={item}
+                  onVideoOpen={setVideoItem}
+                  basePath={basePath}
+                />
               </div>
             );
           })}

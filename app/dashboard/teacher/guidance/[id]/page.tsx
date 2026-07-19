@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { GuidanceContent } from "@/lib/guidance";
-import BlogArticle from "../_components/BlogArticle";
+import BlogArticle from "@/app/dashboard/student/guidance/_components/BlogArticle";
 
 export const dynamic = "force-dynamic";
 
-export default async function GuidanceBlogPage({
+export default async function TeacherGuidanceBlogPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -33,8 +33,8 @@ export default async function GuidanceBlogPage({
   const item = raw as unknown as GuidanceContent;
 
   if (item.content_type !== "blog") {
-    redirect("/dashboard/student/guidance");
+    redirect("/dashboard/teacher/guidance");
   }
 
-  return <BlogArticle item={item} backHref="/dashboard/student/guidance" />;
+  return <BlogArticle item={item} backHref="/dashboard/teacher/guidance" />;
 }

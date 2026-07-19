@@ -28,9 +28,14 @@ const TYPE_ICONS: Record<
 interface Props {
   item: GuidanceContent;
   onVideoOpen: (item: GuidanceContent) => void;
+  basePath?: string;
 }
 
-export default function GuidanceCard({ item, onVideoOpen }: Props) {
+export default function GuidanceCard({
+  item,
+  onVideoOpen,
+  basePath = "/dashboard/student/guidance",
+}: Props) {
   const meta = typeMeta(item.content_type);
   const Icon = TYPE_ICONS[item.content_type];
   const exam = examBadgeLabel(item.target_exam);
@@ -132,7 +137,7 @@ export default function GuidanceCard({ item, onVideoOpen }: Props) {
         <div className="mt-4 pt-3 border-t border-[var(--border)]">
           {item.content_type === "blog" && (
             <Link
-              href={`/dashboard/student/guidance/${item.id}`}
+              href={`${basePath}/${item.id}`}
               className={ctaClass}
               style={ctaStyle}
             >
