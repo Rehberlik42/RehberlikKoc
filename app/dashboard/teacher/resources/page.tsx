@@ -48,6 +48,7 @@ function mapResource(
     exam: { name: string } | { name: string }[] | null;
     subject: { name: string; color: string | null } | { name: string; color: string | null }[] | null;
     topics: { id: number; target_count: number }[] | null;
+    is_active?: boolean | null;
   },
   progress?: ResourceProgressTotals
 ): StudyResource {
@@ -78,6 +79,7 @@ function mapResource(
     correctTotal,
     wrongTotal,
     completionPct,
+    is_active: row.is_active ?? true,
   };
 }
 
@@ -97,9 +99,10 @@ export default async function TeacherResourcesPage() {
     supabase
       .from("study_resources")
       .select(
-        "id, name, publisher, cover_color, order_index, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, target_count)"
+        "id, name, publisher, cover_color, order_index, is_active, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, target_count)"
       )
       .eq("teacher_id", user.id)
+      .eq("is_active", true)
       .order("order_index", { ascending: true }),
     supabase.from("exams").select("id, name").order("name"),
     supabase

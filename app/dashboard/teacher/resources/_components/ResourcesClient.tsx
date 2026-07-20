@@ -216,6 +216,7 @@ function mapEditingResource(
     exam: { name: string } | { name: string }[] | null;
     subject: { name: string; color: string | null } | { name: string; color: string | null }[] | null;
     topics: ResourceTopicRow[] | null;
+    is_active?: boolean | null;
   },
   progress: Pick<
     StudyResource,
@@ -244,6 +245,7 @@ function mapEditingResource(
     correctTotal: progress.correctTotal,
     wrongTotal: progress.wrongTotal,
     completionPct: calcCompletionPct(progress.solvedTotal, totalQuestions),
+    is_active: row.is_active ?? true,
     exam_id: row.exam_id,
     subject_id: row.subject_id,
     topics,
@@ -323,9 +325,10 @@ export default function ResourcesClient({
     const { data, error } = await supabase
       .from("study_resources")
       .select(
-        "id, name, publisher, cover_color, order_index, exam_id, subject_id, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, name, target_count, order_index)"
+        "id, name, publisher, cover_color, order_index, is_active, exam_id, subject_id, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, name, target_count, order_index)"
       )
       .eq("id", resource.id)
+      .eq("is_active", true)
       .single();
 
     setActionLoadingId(null);

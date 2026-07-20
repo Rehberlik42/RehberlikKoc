@@ -133,9 +133,10 @@ export default async function StudentResourcesPage() {
     supabase
       .from("resource_assignments")
       .select(
-        `id, note, study_resource:study_resources(id, name, publisher, cover_color, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, target_count))`
+        `id, note, study_resource:study_resources!inner(id, name, publisher, cover_color, is_active, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, target_count))`
       )
-      .eq("student_id", user.id),
+      .eq("student_id", user.id)
+      .eq("study_resource.is_active", true),
     supabase
       .from("study_plan_tasks")
       .select("study_resource_id, solved_count, correct_count, wrong_count")

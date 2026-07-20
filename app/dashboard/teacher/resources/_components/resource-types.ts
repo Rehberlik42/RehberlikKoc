@@ -10,6 +10,11 @@ export interface ResourceTopicRow {
   name: string;
   target_count: number;
   order_index: number;
+  status: string;
+  tracking_method: string;
+  student_note: string | null;
+  coach_note: string | null;
+  last_studied_at: string | null;
 }
 
 export interface TopicProgressTotals {
@@ -28,6 +33,13 @@ export interface TopicProgressRow {
   wrong: number;
   completionPct: number;
   net: number;
+  // Faz K1: veri katmani alanlari (manuel takip UI'i K2'de). ResourceDetailModal
+  // gibi bu tipi literal ureten dosyalari bozmamak icin opsiyonel tutuluyor.
+  status?: string;
+  tracking_method?: string;
+  student_note?: string | null;
+  coach_note?: string | null;
+  last_studied_at?: string | null;
 }
 
 export interface StudyResource {
@@ -36,6 +48,9 @@ export interface StudyResource {
   publisher: string | null;
   cover_color: string;
   order_index: number;
+  // Faz K1: soft delete alani. AddResourceModal gibi bu tipi literal ureten
+  // (K2'de ele alinacak) dosyalari bozmamak icin opsiyonel tutuluyor.
+  is_active?: boolean;
   exam: { name: string } | null;
   subject: { name: string; color: string | null } | null;
   topicCount: number;

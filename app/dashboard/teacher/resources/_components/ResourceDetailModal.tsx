@@ -68,6 +68,12 @@ function buildTopicProgressRows(
       wrong: totals.wrong,
       completionPct: calcCompletionPct(totals.solved, topic.target_count),
       net: calcResourceNet(totals.correct, totals.wrong),
+      // Faz K2a: manuel takip alanlari (hesaplamayi degistirmez, sadece tasir)
+      status: topic.status,
+      tracking_method: topic.tracking_method,
+      student_note: topic.student_note,
+      coach_note: topic.coach_note,
+      last_studied_at: topic.last_studied_at,
     };
   });
 
@@ -82,15 +88,78 @@ function buildTopicProgressRows(
       wrong: uncategorized.wrong,
       completionPct: 0,
       net: calcResourceNet(uncategorized.correct, uncategorized.wrong),
+      // DB kaydi olmayan sanal satir; duzenlenemez, mantikli varsayilanlar
+      status: "calisilmadi",
+      tracking_method: "soru_bazli",
+      student_note: null,
+      coach_note: null,
+      last_studied_at: null,
     });
   }
 
   return rows;
 }
 
+const STATUS_OPTIONS = [
+  { value: "calisilmadi", label: "Çalışılmadı" },
+  { value: "baslandi", label: "Başlandı" },
+  { value: "devam_ediyor", label: "Devam Ediyor" },
+  { value: "tamamlandi", label: "Tamamlandı" },
+  { value: "tekrar_gerekli", label: "Tekrar Gerekli" },
+] as const;
+
+const TRACKING_OPTIONS = [
+  { value: "sayfa_bazli", label: "Sayfa Bazlı" },
+  { value: "test_bazli", label: "Test Bazlı" },
+  { value: "soru_bazli", label: "Soru Bazlı" },
+  { value: "konu_bazli", label: "Konu Bazlı" },
+  { value: "karma", label: "Karma" },
+] as const;
+
+const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
+const TRACKING_VALUES = TRACKING_OPTIONS.map((o) => o.value) as readonly string[];
+
+function normalizeStatus(value: string | null | undefined): string {
+  return value && STATUS_VALUES.includes(value) ? value : "calisilmadi";
+}
+
+function normalizeTracking(value: string | null | undefined): string {
+  return value && TRACKING_VALUES.includes(value) ? value : "soru_bazli";
+}
+
+function formatLastStudied(iso: string | null | undefined): string {
+  if (!iso) return "Hiç çalışılmadı";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Hiç çalışılmadı";
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (diffDays <= 0) return "Bugün";
+  if (diffDays === 1) return "Dün";
+  if (diffDays < 7) return `${diffDays} gün önce`;
+  return d.toLocaleDateString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+type TopicMetaPatch = {
+  status?: string;
+  tracking_method?: string;
+  coach_note?: string | null;
+  last_studied_at?: string | null;
+};
+
 export default function ResourceDetailModal({ resource, students, onClose }: Props) {
   const [resourceTopics, setResourceTopics] = useState<ResourceTopicRow[]>([]);
-  const [topics, setTopics] = useState<TopicProgressRow[]>([]);
+  const [taskRows, setTaskRows] = useState<
+    {
+      study_resource_topic_id: number | null;
+      solved_count: number | null;
+      correct_count: number | null;
+      wrong_count: number | null;
+    }[]
+  >([]);
+  const [topicUpdateError, setTopicUpdateError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [progressLoading, setProgressLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +191,9 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       const [topicsRes, assignmentsRes] = await Promise.all([
         supabase
           .from("study_resource_topics")
-          .select("id, name, target_count, order_index")
+          .select(
+            "id, name, target_count, order_index, status, tracking_method, student_note, coach_note, last_studied_at"
+          )
           .eq("resource_id", resource.id)
           .order("order_index", { ascending: true }),
         supabase
@@ -143,14 +214,12 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       if (topicsRes.error) {
         setError(topicsRes.error.message ?? "Veriler yüklenemedi");
         setResourceTopics([]);
-        setTopics([]);
         setLoading(false);
         return;
       }
 
       const topicRows = (topicsRes.data ?? []) as ResourceTopicRow[];
       setResourceTopics(topicRows);
-      setTopics([]);
       setLoading(false);
     })();
 
@@ -169,7 +238,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
 
     if (assignedStudents.length === 0) {
       setSelectedStudentId(null);
-      setTopics([]);
+      setTaskRows([]);
       return;
     }
 
@@ -181,7 +250,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
 
   useEffect(() => {
     if (!selectedStudentId) {
-      setTopics([]);
+      setTaskRows([]);
       return;
     }
 
@@ -204,19 +273,27 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
 
       if (tasksRes.error) {
         setProgressError(tasksRes.error.message ?? "İlerleme yüklenemedi");
-        setTopics([]);
+        setTaskRows([]);
         setProgressLoading(false);
         return;
       }
 
-      setTopics(buildTopicProgressRows(resourceTopics, tasksRes.data ?? []));
+      setTaskRows(tasksRes.data ?? []);
       setProgressLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [selectedStudentId, resource.id, resourceTopics]);
+  }, [selectedStudentId, resource.id]);
+
+  // topics: resourceTopics + fetched tasks'tan turetiliyor. Manuel takip alanlari
+  // (status/tracking_method/coach_note/last_studied_at) resourceTopics'te tutuldugu
+  // icin, bir alan degistiginde ekstra network istegi atmadan liste aninda guncellenir.
+  const topics = useMemo<TopicProgressRow[]>(
+    () => (selectedStudentId ? buildTopicProgressRows(resourceTopics, taskRows) : []),
+    [selectedStudentId, resourceTopics, taskRows]
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -252,6 +329,33 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
 
   const selectedStudent = assignedStudents.find((s) => s.id === selectedStudentId);
   const selectedStudentName = selectedStudent?.full_name ?? "Öğrenci";
+
+  // Sadece yerel state'i gunceller (kontrollu input'lar icin, ornegin koc notu yazarken)
+  function setTopicMetaLocal(topicId: number, patch: TopicMetaPatch) {
+    setResourceTopics((rows) =>
+      rows.map((t) => (t.id === topicId ? { ...t, ...patch } : t))
+    );
+  }
+
+  // Optimistic guncelle + DB'ye yaz + hata olursa geri al
+  async function updateTopicMeta(topicId: number, patch: TopicMetaPatch) {
+    const snapshot = resourceTopics;
+    setTopicUpdateError(null);
+    setResourceTopics((rows) =>
+      rows.map((t) => (t.id === topicId ? { ...t, ...patch } : t))
+    );
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("study_resource_topics")
+      .update(patch)
+      .eq("id", topicId);
+
+    if (updateError) {
+      setResourceTopics(snapshot);
+      setTopicUpdateError("Kaydedilemedi: " + updateError.message);
+    }
+  }
 
   async function handleAssignmentToggle(studentId: string) {
     if (togglingId) return;
@@ -497,6 +601,10 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                             </h3>
                           </div>
 
+                          {topicUpdateError && (
+                            <p className="mb-2 text-xs text-red-400">{topicUpdateError}</p>
+                          )}
+
                           {topics.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-10 text-center">
                               <p className="text-sm text-[var(--text-muted)]">
@@ -591,6 +699,94 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                           {topic.net.toFixed(2)}
                                         </span>
                                       </p>
+                                    )}
+
+                                    {topic.id !== null && (
+                                      <div className="mt-3 space-y-2.5 border-t border-[var(--border)] pt-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <select
+                                            value={normalizeStatus(topic.status)}
+                                            onChange={(e) =>
+                                              updateTopicMeta(topic.id as number, {
+                                                status: e.target.value,
+                                              })
+                                            }
+                                            aria-label="Konu durumu"
+                                            className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                          >
+                                            {STATUS_OPTIONS.map((o) => (
+                                              <option key={o.value} value={o.value}>
+                                                {o.label}
+                                              </option>
+                                            ))}
+                                          </select>
+
+                                          <select
+                                            value={normalizeTracking(topic.tracking_method)}
+                                            onChange={(e) =>
+                                              updateTopicMeta(topic.id as number, {
+                                                tracking_method: e.target.value,
+                                              })
+                                            }
+                                            aria-label="Takip yöntemi"
+                                            className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                          >
+                                            {TRACKING_OPTIONS.map((o) => (
+                                              <option key={o.value} value={o.value}>
+                                                {o.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                                          <span>
+                                            Son çalışma:{" "}
+                                            <span className="font-medium text-[var(--text-secondary)]">
+                                              {formatLastStudied(topic.last_studied_at)}
+                                            </span>
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              updateTopicMeta(topic.id as number, {
+                                                last_studied_at: new Date().toISOString(),
+                                              })
+                                            }
+                                            className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)]"
+                                          >
+                                            Bugün olarak işaretle
+                                          </button>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                            Koç Notu
+                                          </label>
+                                          <textarea
+                                            value={topic.coach_note ?? ""}
+                                            onChange={(e) =>
+                                              setTopicMetaLocal(topic.id as number, {
+                                                coach_note: e.target.value,
+                                              })
+                                            }
+                                            onBlur={(e) =>
+                                              updateTopicMeta(topic.id as number, {
+                                                coach_note: e.target.value.trim() || null,
+                                              })
+                                            }
+                                            rows={2}
+                                            placeholder="Bu konuyla ilgili not ekle…"
+                                            className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                          />
+                                        </div>
+
+                                        {topic.student_note && (
+                                          <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
+                                            Öğrenci: {topic.student_note}
+                                          </p>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 );
