@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import MockExamsExportBar from "./_components/MockExamsExportBar";
 import MockExamsClient, {
   type ExamOption,
@@ -10,11 +10,7 @@ import MockExamsClient, {
 export const dynamic = "force-dynamic";
 
 export default async function MockExamsPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   // Sinav turleri (YKS, LGS, KPSS, ARA_SINIF)

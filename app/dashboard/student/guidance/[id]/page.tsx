@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import type { GuidanceContent } from "@/lib/guidance";
 import BlogArticle from "../_components/BlogArticle";
 
@@ -14,10 +14,7 @@ export default async function GuidanceBlogPage({
   const contentId = Number(id);
   if (!Number.isFinite(contentId)) notFound();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: raw } = await supabase

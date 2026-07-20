@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import StudentResourcesClient, {
   type StudentAssignedResource,
 } from "./_components/StudentResourcesClient";
@@ -116,11 +116,7 @@ function getResourceIdFromAssignment(row: {
 }
 
 export default async function StudentResourcesPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: profile } = await supabase

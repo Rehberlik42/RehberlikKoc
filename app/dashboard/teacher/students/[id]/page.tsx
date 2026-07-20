@@ -9,7 +9,7 @@ import {
   BookOpen,
   Sparkles,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import {
   gradeToExam,
   initialsFromName,
@@ -61,11 +61,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   // ─── Bu öğrenci bu öğretmene ait mi? ─────────────────────────────────────

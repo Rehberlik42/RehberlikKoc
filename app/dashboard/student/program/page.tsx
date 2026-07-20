@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { CalendarDays, Sparkles } from "lucide-react";
 import ProgramContent from "./_components/ProgramContent";
 import ProgramExportBar from "./_components/ProgramExportBar";
 import type { Subject } from "./_components/SessionEntryForm";
 
 export default async function ProgramPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   // Tum dersleri ve konularini cek (RLS: authenticated herkes okuyabilir)
@@ -71,7 +69,7 @@ export default async function ProgramPage() {
       </div>
 
       {/* Ana içerik: Form (sol) + Liste (sağ) */}
-      <ProgramContent subjects={subjects} />
+      <ProgramContent subjects={subjects} studentId={user.id} />
     </div>
   );
 }

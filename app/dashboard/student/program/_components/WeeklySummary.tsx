@@ -107,8 +107,10 @@ const GOAL_BAR_FILL: Record<AccentToken, string> = {
 
 export default function WeeklySummary({
   refreshKey = 0,
+  studentId,
 }: {
   refreshKey?: number;
+  studentId: string;
 }) {
   const supabase = createClient();
   const [stats, setStats] = useState<WeekStats | null>(null);
@@ -116,15 +118,12 @@ export default function WeeklySummary({
   const [barsMounted, setBarsMounted] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setBarsMounted(false);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    if (!studentId) {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setBarsMounted(false);
 
     const weekStart = startOfWeek(new Date());
     const weekStartStr = weekStart.toISOString().slice(0, 10);
@@ -134,7 +133,7 @@ export default function WeeklySummary({
       .select(
         "study_date, correct_count, wrong_count, questions_solved, duration_minutes"
       )
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .gte("study_date", weekStartStr);
 
     const rows = data ?? [];
@@ -160,7 +159,7 @@ export default function WeeklySummary({
       activeDays: days.size,
     });
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, studentId]);
 
   useEffect(() => {
     load();

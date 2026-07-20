@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import RecommendationsClient, {
   type ResourceItem,
   type SubjectInsight,
@@ -35,11 +35,7 @@ interface TopicProgressRow {
 }
 
 export default async function RecommendationsPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   // ─── 1) Son denemelerden zayif dersleri tespit et ──────────────────────────

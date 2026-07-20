@@ -1,11 +1,9 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 
 // /dashboard → role'e gore ogrenci veya ogretmen dashboardina yonlendir
 export default async function DashboardIndexPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const appRole = user.app_metadata?.role as string | undefined;

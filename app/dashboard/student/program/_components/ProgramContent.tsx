@@ -9,7 +9,13 @@ import SessionsList from "./SessionsList";
 import WeeklySummary from "./WeeklySummary";
 import StudentWeeklyPlan from "./StudentWeeklyPlan";
 
-export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
+export default function ProgramContent({
+  subjects,
+  studentId,
+}: {
+  subjects: Subject[];
+  studentId: string;
+}) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
@@ -27,7 +33,7 @@ export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
             </p>
           </div>
         </div>
-        <StudentWeeklyPlan />
+        <StudentWeeklyPlan studentId={studentId} />
       </div>
 
       {/* Görsel ayraç */}
@@ -59,6 +65,7 @@ export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
         <div className="xl:sticky xl:top-4 pdf-export-hide print-hidden">
           <SessionEntryForm
             subjects={subjects}
+            studentId={studentId}
             onSuccess={() => setRefreshKey((k) => k + 1)}
           />
         </div>
@@ -71,8 +78,8 @@ export default function ProgramContent({ subjects }: { subjects: Subject[] }) {
             style={{ backgroundColor: PDF_EXPORT_BG }}
           >
             <PdfReportHeader subtitle="Haftalık Çalışma Programı" />
-            <WeeklySummary refreshKey={refreshKey} />
-            <SessionsList refreshKey={refreshKey} embedded />
+            <WeeklySummary refreshKey={refreshKey} studentId={studentId} />
+            <SessionsList refreshKey={refreshKey} embedded studentId={studentId} />
           </div>
         </div>
       </div>

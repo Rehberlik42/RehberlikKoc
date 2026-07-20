@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import DashboardShell, { UserProfile } from "@/app/dashboard/_components/DashboardShell";
 
 export default async function AdminLayout({
@@ -7,12 +7,8 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
   // ─── Get current user ──────────────────────────────────────────────────────
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
 
   if (!user) {
     return redirect("/auth/login");

@@ -1,16 +1,13 @@
 import { redirect } from "next/navigation";
 import { Compass, Sparkles } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import type { GuidanceContent } from "@/lib/guidance";
 import GuidanceHub from "./_components/GuidanceHub";
 
 export const dynamic = "force-dynamic";
 
 export default async function StudentGuidancePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: raw } = await supabase

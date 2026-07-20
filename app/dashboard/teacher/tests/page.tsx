@@ -5,7 +5,7 @@ import {
   Brain,
   Users,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import type { PsychologicalTest } from "@/lib/tests";
 import TeacherTestsClient, {
   type TeacherTestResult,
@@ -38,10 +38,7 @@ interface ResultRow {
 }
 
 export default async function TeacherTestsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: profile } = await supabase

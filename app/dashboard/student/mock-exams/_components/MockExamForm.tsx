@@ -475,12 +475,11 @@ export default function MockExamForm({
 
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
+    const effectiveStudentId =
+      studentId ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!effectiveStudentId) {
       onError("Oturum süresi doldu, tekrar giriş yapın.");
+      setLoading(false);
       return;
     }
 
@@ -488,7 +487,7 @@ export default function MockExamForm({
     const { data: mockExam, error: mockExamError } = await supabase
       .from("mock_exams")
       .insert({
-        student_id: studentId ?? user.id,
+        student_id: effectiveStudentId,
         exam_id: parseInt(examId),
         exam_date: examDate,
         title: title.trim() || null,

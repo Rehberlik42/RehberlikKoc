@@ -32,6 +32,7 @@ export interface Subject {
 
 interface Props {
   subjects: Subject[];
+  studentId: string;
   onSuccess: () => void;
 }
 
@@ -193,7 +194,7 @@ function SelectField({
 }
 
 // ─── Form ─────────────────────────────────────────────────────────────────────
-export default function SessionEntryForm({ subjects, onSuccess }: Props) {
+export default function SessionEntryForm({ subjects, studentId, onSuccess }: Props) {
   const supabase = createClient();
 
   const [subjectId, setSubjectId] = useState("");
@@ -227,19 +228,15 @@ export default function SessionEntryForm({ subjects, onSuccess }: Props) {
       return;
     }
 
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (!studentId) {
       setToast({ type: "error", message: "Oturum süresi doldu, lütfen tekrar giriş yapın." });
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     const { error } = await supabase.from("study_sessions").insert({
-      student_id: user.id,
+      student_id: studentId,
       subject_id: parseInt(subjectId),
       topic_id: topicId ? parseInt(topicId) : null,
       correct_count: parseInt(correct) || 0,

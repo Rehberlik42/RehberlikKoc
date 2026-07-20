@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CalendarCheck, Clock, Video, Users2, Phone, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import {
   MEETING_TYPE_LABELS,
   MEETING_FORMAT_LABELS,
@@ -76,11 +76,7 @@ function pickHighlights(
 }
 
 export default async function StudentDashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: profile } = await supabase

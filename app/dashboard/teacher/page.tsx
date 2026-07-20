@@ -12,7 +12,7 @@ import {
   BarChart2,
   CalendarCheck,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import {
   gradeToExam,
   initialsFromName,
@@ -74,11 +74,7 @@ function appointmentDayLabel(appointmentDate: string): "Bugün" | "Yarın" | nul
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function TeacherDashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: profile } = await supabase

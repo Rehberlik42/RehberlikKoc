@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { MapPin, Sparkles } from "lucide-react";
 import ProgressClient, {
   type SubjectWithTopics,
@@ -8,9 +8,7 @@ import ProgressClient, {
 import type { TopicProgressData, ProgressStatus } from "./_components/TopicRow";
 
 export default async function ProgressPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
   const userId = user.id;
 

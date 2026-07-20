@@ -163,19 +163,9 @@ export default function StudentAddResourceModal({
 
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      onError("Oturum bulunamadı.");
-      return;
-    }
-
     const resourcePayload = {
       teacher_id: teacherId,
-      created_by: user.id,
+      created_by: studentId,
       name: name.trim(),
       publisher: publisher.trim() || null,
       exam_id: parseInt(examId, 10),
@@ -185,7 +175,7 @@ export default function StudentAddResourceModal({
     };
 
     console.log("DEBUG payload:", JSON.stringify(resourcePayload));
-    console.log("DEBUG teacherId prop:", teacherId, "| user.id:", user.id);
+    console.log("DEBUG teacherId prop:", teacherId, "| studentId:", studentId);
 
     const { data: resource, error: resourceError } = await supabase
       .from("study_resources")
@@ -255,7 +245,7 @@ export default function StudentAddResourceModal({
     const assignPayload = {
       study_resource_id: resourceId,
       student_id: studentId,
-      assigned_by: user.id,
+      assigned_by: studentId,
     };
 
     const { error: assignError } = await supabase

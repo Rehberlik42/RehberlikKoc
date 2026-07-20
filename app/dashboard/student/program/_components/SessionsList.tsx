@@ -45,24 +45,22 @@ function formatDate(dateStr: string) {
 export default function SessionsList({
   refreshKey,
   embedded = false,
+  studentId,
 }: {
   refreshKey: number;
   embedded?: boolean;
+  studentId: string;
 }) {
   const supabase = createClient();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSessions = useCallback(async () => {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (!studentId) {
       setLoading(false);
       return;
     }
+    setLoading(true);
 
     const { data } = await supabase
       .from("study_sessions")
@@ -71,7 +69,7 @@ export default function SessionsList({
          subject:subjects(name),
          topic:topics(name)`
       )
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .order("study_date", { ascending: false })
       .order("id", { ascending: false })
       .limit(25);
@@ -90,7 +88,7 @@ export default function SessionsList({
     }));
     setSessions(normalized);
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, studentId]);
 
   useEffect(() => {
     fetchSessions();

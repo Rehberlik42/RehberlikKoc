@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import type { PsychologicalTest, TestType } from "@/lib/tests";
 import TestRunner from "./_components/TestRunner";
 
@@ -16,10 +16,7 @@ export default async function StudentTestRunPage({
   const testId = Number(id);
   if (!Number.isFinite(testId)) notFound();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: rawTest } = await supabase

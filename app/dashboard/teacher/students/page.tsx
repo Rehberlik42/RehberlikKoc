@@ -1,16 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import StudentsPanel from "./_components/StudentsPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherStudentsPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
 
   if (!user) redirect("/");
 

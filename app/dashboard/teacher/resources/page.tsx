@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import ResourcesClient from "@/app/dashboard/teacher/resources/_components/ResourcesClient";
 import {
   calcCompletionPct,
@@ -82,11 +82,7 @@ function mapResource(
 }
 
 export default async function TeacherResourcesPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const { data: profile } = await supabase

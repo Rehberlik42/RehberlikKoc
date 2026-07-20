@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import DashboardShell, { type UserProfile } from "./_components/DashboardShell";
 
 export default async function DashboardLayout({
@@ -7,13 +7,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
   // getUser(): Supabase Auth sunucusuna dogrular — SSR'de guvenci
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { user, error: userError, supabase } = await getCurrentUser();
 
   if (userError || !user) {
     redirect("/");

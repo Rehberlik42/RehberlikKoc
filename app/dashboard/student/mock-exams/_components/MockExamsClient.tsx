@@ -199,10 +199,7 @@ export default function MockExamsClient({
 
   // Yeni deneme eklendikten sonra listeyi yenile
   const refresh = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!studentId) return;
 
     const { data } = await supabase
       .from("mock_exams")
@@ -214,7 +211,7 @@ export default function MockExamsClient({
            subject:subjects(id, name, color)
          )`
       )
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .order("exam_date", { ascending: false })
       .limit(50);
 
@@ -222,7 +219,7 @@ export default function MockExamsClient({
       setMockExams(data as unknown as MockExamWithResults[]);
       router.refresh();
     }
-  }, [supabase, router]);
+  }, [supabase, router, studentId]);
 
   // Silme
   const handleDelete = async (id: number) => {
@@ -332,6 +329,8 @@ export default function MockExamsClient({
     let cancelled = false;
 
     (async () => {
+      if (!studentId || cancelled) return;
+
       if (filteredExams.length === 0) {
         setFocusRecommendations({ top3: [], subjectWeakest: [], hasData: false });
         setFocusLoading(false);
@@ -339,12 +338,6 @@ export default function MockExamsClient({
       }
 
       setFocusLoading(true);
-
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
 
       const { data, error: fetchError } = await supabase
         .from("mock_exam_topic_errors")
@@ -356,7 +349,7 @@ export default function MockExamsClient({
              mock_exam:mock_exams!inner(id, exam_date, title, student_id)
            )`
         )
-        .eq("result.mock_exam.student_id", user.id);
+        .eq("result.mock_exam.student_id", studentId);
 
       if (cancelled) return;
 
@@ -397,7 +390,7 @@ export default function MockExamsClient({
     return () => {
       cancelled = true;
     };
-  }, [filteredExams, subjectRows]);
+  }, [filteredExams, subjectRows, studentId, supabase]);
 
   return (
     <>

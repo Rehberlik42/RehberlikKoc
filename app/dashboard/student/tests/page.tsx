@@ -10,7 +10,7 @@ import {
   ArrowRight,
   HeartPulse,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { typeMeta, type PsychologicalTest, type TestType } from "@/lib/tests";
 import { timeAgo } from "@/lib/student-helpers";
 
@@ -35,10 +35,7 @@ interface ResultLite {
 }
 
 export default async function StudentTestsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
   const [{ data: rawTests }, { data: rawResults }] = await Promise.all([

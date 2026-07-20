@@ -34,7 +34,7 @@ function formatWeekRange(weekStart: Date): string {
 function formatColumnDate(d: Date): string {
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
-export default function StudentWeeklyPlan() {
+export default function StudentWeeklyPlan({ studentId }: { studentId: string }) {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [tasks, setTasks] = useState<PlanTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -57,20 +57,17 @@ export default function StudentWeeklyPlan() {
     return map;
   }, [tasks]);
   const fetchTasks = useCallback(async () => {
-    const client = createClient();
-    setTasksLoading(true);
-    const {
-      data: { user },
-    } = await client.auth.getUser();
-    if (!user) {
+    if (!studentId) {
       setTasks([]);
       setTasksLoading(false);
       return;
     }
+    const client = createClient();
+    setTasksLoading(true);
     const { data, error } = await client
       .from("study_plan_tasks")
       .select(STUDY_PLAN_TASK_SELECT)
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .gte("plan_date", weekStartStr)
       .lte("plan_date", weekEndStr)
       .order("plan_date", { ascending: true })
@@ -85,7 +82,7 @@ export default function StudentWeeklyPlan() {
       setTasks(data.map(mapStudyPlanTaskRow));
     }
     setTasksLoading(false);
-  }, [weekStartStr, weekEndStr]);
+  }, [weekStartStr, weekEndStr, studentId]);
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
