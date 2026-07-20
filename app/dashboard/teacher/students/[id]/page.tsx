@@ -133,7 +133,7 @@ export default async function StudentDetailPage({
     supabase
       .from("subjects")
       .select(
-        "id, name, color, order_index, exam_id, exam:exams(name), topics(id, name, order_index)"
+        "id, name, color, order_index, exam_id, exam:exams(name), topics(id, name, order_index, parent_id)"
       )
       .order("order_index"),
     supabase
@@ -248,9 +248,10 @@ export default async function StudentDetailPage({
           (a: { order_index: number }, b: { order_index: number }) =>
             a.order_index - b.order_index
         )
-        .map((t: { id: number; name: string }) => ({
+        .map((t: { id: number; name: string; parent_id?: number | null }) => ({
           id: t.id,
           name: t.name,
+          parent_id: t.parent_id ?? null,
         })),
     };
   });
