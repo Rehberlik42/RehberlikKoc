@@ -58,8 +58,9 @@ export default function DeleteClientModal({
               <strong className="text-[#161a3a]">&quot;{client.company_name}&quot;</strong>{" "}
               kaydı silinecek.
             </p>
-            <p className="text-xs text-[#8b93b8]">
-              Bu işlem geri alınamaz. Devam etmek istediğinizden emin misiniz?
+            <p className="text-xs leading-relaxed text-red-600/90">
+              Bu işlem öğretmen Auth hesabını ve altındaki tüm öğrenci hesaplarını da
+              kalıcı olarak siler. Geri alınamaz.
             </p>
             {error ? (
               <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">

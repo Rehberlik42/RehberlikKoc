@@ -122,6 +122,31 @@ function isDuplicateEmailError(message: string) {
   );
 }
 
+async function findAuthUserIdByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<string | null> {
+  const normalized = email.trim().toLowerCase();
+  let page = 1;
+  const perPage = 200;
+
+  while (page <= 20) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const users = data.users ?? [];
+    const match = users.find((u) => (u.email ?? "").toLowerCase() === normalized);
+    if (match) return match.id;
+
+    if (users.length < perPage) break;
+    page += 1;
+  }
+
+  return null;
+}
+
 async function ensureTeacherProfile(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -158,6 +183,57 @@ async function ensureTeacherProfile(
   return { success: true as const };
 }
 
+async function finalizeTeacherOnboarding(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  parsed: OnboardingFormData,
+  options?: { reusedAuthUser?: boolean }
+): Promise<ActionResult> {
+  const { error: roleError } = await admin.auth.admin.updateUserById(userId, {
+    password: parsed.password,
+    email_confirm: true,
+    app_metadata: { role: "teacher" },
+    user_metadata: { full_name: parsed.contact_name },
+  });
+
+  if (roleError) {
+    return { error: roleError.message };
+  }
+
+  const profileResult = await ensureTeacherProfile(
+    admin,
+    userId,
+    parsed.contact_name
+  );
+
+  if ("error" in profileResult) {
+    return { error: profileResult.error };
+  }
+
+  const { error: clientError } = await admin.from("clients").insert({
+    company_name: parsed.company_name,
+    contact_name: parsed.contact_name,
+    max_students: parsed.max_students,
+    subscription_status: parsed.subscription_status,
+    expires_at: parsed.expires_at,
+    email: parsed.email,
+    phone: parsed.phone,
+    auth_user_id: userId,
+  });
+
+  if (clientError) {
+    return { error: clientError.message };
+  }
+
+  revalidatePath("/superadmin");
+  return {
+    success: true,
+    message: options?.reusedAuthUser
+      ? "Müşteri kaydı yeniden oluşturuldu; mevcut öğretmen hesabı bağlandı ve şifre güncellendi."
+      : "Müşteri kaydedildi, öğretmen hesabı oluşturuldu ve onboarding tamamlandı.",
+  };
+}
+
 export async function createClientRecord(formData: FormData): Promise<ActionResult> {
   await requireSuperadminSession();
 
@@ -181,10 +257,38 @@ export async function createClientRecord(formData: FormData): Promise<ActionResu
       });
 
     if (authError) {
-      if (isDuplicateEmailError(authError.message)) {
+      if (!isDuplicateEmailError(authError.message)) {
+        return { error: authError.message };
+      }
+
+      // Müşteri silinmiş ama Auth hesabı kalmış olabilir → mevcut hesabı bağla
+      const existingUserId = await findAuthUserIdByEmail(admin, parsed.email);
+      if (!existingUserId) {
         return { error: "Bu e-posta adresi zaten kayıtlı." };
       }
-      return { error: authError.message };
+
+      const { data: byAuth } = await admin
+        .from("clients")
+        .select("id")
+        .eq("auth_user_id", existingUserId)
+        .maybeSingle();
+
+      const { data: byEmail } = await admin
+        .from("clients")
+        .select("id")
+        .eq("email", parsed.email)
+        .maybeSingle();
+
+      if (byAuth || byEmail) {
+        return {
+          error:
+            "Bu e-posta adresi zaten bir müşteri kaydına bağlı. Önce mevcut kaydı silin veya düzenleyin.",
+        };
+      }
+
+      return await finalizeTeacherOnboarding(admin, existingUserId, parsed, {
+        reusedAuthUser: true,
+      });
     }
 
     if (!authData.user) {
@@ -192,49 +296,13 @@ export async function createClientRecord(formData: FormData): Promise<ActionResu
     }
 
     createdUserId = authData.user.id;
+    const result = await finalizeTeacherOnboarding(admin, createdUserId, parsed);
 
-    const { error: roleError } = await admin.auth.admin.updateUserById(
-      createdUserId,
-      {
-        app_metadata: { role: "teacher" },
-      }
-    );
-
-    if (roleError) {
-      throw new Error(roleError.message);
+    if ("error" in result) {
+      throw new Error(result.error);
     }
 
-    const profileResult = await ensureTeacherProfile(
-      admin,
-      createdUserId,
-      parsed.contact_name
-    );
-
-    if ("error" in profileResult) {
-      throw new Error(profileResult.error);
-    }
-
-    const { error: clientError } = await admin.from("clients").insert({
-      company_name: parsed.company_name,
-      contact_name: parsed.contact_name,
-      max_students: parsed.max_students,
-      subscription_status: parsed.subscription_status,
-      expires_at: parsed.expires_at,
-      email: parsed.email,
-      phone: parsed.phone,
-      auth_user_id: createdUserId,
-    });
-
-    if (clientError) {
-      throw new Error(clientError.message);
-    }
-
-    revalidatePath("/superadmin");
-    return {
-      success: true,
-      message:
-        "Müşteri kaydedildi, öğretmen hesabı oluşturuldu ve onboarding tamamlandı.",
-    };
+    return result;
   } catch (err) {
     if (createdUserId) {
       await admin.auth.admin.deleteUser(createdUserId);
@@ -289,12 +357,88 @@ export async function deleteClientRecord(id: string): Promise<ActionResult> {
   }
 
   const admin = createAdminClient();
+
+  const { data: client, error: fetchError } = await admin
+    .from("clients")
+    .select("id, auth_user_id, company_name")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { error: fetchError.message };
+  }
+
+  if (!client) {
+    return { error: "Müşteri kaydı bulunamadı." };
+  }
+
+  const teacherId = client.auth_user_id as string | null;
+
   const { error } = await admin.from("clients").delete().eq("id", id);
 
   if (error) {
     return { error: error.message };
   }
 
+  if (teacherId) {
+    const cascade = await cascadeDeleteTeacherAccount(admin, teacherId);
+    if ("error" in cascade) {
+      return {
+        error:
+          "Müşteri kaydı silindi ancak öğretmen/öğrenci hesapları temizlenemedi: " +
+          cascade.error,
+      };
+    }
+  }
+
   revalidatePath("/superadmin");
+  return { success: true };
+}
+
+/** Öğretmen Auth hesabı + altındaki tüm öğrenci hesaplarını siler. */
+async function cascadeDeleteTeacherAccount(
+  admin: ReturnType<typeof createAdminClient>,
+  teacherId: string
+): Promise<{ success: true } | { error: string }> {
+  const { data: students, error: studentsError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("teacher_id", teacherId)
+    .eq("role", "student");
+
+  if (studentsError) {
+    return { error: studentsError.message };
+  }
+
+  for (const student of students ?? []) {
+    await admin
+      .from("study_resources")
+      .update({ created_by: null })
+      .eq("created_by", student.id);
+    await admin.from("resource_assignments").delete().eq("assigned_by", student.id);
+    await admin.from("student_targets").delete().eq("set_by", student.id);
+
+    const { error } = await admin.auth.admin.deleteUser(student.id);
+    if (error) {
+      return { error: `Öğrenci silinemedi (${student.id}): ${error.message}` };
+    }
+  }
+
+  // Profil silinmesini engelleyebilecek FK'leri temizle
+  await admin.from("appointments").delete().eq("teacher_id", teacherId);
+  await admin
+    .from("study_resources")
+    .update({ created_by: null })
+    .eq("created_by", teacherId);
+  await admin.from("resource_assignments").delete().eq("assigned_by", teacherId);
+  await admin.from("student_targets").delete().eq("set_by", teacherId);
+
+  const { error: teacherDeleteError } =
+    await admin.auth.admin.deleteUser(teacherId);
+
+  if (teacherDeleteError) {
+    return { error: teacherDeleteError.message };
+  }
+
   return { success: true };
 }
