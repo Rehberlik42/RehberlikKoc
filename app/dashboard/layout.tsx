@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import DashboardShell, { type UserProfile } from "./_components/DashboardShell";
+import RouteProgressBar from "./_components/RouteProgressBar";
 
 export default async function DashboardLayout({
   children,
@@ -27,6 +29,9 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell profile={profile as UserProfile}>
+      <Suspense fallback={null}>
+        <RouteProgressBar />
+      </Suspense>
       {children}
     </DashboardShell>
   );
