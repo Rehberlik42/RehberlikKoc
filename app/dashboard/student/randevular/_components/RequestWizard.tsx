@@ -317,7 +317,7 @@ export default function RequestWizard({
                 <p className="text-[var(--text-secondary)] text-[11px] font-semibold uppercase tracking-wider mb-2">
                   Görüşme Şekli
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {(Object.keys(MEETING_FORMAT_LABELS) as MeetingFormat[]).map((f) => (
                     <button
                       key={f}

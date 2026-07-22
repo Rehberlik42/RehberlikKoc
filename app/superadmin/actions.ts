@@ -207,7 +207,7 @@ async function finalizeTeacherOnboarding(
   );
 
   if ("error" in profileResult) {
-    return { error: profileResult.error };
+    return { error: profileResult.error ?? "Profil oluşturulamadı." };
   }
 
   const { error: clientError } = await admin.from("clients").insert({

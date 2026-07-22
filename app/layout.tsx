@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
@@ -50,6 +50,13 @@ export const metadata: Metadata = {
       "YKS, LGS ve ara sınıflar için yapay zeka destekli rehberlik ve koçluk platformu.",
     images: ["/og-image.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#07070f",
 };
 
 export default function RootLayout({

@@ -450,7 +450,7 @@ export default function AvailabilityClient({
               </div>
             </>
           )}
-          <div className="flex-1 min-w-[160px]">
+          <div className="flex-1 min-w-0 sm:min-w-[160px]">
             <label className={labelCls}>Açıklama (opsiyonel)</label>
             <input
               type="text"

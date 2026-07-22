@@ -824,7 +824,7 @@ function DayColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-h-[8rem] flex-col rounded-xl border p-2.5 transition-colors duration-300 ${
+      className={`flex min-h-[8rem] min-w-[240px] flex-col rounded-xl border p-2.5 transition-colors duration-300 lg:min-w-0 ${
         isOver
           ? "border-[var(--primary)]/50 bg-[var(--primary)]/[0.08] shadow-[0_0_24px_rgba(123,47,255,0.15)]"
           : todayCol
@@ -1627,33 +1627,35 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
             >
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-                {weekDays.map((day, colIndex) => {
-                  const dateStr = toISODate(day);
-                  const dayTasks = tasksByDate.get(dateStr) ?? [];
-                  return (
-                    <DayColumn
-                      key={dateStr}
-                      dateStr={dateStr}
-                      day={day}
-                      colIndex={colIndex}
-                      dayTasks={dayTasks}
-                      todayCol={isToday(day)}
-                      onDelete={handleDelete}
-                      deletingId={deletingId}
-                      shouldAnimate={shouldAnimate}
-                      onAdd={() => openAddModal(day, colIndex)}
-                      weekDays={weekDayOptions}
-                      onEdit={handleEditTask}
-                      onCopy={handleCopyTask}
-                      onMove={handleMoveTask}
-                      onRepeat={handleRepeatTask}
-                      onPrepareSplit={handlePrepareSplit}
-                      onSplit={handleSplitTask}
-                      menuBusy={menuBusy}
-                    />
-                  );
-                })}
+              <div className="overflow-x-auto lg:overflow-visible">
+                <div className="grid w-max min-w-full grid-cols-7 gap-3 lg:w-auto lg:grid-cols-4 xl:grid-cols-7">
+                  {weekDays.map((day, colIndex) => {
+                    const dateStr = toISODate(day);
+                    const dayTasks = tasksByDate.get(dateStr) ?? [];
+                    return (
+                      <DayColumn
+                        key={dateStr}
+                        dateStr={dateStr}
+                        day={day}
+                        colIndex={colIndex}
+                        dayTasks={dayTasks}
+                        todayCol={isToday(day)}
+                        onDelete={handleDelete}
+                        deletingId={deletingId}
+                        shouldAnimate={shouldAnimate}
+                        onAdd={() => openAddModal(day, colIndex)}
+                        weekDays={weekDayOptions}
+                        onEdit={handleEditTask}
+                        onCopy={handleCopyTask}
+                        onMove={handleMoveTask}
+                        onRepeat={handleRepeatTask}
+                        onPrepareSplit={handlePrepareSplit}
+                        onSplit={handleSplitTask}
+                        menuBusy={menuBusy}
+                      />
+                    );
+                  })}
+                </div>
               </div>
 
               <DragOverlay dropAnimation={null}>

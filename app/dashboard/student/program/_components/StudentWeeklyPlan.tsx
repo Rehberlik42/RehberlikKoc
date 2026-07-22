@@ -205,7 +205,8 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <div className="overflow-x-auto lg:overflow-visible">
+              <div className="grid w-max min-w-full grid-cols-7 gap-3 lg:w-auto lg:grid-cols-4 xl:grid-cols-7">
               {weekDays.map((day, colIndex) => {
                 const dateStr = toISODate(day);
                 const dayTasks = tasksByDate.get(dateStr) ?? [];
@@ -213,7 +214,7 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
                 return (
                   <div
                     key={dateStr}
-                    className={`flex min-h-[8rem] flex-col rounded-xl border p-2.5 transition-colors duration-300 ${
+                    className={`flex min-h-[8rem] min-w-[240px] flex-col rounded-xl border p-2.5 transition-colors duration-300 lg:min-w-0 ${
                       todayCol
                         ? "border-[var(--primary)]/30 bg-[var(--primary)]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
                         : "border-[var(--border)] bg-white/[0.02]"
@@ -256,6 +257,7 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
                   </div>
                 );
               })}
+              </div>
             </div>
           )}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] text-[var(--text-muted)]">

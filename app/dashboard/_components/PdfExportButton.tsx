@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { exportElementToPdf } from "@/lib/pdf-export";
 
 interface Props {
   /** Hedef div'in id'si (ornegin mock-exams-export-root) */
@@ -27,6 +26,7 @@ export default function PdfExportButton({
     onToast?.("PDF hazırlanıyor...", "info");
 
     try {
+      const { exportElementToPdf } = await import("@/lib/pdf-export");
       await exportElementToPdf(targetId, { filenamePrefix, reportTitle });
       onToast?.("PDF başarıyla indirildi.", "success");
     } catch (err) {

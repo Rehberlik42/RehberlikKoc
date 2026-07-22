@@ -26,7 +26,13 @@ import {
   type SubjectOption,
   type TopicDraft,
 } from "./resource-types";
-import TopicEditor from "./TopicEditor";
+import dynamic from "next/dynamic";
+
+const TopicEditor = dynamic(() => import("./TopicEditor"), {
+  loading: () => (
+    <div className="h-40 animate-pulse rounded-xl bg-[var(--surface-2)]" />
+  ),
+});
 
 interface Props {
   open: boolean;
@@ -498,7 +504,7 @@ export default function AddResourceModal({
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                     Kapak Tasarımı
                   </span>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
                     {COVER_COLOR_PALETTE.map((c) => (
                       <button
                         key={c.value}

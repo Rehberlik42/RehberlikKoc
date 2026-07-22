@@ -15,11 +15,11 @@ import { createClient } from "@/lib/supabase/client";
 import PdfReportHeader from "@/app/dashboard/_components/PdfReportHeader";
 import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import MockExamForm from "./MockExamForm";
-import MockExamChart from "./MockExamChart";
 import MockExamsList from "./MockExamsList";
 import StudentFocusCard from "./StudentFocusCard";
 import StudentExamAnalysis from "./StudentExamAnalysis";
 import StudentTargets from "./StudentTargets";
+import dynamic from "next/dynamic";
 import {
   buildFocusRecommendations,
   buildTopicErrorAnalysis,
@@ -30,6 +30,13 @@ import {
   type FocusRecommendations,
   type RawTopicErrorRecord,
 } from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
+
+const MockExamChart = dynamic(() => import("./MockExamChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 animate-pulse rounded-xl bg-[var(--surface-2)]" />
+  ),
+});
 
 // ─── Types (paylasilan) ───────────────────────────────────────────────────────
 export interface ExamOption {

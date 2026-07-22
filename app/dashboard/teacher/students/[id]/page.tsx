@@ -18,9 +18,9 @@ import {
   timeAgo,
 } from "@/lib/student-helpers";
 import MetricCard from "./_components/MetricCard";
-import StudentNetChart, {
+import StudentNetChartLazy, {
   type NetChartPoint,
-} from "./_components/StudentNetChart";
+} from "./_components/StudentNetChartLazy";
 import StudentSessionsList, {
   type StudentSessionRow,
 } from "./_components/StudentSessionsList";
@@ -28,7 +28,7 @@ import TeacherTopicProgress, {
   type TeacherTopicProgressSubject,
 } from "./_components/TeacherTopicProgress";
 import StudentDetailTabs from "./_components/StudentDetailTabs";
-import TeacherWeeklyPlan from "./_components/TeacherWeeklyPlan";
+import TeacherWeeklyPlanLazy from "./_components/TeacherWeeklyPlanLazy";
 import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
 import ResourcePermissionToggle from "./_components/ResourcePermissionToggle";
@@ -450,14 +450,14 @@ export default async function StudentDetailPage({
             </div>
 
             <div className="mt-6 space-y-6">
-              <StudentNetChart data={chartData} />
+              <StudentNetChartLazy data={chartData} />
               <TeacherTopicProgress studentId={id} subjects={subjects} />
               <StudentSessionsList sessions={sessions} />
             </div>
           </>
         }
         program={
-          <TeacherWeeklyPlan studentId={id} subjects={programSubjects} />
+          <TeacherWeeklyPlanLazy studentId={id} subjects={programSubjects} />
         }
         analysis={
           <ExamAnalysis

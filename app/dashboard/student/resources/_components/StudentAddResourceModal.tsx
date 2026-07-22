@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SearchableSelect from "@/app/dashboard/teacher/students/[id]/_components/SearchableSelect";
-import TopicEditor from "@/app/dashboard/teacher/resources/_components/TopicEditor";
+import dynamic from "next/dynamic";
 import {
   COVER_COLOR_PALETTE,
   examGroupFromName,
@@ -23,6 +23,16 @@ import {
   type SubjectOption,
   type TopicDraft,
 } from "@/app/dashboard/teacher/resources/_components/resource-types";
+
+const TopicEditor = dynamic(
+  () =>
+    import("@/app/dashboard/teacher/resources/_components/TopicEditor"),
+  {
+    loading: () => (
+      <div className="h-40 animate-pulse rounded-xl bg-[var(--surface-2)]" />
+    ),
+  }
+);
 
 interface Props {
   open: boolean;
@@ -392,7 +402,7 @@ export default function StudentAddResourceModal({
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                     Kapak Rengi
                   </span>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
                     {COVER_COLOR_PALETTE.map((c) => (
                       <button
                         key={c.value}
