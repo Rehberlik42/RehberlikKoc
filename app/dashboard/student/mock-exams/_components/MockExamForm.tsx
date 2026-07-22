@@ -11,12 +11,9 @@ import {
   CheckCircle2,
   XCircle,
   Circle,
-  Plus,
-  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateNet } from "@/lib/exam-net";
-import SearchableSelect from "@/app/dashboard/teacher/students/[id]/_components/SearchableSelect";
 import type { ExamOption, SubjectOption } from "./MockExamsClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,11 +22,15 @@ interface TopicOption {
   name: string;
   subject_id: number;
   order_index: number;
+  parent_id: number | null;
 }
 
 interface TopicErrorInput {
   topicId: number;
+  correct: string;
   wrong: string;
+  empty: string;
+  notInExam: boolean;
 }
 
 interface SubjectInput {
@@ -58,25 +59,76 @@ const PENALTY_OPTIONS: { value: number | null; label: string }[] = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function sumDistributedErrors(errors: TopicErrorInput[]): number {
-  return errors.reduce((sum, e) => {
-    if (!e.topicId) return sum;
-    const w = parseInt(e.wrong);
-    if (!w || w <= 0) return sum;
-    return sum + w;
-  }, 0);
-}
-
-function getValidTopicErrors(
-  errors: TopicErrorInput[]
-): { topicId: number; wrong: number }[] {
-  return errors
-    .filter((e) => e.topicId > 0 && (parseInt(e.wrong) || 0) > 0)
-    .map((e) => ({ topicId: e.topicId, wrong: parseInt(e.wrong) || 0 }));
-}
-
 function rowHasData(row: SubjectInput): boolean {
   return row.correct !== "" || row.wrong !== "" || row.empty !== "";
+}
+
+/** Bir dersin sadece yaprak konularini dondurur (baska konuya parent olanlar haric). */
+function getLeafTopics(topics: TopicOption[]): TopicOption[] {
+  const parentIds = new Set(
+    topics
+      .map((t) => t.parent_id)
+      .filter((id): id is number => id !== null)
+  );
+  return topics.filter((t) => !parentIds.has(t.id));
+}
+
+/** Bir konu satirinda anlamli (kaydedilecek) veri var mi? */
+function topicRowHasData(entry: TopicErrorInput | undefined): boolean {
+  if (!entry) return false;
+  if (entry.notInExam) return true;
+  return entry.correct !== "" || entry.wrong !== "" || entry.empty !== "";
+}
+
+/** row.errors icinde bir konunun mevcut girisini bul. */
+function findTopicEntry(
+  errors: TopicErrorInput[],
+  topicId: number
+): TopicErrorInput | undefined {
+  return errors.find((e) => e.topicId === topicId);
+}
+
+/** row.errors icinde ilgili konuyu upsert eder, yeni errors dizisini dondurur. */
+function upsertTopicEntry(
+  errors: TopicErrorInput[],
+  topicId: number,
+  patch: Partial<TopicErrorInput>
+): TopicErrorInput[] {
+  const existing = errors.find((e) => e.topicId === topicId);
+  if (existing) {
+    return errors.map((e) => (e.topicId === topicId ? { ...e, ...patch } : e));
+  }
+  return [
+    ...errors,
+    {
+      topicId,
+      correct: "",
+      wrong: "",
+      empty: "",
+      notInExam: false,
+      ...patch,
+    },
+  ];
+}
+
+/** Konu bazli girilen toplamlar (notInExam olmayan satirlar). */
+function topicTotals(errors: TopicErrorInput[]): {
+  correct: number;
+  wrong: number;
+  empty: number;
+  questions: number;
+} {
+  let correct = 0;
+  let wrong = 0;
+  let empty = 0;
+  for (const e of errors) {
+    if (e.notInExam) continue;
+    if (e.correct === "" && e.wrong === "" && e.empty === "") continue;
+    correct += parseInt(e.correct) || 0;
+    wrong += parseInt(e.wrong) || 0;
+    empty += parseInt(e.empty) || 0;
+  }
+  return { correct, wrong, empty, questions: correct + wrong + empty };
 }
 
 function useAnimatedNumber(target: number, active: boolean, duration = 500) {
@@ -120,31 +172,24 @@ function SubjectInputRow({
 }) {
   const net = calculateNet(parseInt(row.correct) || 0, parseInt(row.wrong) || 0, divisor);
   const hasData = rowHasData(row);
-  const totalWrong = parseInt(row.wrong) || 0;
-  const distributedWrong = sumDistributedErrors(row.errors);
-  const distributionOverflow = distributedWrong > totalWrong;
 
-  const updateError = (index: number, patch: Partial<TopicErrorInput>) => {
-    const nextErrors = row.errors.map((err, i) =>
-      i === index ? { ...err, ...patch } : err
-    );
-    onChange({ ...row, errors: nextErrors });
+  // Sadece yaprak konular (ana uniteler haric)
+  const leafTopics = getLeafTopics(topics);
+
+  const updateTopic = (topicId: number, patch: Partial<TopicErrorInput>) => {
+    onChange({ ...row, errors: upsertTopicEntry(row.errors, topicId, patch) });
   };
 
-  const removeError = (index: number) => {
-    onChange({ ...row, errors: row.errors.filter((_, i) => i !== index) });
-  };
-
-  const addError = () => {
-    onChange({
-      ...row,
-      errors: [...row.errors, { topicId: 0, wrong: "1" }],
-    });
-  };
-
-  const selectedTopicIds = new Set(
-    row.errors.map((e) => e.topicId).filter((id) => id > 0)
-  );
+  // Konu bazli / ders toplami karsilastirmasi
+  const tTotals = topicTotals(row.errors);
+  const subjectQ =
+    (parseInt(row.correct) || 0) +
+    (parseInt(row.wrong) || 0) +
+    (parseInt(row.empty) || 0);
+  const diffQ = subjectQ - tTotals.questions;
+  const touchedTopicCount = row.errors.filter((e) =>
+    topicRowHasData(e)
+  ).length;
 
   return (
     <div
@@ -201,80 +246,80 @@ function SubjectInputRow({
         <div className="mt-3 space-y-2 border-t border-[var(--border)] pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Zayıf konular
+              Konu bazlı sonuçlar
             </p>
-            {(row.errors.length > 0 || totalWrong > 0) && (
-              <p
-                className={`text-[10px] tabular-nums ${
-                  distributionOverflow ? "font-semibold text-red-400" : "text-[var(--text-muted)]"
-                }`}
-              >
-                Konulara dağıtılan: {distributedWrong} / {totalWrong} yanlış
+            {touchedTopicCount > 0 && (
+              <p className="text-[10px] tabular-nums text-[var(--text-muted)]">
+                {touchedTopicCount} konu işaretlendi
               </p>
             )}
           </div>
 
-          {row.errors.length > 0 && (
-            <div className="space-y-2">
-              {row.errors.map((err, errIdx) => {
-                const topicOptions = [
-                  { value: "", label: "Konu seçin" },
-                  ...topics
-                    .filter(
-                      (t) =>
-                        !selectedTopicIds.has(t.id) || t.id === err.topicId
-                    )
-                    .map((t) => ({
-                      value: String(t.id),
-                      label: t.name,
-                    })),
-                ];
+          {leafTopics.length === 0 ? (
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Bu ders için konu tanımlı değil.
+            </p>
+          ) : (
+            <div className="custom-scrollbar max-h-[240px] space-y-1.5 overflow-y-auto pr-1">
+              {leafTopics.map((topic) => {
+                const entry = findTopicEntry(row.errors, topic.id);
+                const notInExam = entry?.notInExam ?? false;
+                const hasTopicData = topicRowHasData(entry);
 
                 return (
                   <div
-                    key={`${row.subjectId}-err-${errIdx}`}
-                    className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                    key={`${row.subjectId}-topic-${topic.id}`}
+                    className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
+                      notInExam
+                        ? "border-[var(--border)] bg-[var(--surface-2)]/40 opacity-50"
+                        : hasTopicData
+                        ? "border-[var(--primary)]/25 bg-[var(--surface)]/50"
+                        : "border-[var(--border)] bg-[var(--surface-2)]/60"
+                    }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <SearchableSelect
-                        label="Konu"
-                        value={err.topicId ? String(err.topicId) : ""}
-                        onChange={(v) =>
-                          updateError(errIdx, {
-                            topicId: v ? parseInt(v, 10) : 0,
-                          })
-                        }
-                        options={topicOptions}
-                        placeholder="Konu seçin"
-                        emptyText={
-                          topics.length === 0
-                            ? "Bu ders için konu tanımlı değil"
-                            : "Konu bulunamadı"
-                        }
+                    <p
+                      className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--text-secondary)]"
+                      title={topic.name}
+                    >
+                      {topic.name}
+                    </p>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <TopicMiniInput
+                        value={entry?.correct ?? ""}
+                        onChange={(v) => updateTopic(topic.id, { correct: v })}
+                        disabled={notInExam}
+                        color="#22c55e"
+                        title="Doğru"
                       />
-                    </div>
-                    <div className="flex items-end gap-2">
-                      <div className="w-20 shrink-0">
-                        <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                          Yanlış
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={err.wrong}
-                          onChange={(e) =>
-                            updateError(errIdx, { wrong: e.target.value })
-                          }
-                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
-                        />
-                      </div>
+                      <TopicMiniInput
+                        value={entry?.wrong ?? ""}
+                        onChange={(v) => updateTopic(topic.id, { wrong: v })}
+                        disabled={notInExam}
+                        color="#ef4444"
+                        title="Yanlış"
+                      />
+                      <TopicMiniInput
+                        value={entry?.empty ?? ""}
+                        onChange={(v) => updateTopic(topic.id, { empty: v })}
+                        disabled={notInExam}
+                        color="#64748b"
+                        title="Boş"
+                      />
                       <button
                         type="button"
-                        onClick={() => removeError(errIdx)}
-                        aria-label="Konu satırını sil"
-                        className="mb-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-muted)] transition-colors hover:border-red-400/30 hover:text-red-400"
+                        onClick={() =>
+                          updateTopic(topic.id, { notInExam: !notInExam })
+                        }
+                        title="Bu konuda soru çıkmadı"
+                        aria-pressed={notInExam}
+                        className={`shrink-0 rounded-md border px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide transition-colors ${
+                          notInExam
+                            ? "border-[var(--accent)]/40 bg-[var(--accent)]/20 text-[var(--accent)]"
+                            : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                        }`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        Çıkmadı
                       </button>
                     </div>
                   </div>
@@ -283,24 +328,46 @@ function SubjectInputRow({
             </div>
           )}
 
-          {distributionOverflow && (
-            <p className="text-[11px] text-red-400">
-              Konulara dağıttığınız yanlış sayısı ders toplamını aşıyor.
+          {/* Dogrulama / uyari ozeti (bilgilendirici, engelleyici degil) */}
+          {tTotals.questions > 0 && diffQ !== 0 && (
+            <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">
+              Konu bazlı toplam: {tTotals.questions} soru. Ders toplamı:{" "}
+              {subjectQ} soru. {Math.abs(diffQ)} soru{" "}
+              {diffQ > 0 ? "eksik" : "fazla"} görünüyor.
             </p>
           )}
-
-          <button
-            type="button"
-            onClick={addError}
-            disabled={topics.length === 0}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Plus className="h-3 w-3" />
-            Yanlış yapılan konu ekle
-          </button>
         </div>
       )}
     </div>
+  );
+}
+
+// Konu satirindaki kompakt D/Y/B kutucugu
+function TopicMiniInput({
+  value,
+  onChange,
+  disabled,
+  color,
+  title,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+  color: string;
+  title: string;
+}) {
+  return (
+    <input
+      type="number"
+      min={0}
+      value={value}
+      disabled={disabled}
+      title={title}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="0"
+      className="w-11 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1 py-1 text-center text-xs font-bold text-[var(--text-primary)] placeholder-white/15 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ ["--tw-ring-color" as string]: `${color}55` }}
+    />
   );
 }
 
@@ -414,7 +481,7 @@ export default function MockExamForm({
       const supabase = createClient();
       const { data, error } = await supabase
         .from("topics")
-        .select("id, name, subject_id, order_index")
+        .select("id, name, subject_id, order_index, parent_id")
         .in("subject_id", subjectIds)
         .order("order_index", { ascending: true });
 
@@ -457,14 +524,6 @@ export default function MockExamForm({
 
   const animatedTotalNet = useAnimatedNumber(totalNet, hasAnyData);
 
-  const hasDistributionOverflow = useMemo(() => {
-    return rows.some((r) => {
-      if (!rowHasData(r)) return false;
-      const totalWrong = parseInt(r.wrong) || 0;
-      return sumDistributedErrors(r.errors) > totalWrong;
-    });
-  }, [rows]);
-
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -476,17 +535,6 @@ export default function MockExamForm({
     if (!hasAnyData) {
       onError("En az bir derse veri girmelisiniz.");
       return;
-    }
-
-    for (const r of rows) {
-      if (!rowHasData(r)) continue;
-      const totalWrong = parseInt(r.wrong) || 0;
-      if (sumDistributedErrors(r.errors) > totalWrong) {
-        onError(
-          `'${r.subjectName}' dersinde konulara dağıttığınız yanlış sayısı ders toplamını aşıyor.`
-        );
-        return;
-      }
     }
 
     setLoading(true);
@@ -553,17 +601,43 @@ export default function MockExamForm({
       const errorsPayload: {
         mock_exam_result_id: number;
         topic_id: number;
-        wrong_count: number;
+        correct_count: number | null;
+        wrong_count: number | null;
+        empty_count: number | null;
+        not_in_exam: boolean;
       }[] = [];
 
       for (const r of rows) {
         const resultId = resultIdBySubjectId.get(r.subjectId);
         if (!resultId) continue;
-        for (const err of getValidTopicErrors(r.errors)) {
+        for (const err of r.errors) {
+          if (!err.topicId) continue;
+
+          if (err.notInExam) {
+            // Bilerek "cikmadi" isaretlenmis konu
+            errorsPayload.push({
+              mock_exam_result_id: resultId,
+              topic_id: err.topicId,
+              correct_count: null,
+              wrong_count: null,
+              empty_count: null,
+              not_in_exam: true,
+            });
+            continue;
+          }
+
+          // En az bir D/Y/B alani doldurulmus mu? (bos string = dokunulmamis)
+          const touched =
+            err.correct !== "" || err.wrong !== "" || err.empty !== "";
+          if (!touched) continue;
+
           errorsPayload.push({
             mock_exam_result_id: resultId,
             topic_id: err.topicId,
-            wrong_count: err.wrong,
+            correct_count: parseInt(err.correct) || 0,
+            wrong_count: parseInt(err.wrong) || 0,
+            empty_count: parseInt(err.empty) || 0,
+            not_in_exam: false,
           });
         }
       }
@@ -778,7 +852,7 @@ export default function MockExamForm({
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading || !hasAnyData || hasDistributionOverflow}
+          disabled={loading || !hasAnyData}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:scale-[1.01] hover:shadow-[var(--primary)]/50 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
