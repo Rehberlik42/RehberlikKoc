@@ -71,6 +71,11 @@ function MockExamRow({
             <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-[var(--primary)]/20 text-[var(--accent)] border border-[var(--primary)]/25">
               {m.exam?.name ?? "—"}
             </span>
+            {m.status === "taslak" && (
+              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                Taslak
+              </span>
+            )}
             {m.title && (
               <span className="text-[var(--text-primary)] font-semibold text-sm truncate">
                 {m.title}

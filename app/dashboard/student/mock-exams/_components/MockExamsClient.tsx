@@ -63,6 +63,7 @@ export interface MockExamWithResults {
   title: string | null;
   publisher: string | null;
   total_questions: number | null;
+  status?: "taslak" | "tamamlandi" | string | null;
   exam: { id: number; name: string } | null;
   results: MockExamResultRow[];
 }
@@ -204,7 +205,7 @@ export default function MockExamsClient({
     const { data } = await supabase
       .from("mock_exams")
       .select(
-        `id, exam_date, title, publisher, total_questions,
+        `id, exam_date, title, publisher, total_questions, status,
          exam:exams(id, name),
          results:mock_exam_results(
            id, subject_id, correct_count, wrong_count, empty_count, net,

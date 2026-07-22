@@ -31,7 +31,7 @@ export default async function MockExamsPage() {
   const { data: rawMockExams } = await supabase
     .from("mock_exams")
     .select(
-      `id, exam_date, title, publisher, total_questions,
+      `id, exam_date, title, publisher, total_questions, status,
        exam:exams(id, name),
        results:mock_exam_results(
          id, subject_id, correct_count, wrong_count, empty_count, net,

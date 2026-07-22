@@ -547,6 +547,18 @@ export default function MockExamForm({
       return;
     }
 
+    // Konu bazli toplam vs ders toplami — herhangi bir ders uyusmuyorsa taslak
+    const hasMismatch = rows.some((row) => {
+      if (!rowHasData(row)) return false;
+      const subjectQ =
+        (parseInt(row.correct) || 0) +
+        (parseInt(row.wrong) || 0) +
+        (parseInt(row.empty) || 0);
+      const t = topicTotals(row.errors);
+      // D2a uyarisiyla ayni: konu girisi baslanmissa ve toplamlar farkliysa
+      return t.questions > 0 && t.questions !== subjectQ;
+    });
+
     // 1) Once mock_exams kaydi
     const { data: mockExam, error: mockExamError } = await supabase
       .from("mock_exams")
@@ -558,6 +570,7 @@ export default function MockExamForm({
         publisher: publisher.trim() || null,
         total_questions: totalQuestions > 0 ? totalQuestions : null,
         wrong_penalty_divisor: wrongPenaltyDivisor,
+        status: hasMismatch ? "taslak" : "tamamlandi",
       })
       .select("id")
       .single();
@@ -677,7 +690,13 @@ export default function MockExamForm({
       }))
     );
 
-    onSuccess(`Deneme kaydedildi! Toplam net: ${totalNet.toFixed(2)}`);
+    if (hasMismatch) {
+      onSuccess(
+        `Deneme taslak olarak kaydedildi (konu/ders toplamı uyuşmuyor). Toplam net: ${totalNet.toFixed(2)}`
+      );
+    } else {
+      onSuccess(`Deneme kaydedildi! Toplam net: ${totalNet.toFixed(2)}`);
+    }
   };
 
   return (
