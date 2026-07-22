@@ -1,3 +1,5 @@
+import { calculateNet } from "@/lib/exam-net";
+
 export type TopicSeverity = "good" | "medium" | "bad";
 export type TopicTrend = "improving" | "worsening" | "stable";
 
@@ -314,10 +316,12 @@ export function normalizeAnalysisExams(
         const subRaw = Array.isArray(r.subject) ? r.subject[0] : r.subject;
         const correct = r.correct_count ?? 0;
         const wrong = r.wrong_count ?? 0;
+        // r.net DB'de kayitli net (kayit aninda divisor'e gore hesaplaniyor).
+        // Fallback olarak varsayilan katsayi (4) ile hesaplanir; davranis korunur.
         const net =
           r.net != null
             ? Number(r.net)
-            : correct - wrong / 4;
+            : calculateNet(correct, wrong, 4);
 
         return {
           subjectId: r.subject_id,

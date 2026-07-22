@@ -6,6 +6,7 @@ import {
   XCircle,
   ListChecks,
 } from "lucide-react";
+import { calculateNet } from "@/lib/exam-net";
 
 export interface StudentSessionRow {
   id: number;
@@ -18,10 +19,6 @@ export interface StudentSessionRow {
 
 interface Props {
   sessions: StudentSessionRow[];
-}
-
-function calcNet(correct: number, wrong: number) {
-  return correct - wrong / 4;
 }
 
 function formatDate(dateStr: string) {
@@ -97,7 +94,7 @@ export default function StudentSessionsList({ sessions }: Props) {
               </thead>
               <tbody>
                 {sessions.map((s, i) => {
-                  const net = calcNet(s.correct_count, s.wrong_count);
+                  const net = calculateNet(s.correct_count, s.wrong_count, 4);
                   return (
                     <tr
                       key={s.id}
@@ -149,7 +146,7 @@ export default function StudentSessionsList({ sessions }: Props) {
 
           <div className="divide-y divide-white/4 md:hidden">
             {sessions.map((s) => {
-              const net = calcNet(s.correct_count, s.wrong_count);
+              const net = calculateNet(s.correct_count, s.wrong_count, 4);
               return (
                 <div key={s.id} className="space-y-2 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">

@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { calculateNet } from "@/lib/exam-net";
 import SearchableSelect from "@/app/dashboard/teacher/students/[id]/_components/SearchableSelect";
 import type { ExamOption, SubjectOption } from "./MockExamsClient";
 
@@ -49,13 +50,14 @@ interface Props {
   onError: (message: string) => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function calcNet(correct: string, wrong: string): number {
-  const c = parseInt(correct) || 0;
-  const w = parseInt(wrong) || 0;
-  return c - w / 4;
-}
+// ─── Yanlis goturme katsayisi secenekleri (Ara Sinif icin) ────────────────────
+const PENALTY_OPTIONS: { value: number | null; label: string }[] = [
+  { value: 4, label: "4 yanlış 1 doğru götürür" },
+  { value: 3, label: "3 yanlış 1 doğru götürür" },
+  { value: null, label: "Yanlış doğruyu götürmez" },
+];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function sumDistributedErrors(errors: TopicErrorInput[]): number {
   return errors.reduce((sum, e) => {
     if (!e.topicId) return sum;
@@ -109,12 +111,14 @@ function SubjectInputRow({
   row,
   topics,
   onChange,
+  divisor,
 }: {
   row: SubjectInput;
   topics: TopicOption[];
   onChange: (next: SubjectInput) => void;
+  divisor: number | null;
 }) {
-  const net = calcNet(row.correct, row.wrong);
+  const net = calculateNet(parseInt(row.correct) || 0, parseInt(row.wrong) || 0, divisor);
   const hasData = rowHasData(row);
   const totalWrong = parseInt(row.wrong) || 0;
   const distributedWrong = sumDistributedErrors(row.errors);
@@ -349,9 +353,21 @@ export default function MockExamForm({
   const [publisher, setPublisher] = useState("");
   const [rows, setRows] = useState<SubjectInput[]>([]);
   const [loading, setLoading] = useState(false);
+  // Yanlis goturme katsayisi (TYT/AYT/LGS icin sabit 4; Ara Sinif'ta secilebilir)
+  const [wrongPenaltyDivisor, setWrongPenaltyDivisor] = useState<number | null>(4);
   const [topicsBySubjectId, setTopicsBySubjectId] = useState<
     Map<number, TopicOption[]>
   >(new Map());
+
+  // Secili sinav "Ara Sinif" mi? (ARA_SINIF ya da "Ara Sınıf" isimlerini yakalar)
+  const selectedExamName =
+    exams.find((e) => String(e.id) === examId)?.name ?? "";
+  const isAraSinif = /ara/i.test(selectedExamName);
+
+  // Ara Sinif disindaki turlerde katsayi her zaman 4'e sabitlensin
+  useEffect(() => {
+    if (!isAraSinif) setWrongPenaltyDivisor(4);
+  }, [isAraSinif]);
 
   // Sinav degistiginde dersleri o sinava gore yenile
   useEffect(() => {
@@ -433,11 +449,11 @@ export default function MockExamForm({
       const w = parseInt(r.wrong) || 0;
       const e = parseInt(r.empty) || 0;
       if (r.correct !== "" || r.wrong !== "" || r.empty !== "") any = true;
-      net += c - w / 4;
+      net += calculateNet(c, w, wrongPenaltyDivisor);
       q += c + w + e;
     }
     return { totalNet: net, totalQuestions: q, hasAnyData: any };
-  }, [rows]);
+  }, [rows, wrongPenaltyDivisor]);
 
   const animatedTotalNet = useAnimatedNumber(totalNet, hasAnyData);
 
@@ -493,6 +509,7 @@ export default function MockExamForm({
         title: title.trim() || null,
         publisher: publisher.trim() || null,
         total_questions: totalQuestions > 0 ? totalQuestions : null,
+        wrong_penalty_divisor: wrongPenaltyDivisor,
       })
       .select("id")
       .single();
@@ -637,6 +654,33 @@ export default function MockExamForm({
           </FormField>
         </div>
 
+        {/* Yanlis goturme katsayisi — yalnizca Ara Sinif turunde */}
+        {isAraSinif && (
+          <FormField
+            label="Yanlış Götürme Katsayısı"
+            icon={<Circle className="w-3.5 h-3.5" />}
+          >
+            <select
+              value={wrongPenaltyDivisor === null ? "none" : String(wrongPenaltyDivisor)}
+              onChange={(e) =>
+                setWrongPenaltyDivisor(
+                  e.target.value === "none" ? null : parseInt(e.target.value, 10)
+                )
+              }
+              className="w-full cursor-pointer appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+            >
+              {PENALTY_OPTIONS.map((o) => (
+                <option
+                  key={o.label}
+                  value={o.value === null ? "none" : String(o.value)}
+                >
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        )}
+
         {/* Baslik + Yayinevi */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Deneme Adı (opsiyonel)" icon={null}>
@@ -697,6 +741,7 @@ export default function MockExamForm({
                   <SubjectInputRow
                     row={row}
                     topics={topicsBySubjectId.get(row.subjectId) ?? []}
+                    divisor={wrongPenaltyDivisor}
                     onChange={(next) => {
                       setRows((prev) => {
                         const copy = [...prev];
