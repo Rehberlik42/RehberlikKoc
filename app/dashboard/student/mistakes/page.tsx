@@ -2,12 +2,24 @@ import { redirect } from "next/navigation";
 import { BookX } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import MistakeQuickAddForm from "./_components/MistakeQuickAddForm";
+import MistakeEntriesList, {
+  type MistakeListEntry,
+} from "./_components/MistakeEntriesList";
 import type {
+  MistakeCauseType,
   MistakeResourceOption,
   MistakeSubjectOption,
 } from "./_components/mistake-types";
 
 export const dynamic = "force-dynamic";
+
+function oneName(
+  raw: { name: string } | { name: string }[] | null | undefined
+): string | null {
+  if (!raw) return null;
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  return v?.name ?? null;
+}
 
 export default async function StudentMistakesPage() {
   const { user, supabase } = await getCurrentUser();
@@ -23,7 +35,7 @@ export default async function StudentMistakesPage() {
 
   const teacherId = (profile?.teacher_id as string | null) ?? null;
 
-  const [subjectsRes, assignmentsRes] = await Promise.all([
+  const [subjectsRes, assignmentsRes, entriesRes] = await Promise.all([
     supabase
       .from("subjects")
       .select(
@@ -32,11 +44,19 @@ export default async function StudentMistakesPage() {
       .order("order_index"),
     supabase
       .from("resource_assignments")
-      .select(
-        `study_resource:study_resources!inner(id, name, is_active)`
-      )
+      .select(`study_resource:study_resources!inner(id, name, is_active)`)
       .eq("student_id", user.id)
       .eq("study_resource.is_active", true),
+    supabase
+      .from("mistake_entries")
+      .select(
+        `id, resource_label, test_label, question_number, cause_type, status,
+         solved_date, created_at,
+         subject:subjects(name), topic:topics(name),
+         study_resource:study_resources(name)`
+      )
+      .eq("student_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const subjects: MistakeSubjectOption[] = (subjectsRes.data ?? []).map((s) => {
@@ -76,14 +96,39 @@ export default async function StudentMistakesPage() {
     a.name.localeCompare(b.name, "tr")
   );
 
+  const listEntries: MistakeListEntry[] = (entriesRes.data ?? []).map((row) => {
+    const resourceLabel =
+      (row.resource_label as string | null)?.trim() ||
+      oneName(
+        row.study_resource as { name: string } | { name: string }[] | null
+      );
+
+    return {
+      id: row.id as number,
+      subjectName: oneName(
+        row.subject as { name: string } | { name: string }[] | null
+      ),
+      topicName: oneName(
+        row.topic as { name: string } | { name: string }[] | null
+      ),
+      resourceLabel,
+      testLabel: (row.test_label as string | null) ?? null,
+      questionNumber: (row.question_number as string | null) ?? null,
+      causeType: row.cause_type as MistakeCauseType,
+      status: row.status as "aktif" | "tamamlandi",
+      solvedDate: row.solved_date as string,
+      createdAt: row.created_at as string,
+    };
+  });
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div className="space-y-1.5">
-        <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] flex items-center gap-2">
-          <BookX className="w-7 h-7 text-[var(--accent)]" />
+        <h2 className="flex items-center gap-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
+          <BookX className="h-7 w-7 text-[var(--accent)]" />
           Hata Defteri
         </h2>
-        <p className="text-[var(--text-muted)] text-sm">
+        <p className="text-sm text-[var(--text-muted)]">
           Bugün hangi testten hangi soruları yanlış yaptığını hızlıca ekle.
           Ortak bağlamı bir kez seç, soruları peş peşe gir.
         </p>
@@ -95,6 +140,8 @@ export default async function StudentMistakesPage() {
         subjects={subjects}
         resources={resources}
       />
+
+      <MistakeEntriesList entries={listEntries} />
     </div>
   );
 }

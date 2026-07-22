@@ -128,6 +128,7 @@ export async function submitMistakeReview(params: {
       .update({
         cause_type: "bilgi_eksigi",
         reflection_note: reflectionNote!.trim(),
+        converted_from_dikkatsizlik: true,
         stage: 0,
         next_review_date: nextIn21,
         updated_at: nowIso,
