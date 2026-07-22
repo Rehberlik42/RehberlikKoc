@@ -200,6 +200,7 @@ export default function AddResourceModal({
             name: t.name,
             target_count: t.target_count,
             order_index: i,
+            topic_id: t.topic_id,
           })
           .eq("id", t.id);
 
@@ -218,6 +219,7 @@ export default function AddResourceModal({
           name: t.name,
           target_count: t.target_count,
           order_index: t.order_index,
+          topic_id: t.topic_id,
         }))
       );
       if (error) return error;
@@ -339,6 +341,7 @@ export default function AddResourceModal({
           name: t.name,
           target_count: t.target_count,
           order_index: i,
+          topic_id: t.topic_id,
         }))
       );
 
@@ -541,7 +544,11 @@ export default function AddResourceModal({
                   öğrencinin girdiği çözüm verileri görev kaydında korunur.
                 </p>
               )}
-              <TopicEditor topics={topics} onChange={setTopics} />
+              <TopicEditor
+                topics={topics}
+                onChange={setTopics}
+                subjectId={subjectId ? parseInt(subjectId, 10) : null}
+              />
 
               <button
                 type="submit"

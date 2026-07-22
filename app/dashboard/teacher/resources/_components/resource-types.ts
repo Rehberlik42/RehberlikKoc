@@ -3,6 +3,8 @@ export interface TopicDraft {
   id?: number;
   name: string;
   target_count: number;
+  /** Merkezi müfredat (topics) bağlantısı — opsiyonel */
+  topic_id: number | null;
 }
 
 export interface ResourceTopicRow {
@@ -10,11 +12,15 @@ export interface ResourceTopicRow {
   name: string;
   target_count: number;
   order_index: number;
+  /** Merkezi müfredat (topics.id) bağlantısı */
+  topic_id?: number | null;
   status: string;
   tracking_method: string;
   student_note: string | null;
   coach_note: string | null;
   last_studied_at: string | null;
+  /** Koç manuel önceliği (sistem riskinden bağımsız) */
+  coach_priority?: string | null;
 }
 
 export interface TopicProgressTotals {
@@ -40,6 +46,10 @@ export interface TopicProgressRow {
   student_note?: string | null;
   coach_note?: string | null;
   last_studied_at?: string | null;
+  /** Merkezi müfredat (topics.id) bağlantısı — Adım 2 */
+  topic_id?: number | null;
+  /** Koç manuel önceliği — K3 */
+  coach_priority?: string | null;
 }
 
 export interface StudyResource {
@@ -75,6 +85,7 @@ export function topicsToDrafts(topics: ResourceTopicRow[]): TopicDraft[] {
       id: t.id,
       name: t.name,
       target_count: t.target_count,
+      topic_id: t.topic_id ?? null,
     }));
 }
 

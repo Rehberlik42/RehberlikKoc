@@ -1,9 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, BookOpen, Loader2, Users, X } from "lucide-react";
+import {
+  AlertCircle,
+  BookOpen,
+  ChevronLeft,
+  Link2,
+  Loader2,
+  Unlink,
+  Users,
+  X,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCentralTopics, type CentralTopic } from "@/lib/use-central-topics";
+import {
+  topicSeverity,
+  topicSeverityBg,
+  topicSeverityColor,
+  type TopicSeverity,
+} from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
 import {
   calcCompletionPct,
   calcResourceNet,
@@ -74,6 +90,8 @@ function buildTopicProgressRows(
       student_note: topic.student_note,
       coach_note: topic.coach_note,
       last_studied_at: topic.last_studied_at,
+      topic_id: topic.topic_id ?? null,
+      coach_priority: topic.coach_priority ?? null,
     };
   });
 
@@ -94,6 +112,8 @@ function buildTopicProgressRows(
       student_note: null,
       coach_note: null,
       last_studied_at: null,
+      topic_id: null,
+      coach_priority: null,
     });
   }
 
@@ -116,8 +136,16 @@ const TRACKING_OPTIONS = [
   { value: "karma", label: "Karma" },
 ] as const;
 
+const COACH_PRIORITY_OPTIONS = [
+  { value: "", label: "Sistem kararına bırak" },
+  { value: "dusuk", label: "Düşük" },
+  { value: "orta", label: "Orta" },
+  { value: "yuksek", label: "Yüksek" },
+] as const;
+
 const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
 const TRACKING_VALUES = TRACKING_OPTIONS.map((o) => o.value) as readonly string[];
+const PRIORITY_VALUES = ["dusuk", "orta", "yuksek"] as const;
 
 function normalizeStatus(value: string | null | undefined): string {
   return value && STATUS_VALUES.includes(value) ? value : "calisilmadi";
@@ -125,6 +153,59 @@ function normalizeStatus(value: string | null | undefined): string {
 
 function normalizeTracking(value: string | null | undefined): string {
   return value && TRACKING_VALUES.includes(value) ? value : "soru_bazli";
+}
+
+function normalizeCoachPriority(value: string | null | undefined): string {
+  return value && (PRIORITY_VALUES as readonly string[]).includes(value)
+    ? value
+    : "";
+}
+
+function severityLabel(severity: TopicSeverity): string {
+  switch (severity) {
+    case "good":
+      return "İyi";
+    case "medium":
+      return "Orta";
+    case "bad":
+      return "Kötü";
+  }
+}
+
+function SystemRiskBadge({
+  severity,
+}: {
+  severity: TopicSeverity | null;
+}) {
+  if (severity == null) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-white/[0.03] px-2 py-1 text-[10px] font-semibold text-[var(--text-muted)]"
+        title="Bu konu için deneme verisi yok veya merkezi konuya bağlı değil"
+      >
+        <span className="h-2 w-2 rounded-full bg-[var(--text-muted)]/50" />
+        Sistem riski: Veri yok
+      </span>
+    );
+  }
+
+  const color = topicSeverityColor(severity);
+  const bg = topicSeverityBg(severity);
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-semibold"
+      style={{
+        color,
+        background: bg,
+        borderColor: `${color}40`,
+      }}
+      title={`Ortalama yanlışa göre sistem riski: ${severityLabel(severity)}`}
+    >
+      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      Sistem riski: {severityLabel(severity)}
+    </span>
+  );
 }
 
 function formatLastStudied(iso: string | null | undefined): string {
@@ -147,7 +228,191 @@ type TopicMetaPatch = {
   tracking_method?: string;
   coach_note?: string | null;
   last_studied_at?: string | null;
+  topic_id?: number | null;
+  coach_priority?: string | null;
 };
+
+/** Adım 1 TopicEditor'daki Bağla picker'ının detay modalına uyarlanmış hali */
+function CentralTopicLinkPicker({
+  linkedTopicId,
+  curriculumTopics,
+  disabled,
+  onLink,
+}: {
+  linkedTopicId: number | null | undefined;
+  curriculumTopics: CentralTopic[];
+  disabled?: boolean;
+  onLink: (topicId: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pickerStep, setPickerStep] = useState<"root" | "children">("root");
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const parentIdsWithChildren = useMemo(
+    () =>
+      new Set(
+        curriculumTopics
+          .map((t) => t.parent_id)
+          .filter((id): id is number => id !== null)
+      ),
+    [curriculumTopics]
+  );
+
+  const hasHierarchy = parentIdsWithChildren.size > 0;
+
+  const rootTopics = useMemo(() => {
+    if (!hasHierarchy) return curriculumTopics;
+    return curriculumTopics.filter((t) => t.parent_id === null);
+  }, [curriculumTopics, hasHierarchy]);
+
+  const childTopics = useMemo(() => {
+    if (selectedParentId == null) return [];
+    return curriculumTopics.filter((t) => t.parent_id === selectedParentId);
+  }, [curriculumTopics, selectedParentId]);
+
+  const linkedName = useMemo(() => {
+    if (linkedTopicId == null) return null;
+    return curriculumTopics.find((t) => t.id === linkedTopicId)?.name ?? null;
+  }, [linkedTopicId, curriculumTopics]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const openPicker = () => {
+    if (disabled) return;
+    setPickerStep("root");
+    setSelectedParentId(null);
+    setOpen((v) => !v);
+  };
+
+  const selectTopic = (id: number) => {
+    onLink(id);
+    setOpen(false);
+  };
+
+  const selectRoot = (t: CentralTopic) => {
+    if (hasHierarchy && parentIdsWithChildren.has(t.id)) {
+      setSelectedParentId(t.id);
+      setPickerStep("children");
+      return;
+    }
+    selectTopic(t.id);
+  };
+
+  if (disabled) return null;
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={openPicker}
+        title={
+          linkedName
+            ? `Bağlı: ${linkedName}`
+            : "Merkezi müfredat konusuna bağla"
+        }
+        className={`flex max-w-[11rem] items-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+          linkedTopicId != null
+            ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--accent)]"
+        }`}
+      >
+        <Link2 className="h-3 w-3 shrink-0" />
+        <span className="truncate">
+          {linkedName
+            ? `Bağlı: ${linkedName}`
+            : linkedTopicId != null
+              ? "Bağlı"
+              : "Bağla"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150">
+          {linkedTopicId != null && (
+            <button
+              type="button"
+              onClick={() => {
+                onLink(null);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/10"
+            >
+              <Unlink className="h-3.5 w-3.5" />
+              Bağlantıyı kaldır
+            </button>
+          )}
+
+          {curriculumTopics.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+              Bu ders için merkezi konu yok.
+            </p>
+          ) : pickerStep === "children" ? (
+            <div className="max-h-56 overflow-y-auto py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerStep("root");
+                  setSelectedParentId(null);
+                }}
+                className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              >
+                <ChevronLeft className="h-3 w-3" />
+                Ana üniteye dön
+              </button>
+              {childTopics.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => selectTopic(t.id)}
+                  className="flex w-full items-center px-3 py-2 text-left text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]"
+                >
+                  {t.name}
+                </button>
+              ))}
+              {childTopics.length === 0 && (
+                <p className="px-3 py-2 text-xs text-[var(--text-muted)]">
+                  Alt konu yok.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="max-h-56 overflow-y-auto py-1">
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                {hasHierarchy ? "Ana ünite / konu" : "Konu seç"}
+              </p>
+              {rootTopics.map((t) => {
+                const isParent = parentIdsWithChildren.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => selectRoot(t)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]"
+                  >
+                    <span className="truncate">{t.name}</span>
+                    {isParent && (
+                      <span className="shrink-0 text-[9px] text-[var(--text-muted)]">
+                        alt konular →
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ResourceDetailModal({ resource, students, onClose }: Props) {
   const [resourceTopics, setResourceTopics] = useState<ResourceTopicRow[]>([]);
@@ -170,6 +435,13 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [subjectId, setSubjectId] = useState<number | null>(null);
+  // Merkezi topic_id -> sistem riski (null = veri yok)
+  const [systemRiskByCentralId, setSystemRiskByCentralId] = useState<
+    Record<number, TopicSeverity | null>
+  >({});
+
+  const { topics: curriculumTopics } = useCentralTopics(subjectId);
 
   useEffect(() => {
     setMounted(true);
@@ -186,13 +458,14 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       setError(null);
       setAssignError(null);
       setProgressError(null);
+      setSubjectId(null);
 
       const supabase = createClient();
-      const [topicsRes, assignmentsRes] = await Promise.all([
+      const [topicsRes, assignmentsRes, resourceRes] = await Promise.all([
         supabase
           .from("study_resource_topics")
           .select(
-            "id, name, target_count, order_index, status, tracking_method, student_note, coach_note, last_studied_at"
+            "id, name, target_count, order_index, topic_id, coach_priority, status, tracking_method, student_note, coach_note, last_studied_at"
           )
           .eq("resource_id", resource.id)
           .order("order_index", { ascending: true }),
@@ -200,6 +473,11 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
           .from("resource_assignments")
           .select("id, student_id")
           .eq("study_resource_id", resource.id),
+        supabase
+          .from("study_resources")
+          .select("subject_id")
+          .eq("id", resource.id)
+          .single(),
       ]);
 
       if (cancelled) return;
@@ -210,6 +488,10 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
         );
       }
       setAssignmentsLoading(false);
+
+      if (!resourceRes.error && resourceRes.data) {
+        setSubjectId(resourceRes.data.subject_id ?? null);
+      }
 
       if (topicsRes.error) {
         setError(topicsRes.error.message ?? "Veriler yüklenemedi");
@@ -286,6 +568,121 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       cancelled = true;
     };
   }, [selectedStudentId, resource.id]);
+
+  // Secili ogrenci + bagli merkezi konular icin deneme riski hesapla
+  const linkedCentralTopicIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const t of resourceTopics) {
+      if (t.topic_id != null) ids.add(t.topic_id);
+    }
+    return [...ids].sort((a, b) => a - b);
+  }, [resourceTopics]);
+
+  const linkedCentralKey = linkedCentralTopicIds.join(",");
+
+  useEffect(() => {
+    if (!selectedStudentId || linkedCentralTopicIds.length === 0) {
+      setSystemRiskByCentralId({});
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("mock_exam_topic_errors")
+        .select(
+          `topic_id, wrong_count, not_in_exam,
+           result:mock_exam_results!inner(
+             id, mock_exam_id,
+             mock_exam:mock_exams!inner(id, exam_date, student_id)
+           )`
+        )
+        .eq("result.mock_exam.student_id", selectedStudentId)
+        .in("topic_id", linkedCentralTopicIds);
+
+      if (cancelled) return;
+
+      if (fetchError || !data) {
+        setSystemRiskByCentralId({});
+        return;
+      }
+
+      // topic_id -> mockExamId -> { wrong, examDate, appeared }
+      const byTopic = new Map<
+        number,
+        Map<number, { wrong: number; examDate: string; appeared: boolean }>
+      >();
+
+      for (const row of data) {
+        const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+        if (!resultRaw) continue;
+        const mockExamRaw = Array.isArray(resultRaw.mock_exam)
+          ? resultRaw.mock_exam[0]
+          : resultRaw.mock_exam;
+        const mockExamId = mockExamRaw?.id ?? resultRaw.mock_exam_id;
+        const examDate = mockExamRaw?.exam_date ?? "";
+        if (!mockExamId) continue;
+
+        const topicMap =
+          byTopic.get(row.topic_id) ??
+          new Map<number, { wrong: number; examDate: string; appeared: boolean }>();
+
+        if (row.not_in_exam === true) {
+          if (!topicMap.has(mockExamId)) {
+            topicMap.set(mockExamId, { wrong: 0, examDate, appeared: false });
+          }
+        } else {
+          const existing = topicMap.get(mockExamId);
+          if (existing && existing.appeared) {
+            existing.wrong += row.wrong_count ?? 0;
+          } else {
+            topicMap.set(mockExamId, {
+              wrong: row.wrong_count ?? 0,
+              examDate,
+              appeared: true,
+            });
+          }
+        }
+        byTopic.set(row.topic_id, topicMap);
+      }
+
+      const next: Record<number, TopicSeverity | null> = {};
+      for (const centralId of linkedCentralTopicIds) {
+        const examMap = byTopic.get(centralId);
+        if (!examMap) {
+          next[centralId] = null;
+          continue;
+        }
+
+        const appeared = [...examMap.values()]
+          .filter((c) => c.appeared)
+          .sort(
+            (a, b) =>
+              new Date(b.examDate).getTime() - new Date(a.examDate).getTime()
+          )
+          .slice(0, 5);
+
+        if (appeared.length === 0) {
+          next[centralId] = null;
+          continue;
+        }
+
+        const avgWrong =
+          appeared.reduce((s, c) => s + c.wrong, 0) / appeared.length;
+        next[centralId] = topicSeverity(avgWrong);
+      }
+
+      setSystemRiskByCentralId(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // linkedCentralKey: id listesi stabil string; linkedCentralTopicIds referansi degisse bile ayni icerikte tekrar fetch yok
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudentId, linkedCentralKey]);
 
   // topics: resourceTopics + fetched tasks'tan turetiliyor. Manuel takip alanlari
   // (status/tracking_method/coach_note/last_studied_at) resourceTopics'te tutuldugu
@@ -737,6 +1134,54 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                               </option>
                                             ))}
                                           </select>
+
+                                          <CentralTopicLinkPicker
+                                            linkedTopicId={topic.topic_id}
+                                            curriculumTopics={curriculumTopics}
+                                            disabled={subjectId == null}
+                                            onLink={(centralTopicId) =>
+                                              updateTopicMeta(topic.id as number, {
+                                                topic_id: centralTopicId,
+                                              })
+                                            }
+                                          />
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <SystemRiskBadge
+                                            severity={
+                                              topic.topic_id != null
+                                                ? (systemRiskByCentralId[topic.topic_id] ??
+                                                  null)
+                                                : null
+                                            }
+                                          />
+                                          <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                                            <span className="font-semibold uppercase tracking-wider">
+                                              Koç önceliği
+                                            </span>
+                                            <select
+                                              value={normalizeCoachPriority(
+                                                topic.coach_priority
+                                              )}
+                                              onChange={(e) =>
+                                                updateTopicMeta(topic.id as number, {
+                                                  coach_priority:
+                                                    e.target.value === ""
+                                                      ? null
+                                                      : e.target.value,
+                                                })
+                                              }
+                                              aria-label="Koç önceliği"
+                                              className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                            >
+                                              {COACH_PRIORITY_OPTIONS.map((o) => (
+                                                <option key={o.label} value={o.value}>
+                                                  {o.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </label>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">

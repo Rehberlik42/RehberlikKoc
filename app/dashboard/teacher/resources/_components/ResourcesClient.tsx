@@ -325,7 +325,7 @@ export default function ResourcesClient({
     const { data, error } = await supabase
       .from("study_resources")
       .select(
-        "id, name, publisher, cover_color, order_index, is_active, exam_id, subject_id, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, name, target_count, order_index)"
+        "id, name, publisher, cover_color, order_index, is_active, exam_id, subject_id, exam:exams(name), subject:subjects(name, color), topics:study_resource_topics(id, name, target_count, order_index, topic_id)"
       )
       .eq("id", resource.id)
       .eq("is_active", true)
