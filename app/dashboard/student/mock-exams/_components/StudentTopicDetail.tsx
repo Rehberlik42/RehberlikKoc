@@ -173,11 +173,11 @@ export default function StudentTopicDetail({
       const { data, error: fetchError } = await supabase
         .from("mock_exam_topic_errors")
         .select(
-          `topic_id, wrong_count,
+          `topic_id, wrong_count, correct_count, empty_count, not_in_exam,
            topic:topics(id, name, order_index),
            result:mock_exam_results!inner(
              id, subject_id, mock_exam_id,
-             mock_exam:mock_exams!inner(id, exam_date, student_id)
+             mock_exam:mock_exams!inner(id, exam_date, student_id, wrong_penalty_divisor)
            )`
         )
         .eq("result.subject_id", subject.id)
@@ -367,7 +367,9 @@ export default function StudentTopicDetail({
                 </tr>
               </thead>
               <tbody>
-                {analysis.rows.map((row) => (
+                {analysis.rows
+                  .filter((r) => r.appearedExamCount > 0)
+                  .map((row) => (
                   <TopicTableRow
                     key={row.topicId}
                     row={row}
@@ -406,16 +408,42 @@ function TopicTableRow({
           />
           <span className="font-semibold text-[var(--text-primary)]">{row.topicName}</span>
         </div>
+        <p className="mt-0.5 pl-3 text-[10px] text-[var(--text-muted)]">
+          ort. {row.avgWrong.toFixed(1)} yanlış{" "}
+          <span className="text-[var(--text-muted)]/70">
+            ({row.appearedExamCount}/{examColumns.length} denemede çıktı)
+          </span>
+        </p>
+        {row.avgNet !== null && (
+          <p
+            className={`pl-3 text-[10px] font-semibold ${
+              row.avgNet >= 0 ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            net ort. {row.avgNet.toFixed(2)}
+          </p>
+        )}
       </td>
       {examColumns.map((col) => {
-        const wrong = row.wrongByExamId[col.mockExamId] ?? 0;
+        const wrongRaw = row.wrongByExamId[col.mockExamId];
+        const appeared = wrongRaw !== null;
+        const wrong = wrongRaw ?? 0;
         return (
           <td key={col.mockExamId} className="px-2 py-3 text-center">
-            <span
-              className={`inline-flex min-w-[2rem] justify-center rounded-lg px-2 py-1 text-xs font-bold tabular-nums ${cellTone(wrong)} ${cellBg(wrong)}`}
-            >
-              {wrong > 0 ? wrong : "—"}
-            </span>
+            {appeared ? (
+              <span
+                className={`inline-flex min-w-[2rem] justify-center rounded-lg px-2 py-1 text-xs font-bold tabular-nums ${cellTone(wrong)} ${cellBg(wrong)}`}
+              >
+                {wrong > 0 ? wrong : "—"}
+              </span>
+            ) : (
+              <span
+                title="Bu denemede çıkmadı"
+                className="inline-flex min-w-[2rem] justify-center rounded-lg bg-transparent px-2 py-1 text-xs font-bold tabular-nums text-[var(--text-muted)] opacity-40"
+              >
+                —
+              </span>
+            )}
           </td>
         );
       })}

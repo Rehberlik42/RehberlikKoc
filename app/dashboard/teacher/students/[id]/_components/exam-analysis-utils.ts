@@ -12,9 +12,16 @@ export interface ExamColumnDef {
 export interface TopicErrorAnalysisRow {
   topicId: number;
   topicName: string;
-  wrongByExamId: Record<number, number>;
+  // null = bu denemede konu "cikmadi" (not_in_exam) olarak isaretlendi
+  wrongByExamId: Record<number, number | null>;
+  correctByExamId: Record<number, number | null>;
+  emptyByExamId: Record<number, number | null>;
+  netByExamId: Record<number, number | null>;
   wrongsChronological: number[];
   avgWrong: number;
+  avgNet: number | null; // appearedExamCount 0 ise null
+  // not_in_exam olarak isaretlenmemis (gercekten cikmis) deneme sayisi
+  appearedExamCount: number;
   severity: TopicSeverity;
   trend: TopicTrend;
 }
@@ -88,30 +95,31 @@ export function formatExamShortDate(examDate: string): string {
   });
 }
 
+type RawMockExam = {
+  id: number;
+  exam_date: string;
+  student_id: string;
+  wrong_penalty_divisor: number | null;
+};
+
+type RawTopicResult = {
+  id: number;
+  subject_id: number;
+  mock_exam_id: number;
+  mock_exam: RawMockExam | RawMockExam[] | null;
+};
+
 export interface RawTopicErrorRecord {
   topic_id: number;
-  wrong_count: number;
+  wrong_count: number | null;
+  correct_count: number | null;
+  empty_count: number | null;
+  not_in_exam: boolean;
   topic:
     | { id: number; name: string; order_index?: number }
     | { id: number; name: string; order_index?: number }[]
     | null;
-  result:
-    | {
-        id: number;
-        subject_id: number;
-        mock_exam_id: number;
-        mock_exam:
-          | { id: number; exam_date: string; student_id: string }
-          | { id: number; exam_date: string; student_id: string }[];
-      }
-    | {
-        id: number;
-        subject_id: number;
-        mock_exam_id: number;
-        mock_exam:
-          | { id: number; exam_date: string; student_id: string }
-          | { id: number; exam_date: string; student_id: string }[];
-      }[];
+  result: RawTopicResult | RawTopicResult[];
 }
 
 export function buildTopicErrorAnalysis(
@@ -130,9 +138,18 @@ export function buildTopicErrorAnalysis(
     }));
 
   const allowedExamIds = new Set(examColumns.map((c) => c.mockExamId));
+
+  interface PerExamCell {
+    correct: number;
+    wrong: number;
+    empty: number;
+    net: number;
+    appeared: boolean; // false => "cikmadi" (not_in_exam) olarak isaretlenmis
+  }
+
   const byTopic = new Map<
     number,
-    { topicName: string; wrongs: Map<number, number> }
+    { topicName: string; perExam: Map<number, PerExamCell> }
   >();
 
   for (const row of rawErrors) {
@@ -150,40 +167,115 @@ export function buildTopicErrorAnalysis(
 
     const acc = byTopic.get(row.topic_id) ?? {
       topicName,
-      wrongs: new Map<number, number>(),
+      perExam: new Map<number, PerExamCell>(),
     };
-    acc.wrongs.set(
-      mockExamId,
-      (acc.wrongs.get(mockExamId) ?? 0) + (row.wrong_count ?? 0)
-    );
+
+    if (row.not_in_exam === true) {
+      // "Cikmadi": ortalamaya HIC dahil etme. Zaten veri girilmis bir
+      // hucreyi ezme (ayni deneme/konu icin cakisma beklenmez ama guvenli).
+      if (!acc.perExam.has(mockExamId)) {
+        acc.perExam.set(mockExamId, {
+          correct: 0,
+          wrong: 0,
+          empty: 0,
+          net: 0,
+          appeared: false,
+        });
+      }
+    } else {
+      const correct = row.correct_count ?? 0;
+      const wrong = row.wrong_count ?? 0;
+      const empty = row.empty_count ?? 0;
+      const divisor = mockExamRaw?.wrong_penalty_divisor ?? 4;
+      const existing = acc.perExam.get(mockExamId);
+      if (existing && existing.appeared) {
+        existing.correct += correct;
+        existing.wrong += wrong;
+        existing.empty += empty;
+        existing.net = calculateNet(existing.correct, existing.wrong, divisor);
+      } else {
+        acc.perExam.set(mockExamId, {
+          correct,
+          wrong,
+          empty,
+          net: calculateNet(correct, wrong, divisor),
+          appeared: true,
+        });
+      }
+    }
+
     byTopic.set(row.topic_id, acc);
   }
 
   const rows: TopicErrorAnalysisRow[] = [];
 
   for (const [topicId, acc] of byTopic) {
-    const wrongByExamId: Record<number, number> = {};
+    const wrongByExamId: Record<number, number | null> = {};
+    const correctByExamId: Record<number, number | null> = {};
+    const emptyByExamId: Record<number, number | null> = {};
+    const netByExamId: Record<number, number | null> = {};
     const wrongsChronological: number[] = [];
 
+    let wrongSum = 0;
+    let appearedExamCount = 0;
+    let netSum = 0;
+    let netCount = 0;
+
     for (const col of examColumns) {
-      const w = acc.wrongs.get(col.mockExamId) ?? 0;
-      wrongByExamId[col.mockExamId] = w;
-      wrongsChronological.push(w);
+      const cell = acc.perExam.get(col.mockExamId);
+
+      if (cell && !cell.appeared) {
+        // Bilerek "cikmadi" -> tamamen haric, degerler null.
+        wrongByExamId[col.mockExamId] = null;
+        correctByExamId[col.mockExamId] = null;
+        emptyByExamId[col.mockExamId] = null;
+        netByExamId[col.mockExamId] = null;
+        wrongsChronological.push(0);
+        continue;
+      }
+
+      if (cell) {
+        // Gercekten cikmis, veri girilmis
+        wrongByExamId[col.mockExamId] = cell.wrong;
+        correctByExamId[col.mockExamId] = cell.correct;
+        emptyByExamId[col.mockExamId] = cell.empty;
+        netByExamId[col.mockExamId] = cell.net;
+        wrongsChronological.push(cell.wrong);
+        wrongSum += cell.wrong;
+        appearedExamCount += 1;
+        netSum += cell.net;
+        netCount += 1;
+        continue;
+      }
+
+      // Bu denemede bu konuya ait satir yok -> eski davranis: 0 yanlisla
+      // "cikti" say (ortalamaya dahil). Boylece D2 oncesi veri bozulmaz.
+      wrongByExamId[col.mockExamId] = 0;
+      correctByExamId[col.mockExamId] = null;
+      emptyByExamId[col.mockExamId] = null;
+      netByExamId[col.mockExamId] = null;
+      wrongsChronological.push(0);
+      appearedExamCount += 1;
     }
 
-    const avgWrong =
-      examColumns.length > 0
-        ? wrongsChronological.reduce((s, n) => s + n, 0) / examColumns.length
-        : 0;
+    const avgWrong = appearedExamCount > 0 ? wrongSum / appearedExamCount : 0;
+    const avgNet = netCount > 0 ? netSum / netCount : null;
 
     rows.push({
       topicId,
       topicName: acc.topicName,
       wrongByExamId,
+      correctByExamId,
+      emptyByExamId,
+      netByExamId,
       wrongsChronological,
       avgWrong,
+      avgNet,
+      appearedExamCount,
       severity: topicSeverity(avgWrong),
-      trend: computeTopicTrend(wrongsChronological),
+      trend: computeTopicTrend(
+        wrongsChronological.filter((w): w is number => w !== null)
+      ),
     });
   }
 
@@ -191,14 +283,18 @@ export function buildTopicErrorAnalysis(
 
   const totalWrongs = rows.reduce(
     (sum, row) =>
-      sum + Object.values(row.wrongByExamId).reduce((s, n) => s + n, 0),
+      sum +
+      Object.values(row.wrongByExamId).reduce<number>(
+        (s, n) => s + (n ?? 0),
+        0
+      ),
     0
   );
   const avgWrongPerExam =
     examColumns.length > 0 ? totalWrongs / examColumns.length : 0;
 
   const withErrors = rows.filter((r) =>
-    Object.values(r.wrongByExamId).some((w) => w > 0)
+    Object.values(r.wrongByExamId).some((w) => (w ?? 0) > 0)
   );
 
   return {

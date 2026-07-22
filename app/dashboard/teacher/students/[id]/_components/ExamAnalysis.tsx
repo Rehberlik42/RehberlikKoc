@@ -230,11 +230,11 @@ export default function ExamAnalysis({
       const { data, error: fetchError } = await supabase
         .from("mock_exam_topic_errors")
         .select(
-          `topic_id, wrong_count,
+          `topic_id, wrong_count, correct_count, empty_count, not_in_exam,
            topic:topics(id, name, order_index),
            result:mock_exam_results!inner(
              id, subject_id, mock_exam_id,
-             mock_exam:mock_exams!inner(id, exam_date, title, student_id)
+             mock_exam:mock_exams!inner(id, exam_date, title, student_id, wrong_penalty_divisor)
            )`
         )
         .eq("result.mock_exam.student_id", studentId);
