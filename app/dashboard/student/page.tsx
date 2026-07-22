@@ -12,6 +12,10 @@ import {
   type AppointmentStatus,
 } from "@/lib/appointments";
 import TodayTasks from "./_components/TodayTasks";
+import TodayMistakesCard, {
+  type MistakeCounters,
+  type TodayMistakeEntry,
+} from "./_components/TodayMistakesCard";
 import TargetSummaryCard, {
   type TargetHighlight,
 } from "./_components/TargetSummaryCard";
@@ -27,6 +31,7 @@ import {
 import {
   getDayLabelFull,
   mapStudyPlanTaskRow,
+  startOfWeek,
   STUDY_PLAN_TASK_SELECT,
   toISODate,
 } from "./program/_components/plan-shared";
@@ -101,12 +106,17 @@ export default async function StudentDashboardPage() {
   const rangeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const rangeEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
 
+  const weekStart = startOfWeek(today);
+  const weekStartIso = weekStart.toISOString();
+
   const [
     { data: todayTasksRaw },
     { data: rawStudentTargets },
     { data: rawMockExams },
     { data: rawSubjects },
     { data: rawUpcomingAppointments },
+    { data: dueMistakesRaw },
+    { data: allMistakesRaw },
   ] = await Promise.all([
     supabase
       .from("study_plan_tasks")
@@ -141,6 +151,25 @@ export default async function StudentDashboardPage() {
       .gte("appointment_date", rangeStart.toISOString())
       .lt("appointment_date", rangeEnd.toISOString())
       .order("appointment_date", { ascending: true }),
+    supabase
+      .from("mistake_entries")
+      .select(
+        `id, subject_id, topic_id, resource_label, test_label, question_number,
+         cause_type, solved_date, next_review_date, stage,
+         subject:subjects(name), topic:topics(name),
+         reviews:mistake_reviews(id, review_stage, result)`
+      )
+      .eq("student_id", user.id)
+      .eq("status", "aktif")
+      .lte("next_review_date", todayStr)
+      .order("next_review_date", { ascending: true }),
+    supabase
+      .from("mistake_entries")
+      .select("id, status, cause_type, next_review_date, updated_at", {
+        count: "exact",
+        head: false,
+      })
+      .eq("student_id", user.id),
   ]);
 
   const upcomingAppointments = (rawUpcomingAppointments ?? []) as {
@@ -233,6 +262,82 @@ export default async function StudentDashboardPage() {
   const overallProgress = computeOverallTargetProgress(progressItems);
   const highlights = pickHighlights(progressItems);
 
+  const dueMistakeEntries: TodayMistakeEntry[] = (dueMistakesRaw ?? []).map(
+    (row) => {
+      const subjectRaw = row.subject as
+        | { name: string }
+        | { name: string }[]
+        | null;
+      const subject = Array.isArray(subjectRaw)
+        ? (subjectRaw[0] ?? null)
+        : subjectRaw;
+      const topicRaw = row.topic as
+        | { name: string }
+        | { name: string }[]
+        | null;
+      const topic = Array.isArray(topicRaw) ? (topicRaw[0] ?? null) : topicRaw;
+      const reviewsRaw = row.reviews as
+        | { id: number; review_stage: number; result: string | null }[]
+        | null;
+      const openReview = (reviewsRaw ?? []).find((r) => r.result == null);
+
+      return {
+        id: row.id as number,
+        subject_id: row.subject_id as number,
+        topic_id: (row.topic_id as number | null) ?? null,
+        resource_label: (row.resource_label as string | null) ?? null,
+        test_label: (row.test_label as string | null) ?? null,
+        question_number: (row.question_number as string | null) ?? null,
+        cause_type: row.cause_type as "dikkatsizlik" | "bilgi_eksigi",
+        solved_date: row.solved_date as string,
+        next_review_date: row.next_review_date as string,
+        stage: Number(row.stage ?? 0),
+        subjectName: subject?.name ?? null,
+        topicName: topic?.name ?? null,
+        activeReviewId: openReview?.id ?? null,
+      };
+    }
+  );
+
+  const mistakeCounters: MistakeCounters = {
+    bugunBekleyen: 0,
+    gecikmis: 0,
+    buHaftaTamamlanan: 0,
+    aktifKirmizi: 0,
+    aktifSari: 0,
+    kaliciOgrenilen: 0,
+  };
+
+  for (const row of allMistakesRaw ?? []) {
+    const status = row.status as string;
+    const cause = row.cause_type as string;
+    const nextDate = row.next_review_date as string | null;
+    const updatedAt = row.updated_at as string | null;
+
+    if (status === "aktif" && nextDate === todayStr) {
+      mistakeCounters.bugunBekleyen += 1;
+    }
+    if (status === "aktif" && nextDate != null && nextDate < todayStr) {
+      mistakeCounters.gecikmis += 1;
+    }
+    if (
+      status === "tamamlandi" &&
+      updatedAt != null &&
+      updatedAt >= weekStartIso
+    ) {
+      mistakeCounters.buHaftaTamamlanan += 1;
+    }
+    if (status === "aktif" && cause === "bilgi_eksigi") {
+      mistakeCounters.aktifKirmizi += 1;
+    }
+    if (status === "aktif" && cause === "dikkatsizlik") {
+      mistakeCounters.aktifSari += 1;
+    }
+    if (status === "tamamlandi") {
+      mistakeCounters.kaliciOgrenilen += 1;
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
@@ -308,6 +413,11 @@ export default async function StudentDashboardPage() {
         initialTasks={initialTasks}
         todayDayName={todayDayName}
         todayDateLong={todayDateLong}
+      />
+
+      <TodayMistakesCard
+        entries={dueMistakeEntries}
+        counters={mistakeCounters}
       />
 
       <TargetSummaryCard overall={overallProgress} highlights={highlights} />
