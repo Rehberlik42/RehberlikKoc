@@ -22,6 +22,7 @@ import {
   X,
   ChevronRight,
   Settings,
+  NotebookPen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { resolveTheme } from "@/lib/themes";
@@ -47,6 +48,7 @@ const studentNav: NavItem[] = [
   { label: "Ana Sayfa",    href: "/dashboard/student",             icon: <LayoutDashboard className="w-4.5 h-4.5" /> },
   { label: "Programım",    href: "/dashboard/student/program",     icon: <CalendarDays className="w-4.5 h-4.5" /> },
   { label: "Denemelerim",  href: "/dashboard/student/mock-exams",  icon: <BarChart2 className="w-4.5 h-4.5" /> },
+  { label: "Hata Defteri", href: "/dashboard/student/mistakes", icon: <NotebookPen className="w-4.5 h-4.5" /> },
   { label: "Önerilerim",   href: "/dashboard/student/recommendations", icon: <BookOpen className="w-4.5 h-4.5" /> },
   { label: "Kaynaklarım",  href: "/dashboard/student/resources",       icon: <Library className="w-4.5 h-4.5" /> },
   { label: "DORA",         href: "/dashboard/student/dora",        icon: <Bot className="w-4.5 h-4.5" /> },
