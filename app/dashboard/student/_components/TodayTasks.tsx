@@ -199,7 +199,8 @@ export default function TodayTasks({
     const { error } = await supabase
       .from("study_plan_tasks")
       .update(buildTaskUpdatePayload(next, data))
-      .eq("id", taskId);
+      .eq("id", taskId)
+      .eq("is_published", true);
 
     setTogglingId(null);
 

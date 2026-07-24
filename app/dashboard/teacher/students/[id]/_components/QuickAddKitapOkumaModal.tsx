@@ -23,6 +23,7 @@ interface Props {
   onSuccess: (planDate: string) => void;
   onError: (message: string) => void;
   weekDays?: Date[];
+  draftMode?: boolean;
 }
 
 const DAY_LABELS_SHORT = [
@@ -62,6 +63,7 @@ export default function QuickAddKitapOkumaModal({
   onSuccess,
   onError,
   weekDays,
+  draftMode = false,
 }: Props) {
   const supabase = createClient();
   const [note, setNote] = useState("");
@@ -111,6 +113,7 @@ export default function QuickAddKitapOkumaModal({
         study_resource_id: null,
         study_resource_topic_id: null,
         details,
+        is_published: !draftMode,
       });
       if (error) throw { date: targetDate, message: error.message };
       return targetDate;

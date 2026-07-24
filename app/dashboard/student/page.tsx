@@ -123,6 +123,7 @@ export default async function StudentDashboardPage() {
       .select(STUDY_PLAN_TASK_SELECT)
       .eq("student_id", user.id)
       .eq("plan_date", todayStr)
+      .eq("is_published", true)
       .order("order_index", { ascending: true })
       .order("start_time", { ascending: true }),
     supabase

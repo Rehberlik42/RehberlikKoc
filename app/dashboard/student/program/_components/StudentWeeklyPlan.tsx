@@ -68,6 +68,7 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
       .from("study_plan_tasks")
       .select(STUDY_PLAN_TASK_SELECT)
       .eq("student_id", studentId)
+      .eq("is_published", true)
       .gte("plan_date", weekStartStr)
       .lte("plan_date", weekEndStr)
       .order("plan_date", { ascending: true })
@@ -105,7 +106,8 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
     const { error } = await supabase
       .from("study_plan_tasks")
       .update(buildTaskUpdatePayload(next, data))
-      .eq("id", taskId);
+      .eq("id", taskId)
+      .eq("is_published", true);
 
     setTogglingId(null);
 

@@ -141,6 +141,7 @@ export default async function StudentResourcesPage() {
       .from("study_plan_tasks")
       .select("study_resource_id, solved_count, correct_count, wrong_count")
       .eq("student_id", user.id)
+      .eq("is_published", true)
       .eq("is_completed", true)
       .not("study_resource_id", "is", null)
       .not("solved_count", "is", null),

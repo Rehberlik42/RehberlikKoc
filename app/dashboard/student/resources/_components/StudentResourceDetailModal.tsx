@@ -227,6 +227,7 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
           .select("study_resource_topic_id, solved_count, correct_count, wrong_count")
           .eq("study_resource_id", resource.id)
           .eq("student_id", studentId)
+          .eq("is_published", true)
           .eq("is_completed", true)
           .not("solved_count", "is", null),
       ]);

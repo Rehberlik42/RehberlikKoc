@@ -186,6 +186,7 @@ interface Props {
   existingTask?: ExistingTask | null;
   /** Haftanın günleri — yalnızca yeni görev eklerken çoklu gün seçimi için */
   weekDays?: Date[];
+  draftMode?: boolean;
 }
 
 const DAY_LABELS_SHORT = [
@@ -233,6 +234,7 @@ export default function AddTaskModal({
   onError,
   existingTask = null,
   weekDays,
+  draftMode = false,
 }: Props) {
   const supabase = createClient();
   const isEdit = Boolean(existingTask);
@@ -633,6 +635,7 @@ export default function AddTaskModal({
         study_resource_id,
         study_resource_topic_id,
         details: cleanedDetails,
+        is_published: !draftMode,
       });
       if (error) {
         throw { date: targetDate, message: error.message };
