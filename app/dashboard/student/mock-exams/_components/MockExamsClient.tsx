@@ -410,7 +410,10 @@ export default function MockExamsClient({
         className="space-y-4 rounded-2xl p-4 sm:p-5"
         style={{ backgroundColor: PDF_EXPORT_BG }}
       >
-        <PdfReportHeader subtitle="Deneme Analizi Raporu" />
+        <PdfReportHeader
+          eyebrow="MINDORA Deneme Analizi"
+          subtitle="Deneme Analizi Raporu"
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard

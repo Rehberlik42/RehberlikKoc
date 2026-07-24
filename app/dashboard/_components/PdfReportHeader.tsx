@@ -4,8 +4,10 @@ import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 
 export default function PdfReportHeader({
   subtitle,
+  eyebrow = "MINDORA Raporu",
 }: {
   subtitle: string;
+  eyebrow?: string;
 }) {
   const dateLabel = new Date().toLocaleDateString("tr-TR", {
     weekday: "long",
@@ -20,7 +22,7 @@ export default function PdfReportHeader({
       style={{ backgroundColor: PDF_EXPORT_BG }}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-        MINDORA Raporu
+        {eyebrow}
       </p>
       <h3 className="text-[var(--text-primary)] text-lg sm:text-xl font-black mt-1">{subtitle}</h3>
       <p className="text-[var(--text-muted)] text-xs mt-1">{dateLabel}</p>

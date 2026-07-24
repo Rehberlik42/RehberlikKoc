@@ -77,7 +77,10 @@ export default function ProgramContent({
             className="space-y-4 rounded-2xl p-4 sm:p-5"
             style={{ backgroundColor: PDF_EXPORT_BG }}
           >
-            <PdfReportHeader subtitle="Haftalık Çalışma Programı" />
+            <PdfReportHeader
+              eyebrow="MINDORA Programı"
+              subtitle="Haftalık Çalışma Programı"
+            />
             <WeeklySummary refreshKey={refreshKey} studentId={studentId} />
             <SessionsList refreshKey={refreshKey} embedded studentId={studentId} />
           </div>

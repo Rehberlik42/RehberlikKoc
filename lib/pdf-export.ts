@@ -50,6 +50,14 @@ export async function exportElementToPdf(
     onclone: (_clonedDoc, clonedRoot) => {
       if (clonedRoot instanceof HTMLElement) {
         clonedRoot.style.backgroundColor = PDF_EXPORT_BG;
+        clonedRoot
+          .querySelectorAll<HTMLElement>(
+            '[class*="overflow-x-auto"], [class*="overflow-x-scroll"]'
+          )
+          .forEach((node) => {
+            node.style.overflow = "visible";
+            node.style.width = "max-content";
+          });
       }
     },
   });
