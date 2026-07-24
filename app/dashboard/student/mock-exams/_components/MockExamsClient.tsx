@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import PdfReportHeader from "@/app/dashboard/_components/PdfReportHeader";
-import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import MockExamForm from "./MockExamForm";
 import MockExamsList from "./MockExamsList";
 import StudentFocusCard from "./StudentFocusCard";
@@ -408,7 +407,6 @@ export default function MockExamsClient({
       <div
         id="mock-exams-export-root"
         className="space-y-4 rounded-2xl p-4 sm:p-5"
-        style={{ backgroundColor: PDF_EXPORT_BG }}
       >
         <PdfReportHeader
           eyebrow="MINDORA Deneme Analizi"

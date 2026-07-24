@@ -1,7 +1,5 @@
 /** PDF yakalama bolgesinde gorunen marka basligi (ekranda da okunakli) */
 
-import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
-
 export default function PdfReportHeader({
   subtitle,
   eyebrow = "MINDORA Raporu",
@@ -17,15 +15,14 @@ export default function PdfReportHeader({
   });
 
   return (
-    <div
-      className="rounded-xl border border-[var(--border)] px-5 py-4 mb-4"
-      style={{ backgroundColor: PDF_EXPORT_BG }}
-    >
+    <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
         {eyebrow}
       </p>
-      <h3 className="text-[var(--text-primary)] text-lg sm:text-xl font-black mt-1">{subtitle}</h3>
-      <p className="text-[var(--text-muted)] text-xs mt-1">{dateLabel}</p>
+      <h3 className="mt-1 text-lg font-black text-[var(--text-primary)] sm:text-xl">
+        {subtitle}
+      </h3>
+      <p className="mt-1 text-xs text-[var(--text-muted)]">{dateLabel}</p>
     </div>
   );
 }

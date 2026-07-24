@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { BookOpenCheck, ListTodo } from "lucide-react";
 import PdfReportHeader from "@/app/dashboard/_components/PdfReportHeader";
-import { PDF_EXPORT_BG } from "@/lib/pdf-export-constants";
 import SessionEntryForm, { type Subject } from "./SessionEntryForm";
 import SessionsList from "./SessionsList";
 import WeeklySummary from "./WeeklySummary";
@@ -75,7 +74,6 @@ export default function ProgramContent({
           <div
             id="program-export-root"
             className="space-y-4 rounded-2xl p-4 sm:p-5"
-            style={{ backgroundColor: PDF_EXPORT_BG }}
           >
             <PdfReportHeader
               eyebrow="MINDORA Programı"
