@@ -21,6 +21,7 @@ import {
   Link2,
   Clock,
   Hash,
+  CalendarDays,
 } from "lucide-react";
 
 export type TaskType =
@@ -32,7 +33,8 @@ export type TaskType =
   | "tekrar"
   | "yanlis_analizi"
   | "odev"
-  | "manuel";
+  | "manuel"
+  | "kitap_okuma";
 
 export type ExistingTask = {
   id: string;
@@ -115,7 +117,6 @@ function mapStudyResource(row: {
 const TASK_TYPE_OPTIONS: { value: TaskType; label: string }[] = [
   { value: "ders", label: "Ders" },
   { value: "deneme", label: "Deneme" },
-  { value: "bras_deneme", label: "Branş Denemesi" },
   { value: "soru_cozumu", label: "Soru Çözümü" },
   { value: "video_izleme", label: "Video İzleme" },
   { value: "tekrar", label: "Tekrar" },
@@ -123,6 +124,12 @@ const TASK_TYPE_OPTIONS: { value: TaskType; label: string }[] = [
   { value: "odev", label: "Ödev" },
   { value: "manuel", label: "Manuel Görev" },
 ];
+
+/** Düzenlemede listeden çıkarılmış türlerin etiketi (değer korunur). */
+const LEGACY_TASK_TYPE_LABELS: Partial<Record<TaskType, string>> = {
+  bras_deneme: "Branş Denemesi",
+  kitap_okuma: "Kitap Okuma",
+};
 
 const inputCls =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0";
@@ -177,6 +184,29 @@ interface Props {
   onSuccess: (planDate: string) => void;
   onError: (message: string) => void;
   existingTask?: ExistingTask | null;
+  /** Haftanın günleri — yalnızca yeni görev eklerken çoklu gün seçimi için */
+  weekDays?: Date[];
+}
+
+const DAY_LABELS_SHORT = [
+  "Pzt",
+  "Sal",
+  "Çar",
+  "Per",
+  "Cum",
+  "Cmt",
+  "Paz",
+] as const;
+
+function toISODateLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatDaySub(d: Date): string {
+  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
 
 function resolveAnaUniteId(
@@ -202,6 +232,7 @@ export default function AddTaskModal({
   onSuccess,
   onError,
   existingTask = null,
+  weekDays,
 }: Props) {
   const supabase = createClient();
   const isEdit = Boolean(existingTask);
@@ -239,6 +270,9 @@ export default function AddTaskModal({
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [details, setDetails] = useState<Record<string, string | number>>(
     () => existingTask?.details ?? {}
+  );
+  const [additionalDays, setAdditionalDays] = useState<Set<string>>(
+    new Set()
   );
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -334,6 +368,7 @@ export default function AddTaskModal({
           : ""
       );
       setDetails(existingTask.details ?? {});
+      setAdditionalDays(new Set());
       return;
     }
 
@@ -347,6 +382,7 @@ export default function AddTaskModal({
     setResourceId("");
     setResourceTopicId("");
     setDetails({});
+    setAdditionalDays(new Set());
   }, [planDate, existingTask, subjects]);
 
   useEffect(() => {
@@ -579,33 +615,71 @@ export default function AddTaskModal({
       return;
     }
 
-    const orderIndex = taskCountForDate(planDate);
-    const { error } = await supabase.from("study_plan_tasks").insert({
-      student_id: studentId,
-      teacher_id: user.id,
-      plan_date: planDate,
-      subject_id,
-      topic_id,
-      task_type: taskType,
-      title: title.trim(),
-      start_time: null,
-      end_time: null,
-      break_minutes: null,
-      order_index: orderIndex,
-      is_completed: false,
-      study_resource_id,
-      study_resource_topic_id,
-      details: cleanedDetails,
-    });
+    const insertTaskForDate = async (targetDate: string) => {
+      const orderIndex = taskCountForDate(targetDate);
+      const { error } = await supabase.from("study_plan_tasks").insert({
+        student_id: studentId,
+        teacher_id: user.id,
+        plan_date: targetDate,
+        subject_id,
+        topic_id,
+        task_type: taskType,
+        title: title.trim(),
+        start_time: null,
+        end_time: null,
+        break_minutes: null,
+        order_index: orderIndex,
+        is_completed: false,
+        study_resource_id,
+        study_resource_topic_id,
+        details: cleanedDetails,
+      });
+      if (error) {
+        throw { date: targetDate, message: error.message };
+      }
+      return targetDate;
+    };
+
+    const targetDates = Array.from(
+      new Set([planDate, ...additionalDays])
+    ).sort();
+
+    const results = await Promise.allSettled(
+      targetDates.map((d) => insertTaskForDate(d))
+    );
 
     setLoading(false);
 
-    if (error) {
-      onError("Kayıt sırasında hata oluştu: " + error.message);
+    const succeeded: string[] = [];
+    const failed: string[] = [];
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        succeeded.push(r.value);
+      } else {
+        const reason = r.reason as { date?: string; message?: string };
+        failed.push(reason?.date ?? "?");
+      }
+    }
+
+    for (const d of succeeded) {
+      onSuccess(d);
+    }
+
+    if (failed.length === 0) {
+      onClose();
       return;
     }
 
-    onSuccess(planDate);
+    if (succeeded.length === 0) {
+      onError(
+        `Kayıt sırasında hata oluştu (${failed.length} gün başarısız).`
+      );
+      return;
+    }
+
+    onError(
+      `${succeeded.length} güne eklendi, ${failed.length} günde hata oluştu (${failed.join(", ")}).`
+    );
     onClose();
   };
 
@@ -766,10 +840,22 @@ export default function AddTaskModal({
               value={taskType}
               onChange={handleTaskTypeChange}
               searchable={false}
-              options={TASK_TYPE_OPTIONS.map((opt) => ({
-                value: opt.value,
-                label: opt.label,
-              }))}
+              options={[
+                ...TASK_TYPE_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: opt.label,
+                })),
+                ...(isEdit &&
+                LEGACY_TASK_TYPE_LABELS[taskType] &&
+                !TASK_TYPE_OPTIONS.some((o) => o.value === taskType)
+                  ? [
+                      {
+                        value: taskType,
+                        label: LEGACY_TASK_TYPE_LABELS[taskType] as string,
+                      },
+                    ]
+                  : []),
+              ]}
             />
           )}
 
@@ -996,7 +1082,9 @@ export default function AddTaskModal({
                 </>
               )}
 
-              {(taskType === "ders" || taskType === "manuel") && (
+              {(taskType === "ders" ||
+                taskType === "manuel" ||
+                taskType === "kitap_okuma") && (
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>
                     <Clock className="h-3.5 w-3.5" />
@@ -1047,6 +1135,60 @@ export default function AddTaskModal({
                   </>
                 ) : null}
               </p>
+
+              {!isEdit && weekDays && weekDays.length > 0 && (
+                <div className="space-y-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/50 p-3">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5 text-[var(--accent)]" />
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Başka günlere de ekle
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-[var(--text-muted)]">
+                    Birincil gün ({dayLabel}) zaten seçili. İstersen aynı görevi
+                    haftanın diğer günlerine de ekle.
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                    {weekDays.map((d, i) => {
+                      const dateStr = toISODateLocal(d);
+                      const isPrimary = dateStr === planDate;
+                      const checked =
+                        isPrimary || additionalDays.has(dateStr);
+                      return (
+                        <button
+                          key={dateStr}
+                          type="button"
+                          disabled={isPrimary || loading}
+                          onClick={() => {
+                            if (isPrimary) return;
+                            setAdditionalDays((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(dateStr)) next.delete(dateStr);
+                              else next.add(dateStr);
+                              return next;
+                            });
+                          }}
+                          className={`flex flex-col items-start rounded-lg border px-2.5 py-2 text-left transition-colors disabled:cursor-default ${
+                            checked
+                              ? isPrimary
+                                ? "border-[var(--primary)]/50 bg-[var(--primary)]/15 text-[var(--accent)]"
+                                : "border-[var(--primary)]/40 bg-[var(--primary)]/20 text-[var(--text-primary)]"
+                              : "border-[var(--border)] bg-[var(--bg)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          <span className="text-xs font-bold">
+                            {DAY_LABELS_SHORT[i]}
+                            {isPrimary ? " · bu gün" : ""}
+                          </span>
+                          <span className="text-[10px] opacity-80">
+                            {formatDaySub(d)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

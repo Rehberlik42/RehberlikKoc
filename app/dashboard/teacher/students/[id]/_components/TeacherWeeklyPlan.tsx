@@ -21,6 +21,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import AddTaskModal, { type ExistingTask } from "./AddTaskModal";
+import QuickAddBransDenemesiModal from "./QuickAddBransDenemesiModal";
+import QuickAddKitapOkumaModal from "./QuickAddKitapOkumaModal";
 import type { ProgramSubject } from "./program-types";
 import {
   Clock,
@@ -40,6 +42,8 @@ import {
   Repeat,
   Pencil,
   SplitSquareHorizontal,
+  BookMarked,
+  BookOpen,
 } from "lucide-react";
 
 export type { ProgramSubject } from "./program-types";
@@ -55,7 +59,8 @@ type TaskType =
   | "tekrar"
   | "yanlis_analizi"
   | "odev"
-  | "manuel";
+  | "manuel"
+  | "kitap_okuma";
 
 type ToastType = "success" | "error";
 
@@ -98,6 +103,7 @@ const TASK_TYPE_BADGE: Record<TaskType, { label: string; color: string }> = {
   yanlis_analizi: { label: "Yanlış Analizi", color: "#FF5757" },
   odev: { label: "Ödev", color: "#7BE0AD" },
   manuel: { label: "Manuel", color: "#94A3B8" },
+  kitap_okuma: { label: "Kitap Okuma", color: "#C17F45" },
 };
 
 const FALLBACK_BADGE = { label: "Görev", color: "#94A3B8" };
@@ -792,6 +798,8 @@ function DayColumn({
   deletingId,
   shouldAnimate,
   onAdd,
+  onAddBrans,
+  onAddKitap,
   weekDays,
   onEdit,
   onCopy,
@@ -810,6 +818,8 @@ function DayColumn({
   deletingId: string | null;
   shouldAnimate: (id: string) => boolean;
   onAdd: () => void;
+  onAddBrans: () => void;
+  onAddKitap: () => void;
   weekDays: WeekDayOption[];
   onEdit: (taskId: string) => Promise<void>;
   onCopy: (taskId: string) => Promise<void>;
@@ -820,6 +830,9 @@ function DayColumn({
   menuBusy: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dateStr });
+
+  const quickBtnCls =
+    "flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border)] py-1.5 text-[10px] font-semibold text-[var(--text-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)]/40 hover:bg-[var(--primary)]/[0.06] hover:text-[var(--accent)]";
 
   return (
     <div
@@ -881,14 +894,20 @@ function DayColumn({
         </div>
       </SortableContext>
 
-      <button
-        type="button"
-        onClick={onAdd}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--border)] py-2 text-[11px] font-semibold text-[var(--text-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)]/40 hover:bg-[var(--primary)]/[0.06] hover:text-[var(--accent)]"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        Görev Ekle
-      </button>
+      <div className="mt-2 flex flex-col gap-1.5">
+        <button type="button" onClick={onAdd} className={quickBtnCls}>
+          <Plus className="h-3.5 w-3.5" />
+          Görev Ekle
+        </button>
+        <button type="button" onClick={onAddBrans} className={quickBtnCls}>
+          <BookMarked className="h-3 w-3" />
+          Branş Denemesi
+        </button>
+        <button type="button" onClick={onAddKitap} className={quickBtnCls}>
+          <BookOpen className="h-3 w-3" />
+          Kitap Okuma
+        </button>
+      </div>
     </div>
   );
 }
@@ -907,6 +926,14 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
     planDate: string;
     dayLabel: string;
     existingTask?: ExistingTask | null;
+  } | null>(null);
+  const [bransModal, setBransModal] = useState<{
+    planDate: string;
+    dayLabel: string;
+  } | null>(null);
+  const [kitapModal, setKitapModal] = useState<{
+    planDate: string;
+    dayLabel: string;
   } | null>(null);
   const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
   const [menuBusy, setMenuBusy] = useState(false);
@@ -1542,6 +1569,20 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
     });
   };
 
+  const openBransModal = (day: Date, colIndex: number) => {
+    setBransModal({
+      planDate: toISODate(day),
+      dayLabel: `${DAY_LABELS_FULL[colIndex]}, ${formatColumnDate(day)}`,
+    });
+  };
+
+  const openKitapModal = (day: Date, colIndex: number) => {
+    setKitapModal({
+      planDate: toISODate(day),
+      dayLabel: `${DAY_LABELS_FULL[colIndex]}, ${formatColumnDate(day)}`,
+    });
+  };
+
   return (
     <>
       {toast && (
@@ -1563,6 +1604,34 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
           onSuccess={handleTaskAdded}
           onError={handleTaskError}
           existingTask={addModal.existingTask}
+          weekDays={addModal.existingTask ? undefined : weekDays}
+        />
+      )}
+
+      {bransModal && (
+        <QuickAddBransDenemesiModal
+          onClose={() => setBransModal(null)}
+          studentId={studentId}
+          subjects={subjects}
+          planDate={bransModal.planDate}
+          dayLabel={bransModal.dayLabel}
+          taskCountForDate={taskCountForDate}
+          onSuccess={handleTaskAdded}
+          onError={handleTaskError}
+          weekDays={weekDays}
+        />
+      )}
+
+      {kitapModal && (
+        <QuickAddKitapOkumaModal
+          onClose={() => setKitapModal(null)}
+          studentId={studentId}
+          planDate={kitapModal.planDate}
+          dayLabel={kitapModal.dayLabel}
+          taskCountForDate={taskCountForDate}
+          onSuccess={handleTaskAdded}
+          onError={handleTaskError}
+          weekDays={weekDays}
         />
       )}
 
@@ -1644,6 +1713,8 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                         deletingId={deletingId}
                         shouldAnimate={shouldAnimate}
                         onAdd={() => openAddModal(day, colIndex)}
+                        onAddBrans={() => openBransModal(day, colIndex)}
+                        onAddKitap={() => openKitapModal(day, colIndex)}
                         weekDays={weekDayOptions}
                         onEdit={handleEditTask}
                         onCopy={handleCopyTask}
