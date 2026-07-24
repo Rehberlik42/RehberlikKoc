@@ -917,10 +917,10 @@ function Header({
       {/* Logo — header: yatay ikon markası */}
       <MindoraLogo priority />
 
-      <nav className="flex items-center gap-3">
+      <nav className="flex items-center gap-2">
         <button
           onClick={() => onOpenAuth("student")}
-          className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white/80 border border-white/10 hover:border-[#4F7CFF]/60 hover:text-white transition-all duration-300"
+          className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-sm font-semibold text-white/80 border border-white/10 hover:border-[#4F7CFF]/60 hover:text-white transition-all duration-300"
         >
           Öğrenci Girişi
         </button>
