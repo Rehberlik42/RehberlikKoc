@@ -5,7 +5,9 @@ import { createPortal } from "react-dom";
 import {
   AlertCircle,
   BookOpen,
+  ChevronDown,
   ChevronLeft,
+  ChevronRight,
   Link2,
   Loader2,
   Unlink,
@@ -89,14 +91,13 @@ function buildTopicProgressRows(
       wrong: totals.wrong,
       completionPct: calcCompletionPct(totals.solved, topic.target_count),
       net: calcResourceNet(totals.correct, totals.wrong),
-      // Faz K2a: manuel takip alanlari (hesaplamayi degistirmez, sadece tasir)
-      status: topic.status,
-      tracking_method: topic.tracking_method,
-      student_note: topic.student_note,
-      coach_note: topic.coach_note,
-      last_studied_at: topic.last_studied_at,
+      // Manuel takip alanlari study_resource_topic_progress'ten gelir (asagida merge)
+      status: "calisilmadi",
+      student_note: null,
+      coach_note: null,
+      last_studied_at: null,
       topic_id: topic.topic_id ?? null,
-      coach_priority: topic.coach_priority ?? null,
+      coach_priority: null,
     };
   });
 
@@ -111,9 +112,7 @@ function buildTopicProgressRows(
       wrong: uncategorized.wrong,
       completionPct: 0,
       net: calcResourceNet(uncategorized.correct, uncategorized.wrong),
-      // DB kaydi olmayan sanal satir; duzenlenemez, mantikli varsayilanlar
       status: "calisilmadi",
-      tracking_method: "soru_bazli",
       student_note: null,
       coach_note: null,
       last_studied_at: null,
@@ -133,13 +132,16 @@ const STATUS_OPTIONS = [
   { value: "tekrar_gerekli", label: "Tekrar Gerekli" },
 ] as const;
 
-const TRACKING_OPTIONS = [
-  { value: "sayfa_bazli", label: "Sayfa Bazlı" },
-  { value: "test_bazli", label: "Test Bazlı" },
-  { value: "soru_bazli", label: "Soru Bazlı" },
-  { value: "konu_bazli", label: "Konu Bazlı" },
-  { value: "karma", label: "Karma" },
-] as const;
+const STATUS_CYCLE = STATUS_OPTIONS.map((o) => o.value);
+
+const STATUS_CHIP_CLS: Record<string, string> = {
+  calisilmadi:
+    "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]",
+  baslandi: "border-sky-500/40 bg-sky-500/15 text-sky-300",
+  devam_ediyor: "border-amber-500/40 bg-amber-500/15 text-amber-200",
+  tamamlandi: "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
+  tekrar_gerekli: "border-rose-500/40 bg-rose-500/15 text-rose-300",
+};
 
 const COACH_PRIORITY_OPTIONS = [
   { value: "", label: "Sistem kararına bırak" },
@@ -149,21 +151,47 @@ const COACH_PRIORITY_OPTIONS = [
 ] as const;
 
 const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
-const TRACKING_VALUES = TRACKING_OPTIONS.map((o) => o.value) as readonly string[];
 const PRIORITY_VALUES = ["dusuk", "orta", "yuksek"] as const;
+
+type TopicStudentProgress = {
+  status: string;
+  student_note: string | null;
+  coach_note: string | null;
+  last_studied_at: string | null;
+  coach_priority: string | null;
+};
+
+const DEFAULT_TOPIC_PROGRESS: TopicStudentProgress = {
+  status: "calisilmadi",
+  student_note: null,
+  coach_note: null,
+  last_studied_at: null,
+  coach_priority: null,
+};
 
 function normalizeStatus(value: string | null | undefined): string {
   return value && STATUS_VALUES.includes(value) ? value : "calisilmadi";
-}
-
-function normalizeTracking(value: string | null | undefined): string {
-  return value && TRACKING_VALUES.includes(value) ? value : "soru_bazli";
 }
 
 function normalizeCoachPriority(value: string | null | undefined): string {
   return value && (PRIORITY_VALUES as readonly string[]).includes(value)
     ? value
     : "";
+}
+
+function nextStatus(current: string): string {
+  const idx = STATUS_CYCLE.indexOf(
+    normalizeStatus(current) as (typeof STATUS_CYCLE)[number]
+  );
+  const i = idx >= 0 ? idx : 0;
+  return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
+}
+
+function statusLabel(value: string): string {
+  return (
+    STATUS_OPTIONS.find((o) => o.value === normalizeStatus(value))?.label ??
+    "Çalışılmadı"
+  );
 }
 
 function severityLabel(severity: TopicSeverity): string {
@@ -288,13 +316,16 @@ function formatLastStudied(iso: string | null | undefined): string {
   });
 }
 
-type TopicMetaPatch = {
-  status?: string;
-  tracking_method?: string;
-  coach_note?: string | null;
-  last_studied_at?: string | null;
+type TopicLinkPatch = {
   topic_id?: number | null;
+};
+
+type TopicProgressPatch = {
+  status?: string;
+  coach_note?: string | null;
   coach_priority?: string | null;
+  last_studied_at?: string | null;
+  student_note?: string | null;
 };
 
 /** Adım 1 TopicEditor'daki Bağla picker'ının detay modalına uyarlanmış hali */
@@ -481,6 +512,12 @@ function CentralTopicLinkPicker({
 
 export default function ResourceDetailModal({ resource, students, onClose }: Props) {
   const [resourceTopics, setResourceTopics] = useState<ResourceTopicRow[]>([]);
+  const [progressByTopicId, setProgressByTopicId] = useState<
+    Record<number, TopicStudentProgress>
+  >({});
+  const [expandedTopicIds, setExpandedTopicIds] = useState<Set<number>>(
+    () => new Set()
+  );
   const [taskRows, setTaskRows] = useState<
     {
       study_resource_topic_id: number | null;
@@ -529,9 +566,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       const [topicsRes, assignmentsRes, resourceRes] = await Promise.all([
         supabase
           .from("study_resource_topics")
-          .select(
-            "id, name, target_count, order_index, topic_id, coach_priority, status, tracking_method, student_note, coach_note, last_studied_at"
-          )
+          .select("id, name, target_count, order_index, topic_id")
           .eq("resource_id", resource.id)
           .order("order_index", { ascending: true }),
         supabase
@@ -565,7 +600,20 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
         return;
       }
 
-      const topicRows = (topicsRes.data ?? []) as ResourceTopicRow[];
+      const topicRows = (topicsRes.data ?? []).map((row) => ({
+        id: row.id as number,
+        name: row.name as string,
+        target_count: (row.target_count as number) ?? 0,
+        order_index: (row.order_index as number) ?? 0,
+        topic_id: (row.topic_id as number | null) ?? null,
+        // Deprecated paylaşımlı alanlar — UI progress tablosundan okur
+        status: "calisilmadi",
+        tracking_method: "soru_bazli",
+        student_note: null,
+        coach_note: null,
+        last_studied_at: null,
+        coach_priority: null,
+      })) as ResourceTopicRow[];
       setResourceTopics(topicRows);
       setLoading(false);
     })();
@@ -598,6 +646,8 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
   useEffect(() => {
     if (!selectedStudentId) {
       setTaskRows([]);
+      setProgressByTopicId({});
+      setExpandedTopicIds(new Set());
       return;
     }
 
@@ -606,6 +656,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
     (async () => {
       setProgressLoading(true);
       setProgressError(null);
+      setExpandedTopicIds(new Set());
 
       const supabase = createClient();
       const tasksRes = await supabase
@@ -633,6 +684,69 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       cancelled = true;
     };
   }, [selectedStudentId, resource.id]);
+
+  // Öğrenciye özel manuel takip (study_resource_topic_progress)
+  const resourceTopicIdsKey = useMemo(
+    () =>
+      resourceTopics
+        .map((t) => t.id)
+        .sort((a, b) => a - b)
+        .join(","),
+    [resourceTopics]
+  );
+
+  useEffect(() => {
+    if (!selectedStudentId || resourceTopics.length === 0) {
+      setProgressByTopicId({});
+      return;
+    }
+
+    let cancelled = false;
+    const topicIds = resourceTopics.map((t) => t.id);
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("study_resource_topic_progress")
+        .select(
+          "study_resource_topic_id, status, student_note, coach_note, coach_priority, last_studied_at"
+        )
+        .eq("student_id", selectedStudentId)
+        .in("study_resource_topic_id", topicIds);
+
+      if (cancelled) return;
+
+      if (fetchError || !data) {
+        setProgressByTopicId({});
+        if (fetchError) {
+          setTopicUpdateError(
+            "Takip verisi yüklenemedi: " + fetchError.message
+          );
+        }
+        return;
+      }
+
+      const next: Record<number, TopicStudentProgress> = {};
+      for (const row of data) {
+        const id = row.study_resource_topic_id as number;
+        next[id] = {
+          status: normalizeStatus(row.status as string | null),
+          student_note: (row.student_note as string | null) ?? null,
+          coach_note: (row.coach_note as string | null) ?? null,
+          coach_priority: (row.coach_priority as string | null) ?? null,
+          last_studied_at: (row.last_studied_at as string | null) ?? null,
+        };
+      }
+      setProgressByTopicId(next);
+      setTopicUpdateError(null);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // resourceTopicIdsKey: id listesi stabil
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudentId, resourceTopicIdsKey]);
 
   // Secili ogrenci + bagli merkezi konular icin deneme matrisi
   const linkedCentralTopicIds = useMemo(() => {
@@ -701,13 +815,23 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
     };
   }, [rawTopicErrors]);
 
-  // topics: resourceTopics + fetched tasks'tan turetiliyor. Manuel takip alanlari
-  // (status/tracking_method/coach_note/last_studied_at) resourceTopics'te tutuldugu
-  // icin, bir alan degistiginde ekstra network istegi atmadan liste aninda guncellenir.
-  const topics = useMemo<TopicProgressRow[]>(
-    () => (selectedStudentId ? buildTopicProgressRows(resourceTopics, taskRows) : []),
-    [selectedStudentId, resourceTopics, taskRows]
-  );
+  // topics: resourceTopics + tasks + öğrenciye özel progress merge
+  const topics = useMemo<TopicProgressRow[]>(() => {
+    if (!selectedStudentId) return [];
+    const base = buildTopicProgressRows(resourceTopics, taskRows);
+    return base.map((t) => {
+      if (t.id == null) return t;
+      const p = progressByTopicId[t.id] ?? DEFAULT_TOPIC_PROGRESS;
+      return {
+        ...t,
+        status: p.status,
+        student_note: p.student_note,
+        coach_note: p.coach_note,
+        last_studied_at: p.last_studied_at,
+        coach_priority: p.coach_priority,
+      };
+    });
+  }, [selectedStudentId, resourceTopics, taskRows, progressByTopicId]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -744,15 +868,23 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
   const selectedStudent = assignedStudents.find((s) => s.id === selectedStudentId);
   const selectedStudentName = selectedStudent?.full_name ?? "Öğrenci";
 
-  // Sadece yerel state'i gunceller (kontrollu input'lar icin, ornegin koc notu yazarken)
-  function setTopicMetaLocal(topicId: number, patch: TopicMetaPatch) {
-    setResourceTopics((rows) =>
-      rows.map((t) => (t.id === topicId ? { ...t, ...patch } : t))
-    );
+  // Sadece yerel progress state (kontrollu input'lar icin, ornegin koc notu yazarken)
+  function setProgressLocal(topicId: number, patch: TopicProgressPatch) {
+    setProgressByTopicId((prev) => {
+      const current = prev[topicId] ?? DEFAULT_TOPIC_PROGRESS;
+      return {
+        ...prev,
+        [topicId]: {
+          ...current,
+          ...patch,
+          status: patch.status != null ? normalizeStatus(patch.status) : current.status,
+        },
+      };
+    });
   }
 
-  // Optimistic guncelle + DB'ye yaz + hata olursa geri al
-  async function updateTopicMeta(topicId: number, patch: TopicMetaPatch) {
+  // Merkezi müfredat bağlama — study_resource_topics.topic_id (paylaşımlı, doğru)
+  async function updateTopicLink(topicId: number, patch: TopicLinkPatch) {
     const snapshot = resourceTopics;
     setTopicUpdateError(null);
     setResourceTopics((rows) =>
@@ -769,6 +901,64 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       setResourceTopics(snapshot);
       setTopicUpdateError("Kaydedilemedi: " + updateError.message);
     }
+  }
+
+  // Öğrenciye özel takip — upsert study_resource_topic_progress
+  async function upsertTopicProgress(
+    topicId: number,
+    patch: TopicProgressPatch
+  ) {
+    if (!selectedStudentId) return;
+
+    const snapshot = progressByTopicId;
+    const prev = progressByTopicId[topicId] ?? DEFAULT_TOPIC_PROGRESS;
+    const next: TopicStudentProgress = {
+      ...prev,
+      ...patch,
+      status: normalizeStatus(patch.status ?? prev.status),
+    };
+
+    setTopicUpdateError(null);
+    setProgressByTopicId((m) => ({ ...m, [topicId]: next }));
+
+    const supabase = createClient();
+    const { error: upsertError } = await supabase
+      .from("study_resource_topic_progress")
+      .upsert(
+        {
+          study_resource_topic_id: topicId,
+          student_id: selectedStudentId,
+          status: next.status,
+          student_note: next.student_note,
+          coach_note: next.coach_note,
+          coach_priority: next.coach_priority,
+          last_studied_at: next.last_studied_at,
+        },
+        { onConflict: "study_resource_topic_id,student_id" }
+      );
+
+    if (upsertError) {
+      setProgressByTopicId(snapshot);
+      setTopicUpdateError("Kaydedilemedi: " + upsertError.message);
+    }
+  }
+
+  async function cycleTopicStatus(topicId: number) {
+    const current =
+      progressByTopicId[topicId]?.status ?? DEFAULT_TOPIC_PROGRESS.status;
+    await upsertTopicProgress(topicId, {
+      status: nextStatus(current),
+      last_studied_at: new Date().toISOString(),
+    });
+  }
+
+  function toggleTopicDetails(topicId: number) {
+    setExpandedTopicIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(topicId)) next.delete(topicId);
+      else next.add(topicId);
+      return next;
+    });
   }
 
   async function handleAssignmentToggle(studentId: string) {
@@ -1032,14 +1222,10 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                             <div className="space-y-3">
                               {topics.map((topic) => {
                                 const hasProgress = topic.solved > 0;
-                                const allDone =
-                                  topic.target_count > 0 && topic.completionPct >= 100;
-                                const barWidth =
-                                  topic.target_count > 0
-                                    ? Math.min(100, (topic.solved / topic.target_count) * 100)
-                                    : hasProgress
-                                      ? 100
-                                      : 0;
+                                const status = normalizeStatus(topic.status);
+                                const detailsOpen =
+                                  topic.id != null &&
+                                  expandedTopicIds.has(topic.id);
 
                                 return (
                                   <div
@@ -1047,7 +1233,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                     className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
                                   >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <div className="min-w-0">
+                                      <div className="min-w-0 flex-1">
                                         <p className="text-sm font-semibold text-[var(--text-primary)]">
                                           {topic.name}
                                         </p>
@@ -1055,115 +1241,55 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                           {hasProgress ? (
                                             <>
                                               <span className="font-semibold text-[var(--text-secondary)]">
-                                                {topic.solved}
+                                                {topic.solved} soru çözüldü
                                               </span>
-                                              {topic.target_count > 0 && (
-                                                <>
-                                                  <span className="text-[var(--text-muted)]">
-                                                    {" "}
-                                                    /{" "}
-                                                  </span>
-                                                  {topic.target_count} soru
-                                                </>
-                                              )}
+                                              <span className="mx-1.5 text-[var(--text-muted)]">
+                                                ·
+                                              </span>
+                                              <span className="text-green-400/90">
+                                                D{topic.correct}
+                                              </span>
+                                              <span className="mx-1 text-[var(--text-muted)]">
+                                                ·
+                                              </span>
+                                              <span className="text-red-400/90">
+                                                Y{topic.wrong}
+                                              </span>
+                                              <span className="mx-1 text-[var(--text-muted)]">
+                                                ·
+                                              </span>
+                                              <span>
+                                                net {topic.net >= 0 ? "+" : ""}
+                                                {topic.net.toFixed(2)}
+                                              </span>
                                             </>
                                           ) : (
                                             <span className="text-[var(--text-muted)]">
-                                              {topic.target_count > 0
-                                                ? `0 / ${topic.target_count} soru`
-                                                : "Henüz çözüm yok"}
+                                              Henüz çözüm yok
                                             </span>
                                           )}
                                         </p>
                                       </div>
-                                      {topic.target_count > 0 && (
-                                        <span
-                                          className={`text-xs font-bold ${
-                                            allDone ? "text-green-400" : "text-[var(--accent)]"
+
+                                      {topic.id !== null && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            void cycleTopicStatus(topic.id as number)
+                                          }
+                                          aria-label={`Durum: ${statusLabel(status)}. Sonraki duruma geç`}
+                                          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
+                                            STATUS_CHIP_CLS[status] ??
+                                            STATUS_CHIP_CLS.calisilmadi
                                           }`}
                                         >
-                                          %{topic.completionPct}
-                                        </span>
+                                          {statusLabel(status)}
+                                        </button>
                                       )}
                                     </div>
 
-                                    {topic.target_count > 0 && (
-                                      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/8">
-                                        <div
-                                          className={`h-full rounded-full transition-all ${
-                                            allDone
-                                              ? "bg-green-500"
-                                              : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
-                                          }`}
-                                          style={{
-                                            width: `${hasProgress ? Math.max(barWidth, 2) : 0}%`,
-                                          }}
-                                        />
-                                      </div>
-                                    )}
-
-                                    {hasProgress && (
-                                      <p className="mt-2 text-[10px] text-[var(--text-muted)]">
-                                        <span className="text-green-400/90">D{topic.correct}</span>
-                                        <span className="mx-1 text-[var(--text-muted)]">·</span>
-                                        <span className="text-red-400/90">Y{topic.wrong}</span>
-                                        <span className="mx-1 text-[var(--text-muted)]">·</span>
-                                        <span>
-                                          net {topic.net >= 0 ? "+" : ""}
-                                          {topic.net.toFixed(2)}
-                                        </span>
-                                      </p>
-                                    )}
-
                                     {topic.id !== null && (
                                       <div className="mt-3 space-y-2.5 border-t border-[var(--border)] pt-3">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <select
-                                            value={normalizeStatus(topic.status)}
-                                            onChange={(e) =>
-                                              updateTopicMeta(topic.id as number, {
-                                                status: e.target.value,
-                                              })
-                                            }
-                                            aria-label="Konu durumu"
-                                            className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                          >
-                                            {STATUS_OPTIONS.map((o) => (
-                                              <option key={o.value} value={o.value}>
-                                                {o.label}
-                                              </option>
-                                            ))}
-                                          </select>
-
-                                          <select
-                                            value={normalizeTracking(topic.tracking_method)}
-                                            onChange={(e) =>
-                                              updateTopicMeta(topic.id as number, {
-                                                tracking_method: e.target.value,
-                                              })
-                                            }
-                                            aria-label="Takip yöntemi"
-                                            className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                          >
-                                            {TRACKING_OPTIONS.map((o) => (
-                                              <option key={o.value} value={o.value}>
-                                                {o.label}
-                                              </option>
-                                            ))}
-                                          </select>
-
-                                          <CentralTopicLinkPicker
-                                            linkedTopicId={topic.topic_id}
-                                            curriculumTopics={curriculumTopics}
-                                            disabled={subjectId == null}
-                                            onLink={(centralTopicId) =>
-                                              updateTopicMeta(topic.id as number, {
-                                                topic_id: centralTopicId,
-                                              })
-                                            }
-                                          />
-                                        </div>
-
                                         <div className="flex flex-wrap items-center gap-2">
                                           <TopicExamMatrixStrip
                                             row={
@@ -1177,80 +1303,120 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                               topicExamAnalysis.examColumns
                                             }
                                           />
-                                          <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                                            <span className="font-semibold uppercase tracking-wider">
-                                              Koç önceliği
-                                            </span>
-                                            <select
-                                              value={normalizeCoachPriority(
-                                                topic.coach_priority
-                                              )}
-                                              onChange={(e) =>
-                                                updateTopicMeta(topic.id as number, {
-                                                  coach_priority:
-                                                    e.target.value === ""
-                                                      ? null
-                                                      : e.target.value,
-                                                })
-                                              }
-                                              aria-label="Koç önceliği"
-                                              className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                            >
-                                              {COACH_PRIORITY_OPTIONS.map((o) => (
-                                                <option key={o.label} value={o.value}>
-                                                  {o.label}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </label>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                                          <span>
-                                            Son çalışma:{" "}
-                                            <span className="font-medium text-[var(--text-secondary)]">
-                                              {formatLastStudied(topic.last_studied_at)}
-                                            </span>
-                                          </span>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              updateTopicMeta(topic.id as number, {
-                                                last_studied_at: new Date().toISOString(),
-                                              })
+                                          <CentralTopicLinkPicker
+                                            linkedTopicId={topic.topic_id}
+                                            curriculumTopics={curriculumTopics}
+                                            disabled={subjectId == null}
+                                            onLink={(centralTopicId) =>
+                                              void updateTopicLink(
+                                                topic.id as number,
+                                                { topic_id: centralTopicId }
+                                              )
                                             }
-                                            className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)]"
-                                          >
-                                            Bugün olarak işaretle
-                                          </button>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                          <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                                            Koç Notu
-                                          </label>
-                                          <textarea
-                                            value={topic.coach_note ?? ""}
-                                            onChange={(e) =>
-                                              setTopicMetaLocal(topic.id as number, {
-                                                coach_note: e.target.value,
-                                              })
-                                            }
-                                            onBlur={(e) =>
-                                              updateTopicMeta(topic.id as number, {
-                                                coach_note: e.target.value.trim() || null,
-                                              })
-                                            }
-                                            rows={2}
-                                            placeholder="Bu konuyla ilgili not ekle…"
-                                            className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
                                           />
                                         </div>
 
-                                        {topic.student_note && (
-                                          <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
-                                            Öğrenci: {topic.student_note}
-                                          </p>
+                                        <p className="text-[11px] text-[var(--text-muted)]">
+                                          Son çalışma:{" "}
+                                          <span className="font-medium text-[var(--text-secondary)]">
+                                            {formatLastStudied(
+                                              topic.last_studied_at
+                                            )}
+                                          </span>
+                                        </p>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            toggleTopicDetails(topic.id as number)
+                                          }
+                                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
+                                        >
+                                          {detailsOpen ? (
+                                            <ChevronDown className="h-3.5 w-3.5" />
+                                          ) : (
+                                            <ChevronRight className="h-3.5 w-3.5" />
+                                          )}
+                                          Detaylar
+                                        </button>
+
+                                        {detailsOpen && (
+                                          <div className="space-y-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-3">
+                                            {topic.student_note ? (
+                                              <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
+                                                Öğrenci: {topic.student_note}
+                                              </p>
+                                            ) : (
+                                              <p className="text-[11px] text-[var(--text-muted)]">
+                                                Öğrenci notu yok
+                                              </p>
+                                            )}
+
+                                            <div className="flex flex-col gap-1">
+                                              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                                Koç Notu
+                                              </label>
+                                              <textarea
+                                                value={topic.coach_note ?? ""}
+                                                onChange={(e) =>
+                                                  setProgressLocal(
+                                                    topic.id as number,
+                                                    {
+                                                      coach_note: e.target.value,
+                                                    }
+                                                  )
+                                                }
+                                                onBlur={(e) =>
+                                                  void upsertTopicProgress(
+                                                    topic.id as number,
+                                                    {
+                                                      coach_note:
+                                                        e.target.value.trim() ||
+                                                        null,
+                                                    }
+                                                  )
+                                                }
+                                                rows={2}
+                                                placeholder="Bu konuyla ilgili not ekle…"
+                                                className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                              />
+                                            </div>
+
+                                            <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                                              <span className="font-semibold uppercase tracking-wider">
+                                                Koç önceliği
+                                              </span>
+                                              <select
+                                                value={normalizeCoachPriority(
+                                                  topic.coach_priority
+                                                )}
+                                                onChange={(e) =>
+                                                  void upsertTopicProgress(
+                                                    topic.id as number,
+                                                    {
+                                                      coach_priority:
+                                                        e.target.value === ""
+                                                          ? null
+                                                          : e.target.value,
+                                                    }
+                                                  )
+                                                }
+                                                aria-label="Koç önceliği"
+                                                className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                              >
+                                                {COACH_PRIORITY_OPTIONS.map(
+                                                  (o) => (
+                                                    <option
+                                                      key={o.label}
+                                                      value={o.value}
+                                                    >
+                                                      {o.label}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                            </label>
+                                          </div>
                                         )}
                                       </div>
                                     )}

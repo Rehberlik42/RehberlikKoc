@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -19,12 +19,10 @@ import {
   calcCompletionPct,
   EMPTY_RESOURCE_PROGRESS,
   examGroupFromName,
-  topicsToDrafts,
   type ExamOption,
   type StudyResource,
   type StudyResourceWithTopics,
   type SubjectOption,
-  type TopicDraft,
 } from "./resource-types";
 import dynamic from "next/dynamic";
 
@@ -122,14 +120,12 @@ export default function AddResourceModal({
 }: Props) {
   const supabase = createClient();
   const isEditMode = editing != null;
-  const originalTopicIdsRef = useRef<number[]>([]);
 
   const [name, setName] = useState("");
   const [publisher, setPublisher] = useState("");
   const [examId, setExamId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [coverColor, setCoverColor] = useState<string>(COVER_COLOR_PALETTE[0].value);
-  const [topics, setTopics] = useState<TopicDraft[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -146,16 +142,12 @@ export default function AddResourceModal({
       setExamId(editing.exam_id != null ? String(editing.exam_id) : "");
       setSubjectId(editing.subject_id != null ? String(editing.subject_id) : "");
       setCoverColor(editing.cover_color);
-      setTopics(topicsToDrafts(editing.topics));
-      originalTopicIdsRef.current = editing.topics.map((t) => t.id);
     } else {
       setName("");
       setPublisher("");
       setExamId("");
       setSubjectId("");
       setCoverColor(COVER_COLOR_PALETTE[0].value);
-      setTopics([]);
-      originalTopicIdsRef.current = [];
     }
   }, [open, editing]);
 
@@ -190,75 +182,12 @@ export default function AddResourceModal({
   const selectedExam = examOptions.find((e) => String(e.id) === examId);
   const selectedSubject = subjectOptions.find((s) => String(s.id) === subjectId);
 
-  const syncTopics = async (resourceId: string, validTopics: TopicDraft[]) => {
-    const originalIds = originalTopicIdsRef.current;
-    const currentIds = new Set(
-      validTopics.filter((t) => t.id != null).map((t) => t.id as number)
-    );
-    const toDelete = originalIds.filter((id) => !currentIds.has(id));
-
-    for (let i = 0; i < validTopics.length; i++) {
-      const t = validTopics[i];
-      if (t.id != null) {
-        const { error } = await supabase
-          .from("study_resource_topics")
-          .update({
-            name: t.name,
-            target_count: t.target_count,
-            order_index: i,
-            topic_id: t.topic_id,
-          })
-          .eq("id", t.id);
-
-        if (error) return error;
-      }
-    }
-
-    const toInsert = validTopics
-      .map((t, order_index) => ({ ...t, order_index }))
-      .filter((t) => t.id == null);
-
-    if (toInsert.length > 0) {
-      const { error } = await supabase.from("study_resource_topics").insert(
-        toInsert.map((t) => ({
-          resource_id: resourceId,
-          name: t.name,
-          target_count: t.target_count,
-          order_index: t.order_index,
-          topic_id: t.topic_id,
-        }))
-      );
-      if (error) return error;
-    }
-
-    if (toDelete.length > 0) {
-      const { error } = await supabase
-        .from("study_resource_topics")
-        .delete()
-        .in("id", toDelete);
-      if (error) return error;
-    }
-
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) return;
     if (!examId) return;
     if (!subjectId) return;
-
-    const validTopics = topics
-      .filter((t) => t.name.trim())
-      .map((t) => ({
-        ...t,
-        name: t.name.trim(),
-        target_count: t.target_count || 0,
-      }));
-
-    const topicCount = validTopics.length;
-    const totalQuestions = validTopics.reduce((sum, t) => sum + t.target_count, 0);
 
     setLoading(true);
 
@@ -278,20 +207,12 @@ export default function AddResourceModal({
         )
         .single();
 
+      setLoading(false);
+
       if (error || !data) {
-        setLoading(false);
         onError("Kaynak güncellenemedi: " + (error?.message ?? "bilinmeyen hata"));
         return;
       }
-
-      const topicsError = await syncTopics(editing.id, validTopics);
-      if (topicsError) {
-        setLoading(false);
-        onError("Kaynak güncellendi ancak konular kaydedilemedi: " + topicsError.message);
-        return;
-      }
-
-      setLoading(false);
 
       const examRaw = data.exam;
       const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
@@ -306,12 +227,12 @@ export default function AddResourceModal({
         order_index: data.order_index,
         exam: exam as { name: string } | null,
         subject: subject as { name: string; color: string | null } | null,
-        topicCount,
-        totalQuestions,
+        topicCount: editing.topicCount,
+        totalQuestions: editing.totalQuestions,
         solvedTotal: editing.solvedTotal,
         correctTotal: editing.correctTotal,
         wrongTotal: editing.wrongTotal,
-        completionPct: calcCompletionPct(editing.solvedTotal, totalQuestions),
+        completionPct: calcCompletionPct(editing.solvedTotal, editing.totalQuestions),
       });
       onClose();
       return;
@@ -333,34 +254,12 @@ export default function AddResourceModal({
       )
       .single();
 
+    setLoading(false);
+
     if (error || !data) {
-      setLoading(false);
       onError("Kaynak eklenemedi: " + (error?.message ?? "bilinmeyen hata"));
       return;
     }
-
-    let topicsSaved = false;
-    if (validTopics.length > 0) {
-      const { error: topicsError } = await supabase.from("study_resource_topics").insert(
-        validTopics.map((t, i) => ({
-          resource_id: data.id,
-          name: t.name,
-          target_count: t.target_count,
-          order_index: i,
-          topic_id: t.topic_id,
-        }))
-      );
-
-      if (topicsError) {
-        onError(
-          "Kaynak oluşturuldu ancak konular eklenemedi: " + topicsError.message
-        );
-      } else {
-        topicsSaved = true;
-      }
-    }
-
-    setLoading(false);
 
     const examRaw = data.exam;
     const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
@@ -375,8 +274,8 @@ export default function AddResourceModal({
       order_index: data.order_index,
       exam: exam as { name: string } | null,
       subject: subject as { name: string; color: string | null } | null,
-      topicCount: topicsSaved ? topicCount : 0,
-      totalQuestions: topicsSaved ? totalQuestions : 0,
+      topicCount: 0,
+      totalQuestions: 0,
       ...EMPTY_RESOURCE_PROGRESS,
     });
     onClose();
@@ -546,13 +445,10 @@ export default function AddResourceModal({
             <div className="border-t border-[var(--border)] px-5 pb-5 sm:px-6 sm:pb-6">
               {isEditMode && (
                 <p className="mb-3 text-[10px] leading-relaxed text-amber-400/80">
-                  Silinen konulara bağlı program görevlerinin konu bağlantısı kalkar;
-                  öğrencinin girdiği çözüm verileri görev kaydında korunur.
+                  Ders değiştirilirse, kaynağın hiç konusu yoksa yeni derse ait kazanımlar otomatik eklenir.
                 </p>
               )}
               <TopicEditor
-                topics={topics}
-                onChange={setTopics}
                 subjectId={subjectId ? parseInt(subjectId, 10) : null}
               />
 
