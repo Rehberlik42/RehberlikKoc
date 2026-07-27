@@ -4,6 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, BookOpen, Loader2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  buildTopicErrorAnalysis,
+  topicSeverity,
+  topicSeverityBg,
+  topicSeverityColor,
+  type ExamColumnDef,
+  type NormalizedExam,
+  type RawTopicErrorRecord,
+  type TopicErrorAnalysisRow,
+  type TopicSeverity,
+} from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
 import type { StudentAssignedResource } from "./StudentResourcesClient";
 
 interface Props {
@@ -22,6 +33,7 @@ interface ResourceTopicRow {
   student_note: string | null;
   coach_note: string | null;
   last_studied_at: string | null;
+  topic_id: number | null;
 }
 
 interface TopicProgressTotals {
@@ -45,6 +57,7 @@ interface TopicProgressRow {
   student_note: string | null;
   coach_note: string | null;
   last_studied_at: string | null;
+  topic_id: number | null;
 }
 
 function calcResourceNet(correct: number, wrong: number): number {
@@ -110,6 +123,7 @@ function buildTopicProgressRows(
       student_note: topic.student_note,
       coach_note: topic.coach_note,
       last_studied_at: topic.last_studied_at,
+      topic_id: topic.topic_id ?? null,
     };
   });
 
@@ -130,6 +144,7 @@ function buildTopicProgressRows(
       student_note: null,
       coach_note: null,
       last_studied_at: null,
+      topic_id: null,
     });
   }
 
@@ -178,6 +193,113 @@ function formatLastStudied(iso: string | null | undefined): string {
   });
 }
 
+function severityLabel(severity: TopicSeverity): string {
+  switch (severity) {
+    case "good":
+      return "İyi";
+    case "medium":
+      return "Orta";
+    case "bad":
+      return "Kötü";
+  }
+}
+
+/** Ham hata kayıtlarından buildTopicErrorAnalysis için minimal NormalizedExam listesi */
+function examsFromRawErrors(raw: RawTopicErrorRecord[]): NormalizedExam[] {
+  const map = new Map<number, NormalizedExam>();
+  for (const row of raw) {
+    const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+    if (!resultRaw) continue;
+    const mockExamRaw = Array.isArray(resultRaw.mock_exam)
+      ? resultRaw.mock_exam[0]
+      : resultRaw.mock_exam;
+    if (!mockExamRaw?.id) continue;
+    if (map.has(mockExamRaw.id)) continue;
+    map.set(mockExamRaw.id, {
+      id: mockExamRaw.id,
+      exam_date: mockExamRaw.exam_date,
+      title: null,
+      examId: 0,
+      examName: "",
+      results: [],
+    });
+  }
+  return [...map.values()].sort(
+    (a, b) =>
+      new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+  );
+}
+
+/**
+ * Kart içi mini konu×deneme şeridi — koç ResourceDetailModal ile aynı mantık
+ * (appeared / çıkmadı + yanlış adedine göre severity renkleri).
+ */
+function TopicExamMatrixStrip({
+  row,
+  examColumns,
+}: {
+  row: TopicErrorAnalysisRow | null | undefined;
+  examColumns: ExamColumnDef[];
+}) {
+  if (!row || examColumns.length === 0) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-white/[0.03] px-2 py-1 text-[10px] font-semibold text-[var(--text-muted)]"
+        title="Bu konu için deneme verisi yok veya merkezi konuya bağlı değil"
+      >
+        <span className="h-2 w-2 rounded-full bg-[var(--text-muted)]/50" />
+        Sistem riski: Veri yok
+      </span>
+    );
+  }
+
+  return (
+    <div
+      className="inline-flex max-w-full flex-col gap-1"
+      title={`Ort. ${row.avgWrong.toFixed(1)} yanlış · ${severityLabel(row.severity)}`}
+    >
+      <div className="inline-flex flex-wrap items-center gap-0.5">
+        {examColumns.map((col) => {
+          const wrongRaw = row.wrongByExamId[col.mockExamId];
+          const appeared = wrongRaw !== null;
+          const wrong = wrongRaw ?? 0;
+
+          if (!appeared) {
+            return (
+              <span
+                key={col.mockExamId}
+                title={`${col.label} (${col.shortDate}): çıkmadı`}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-[9px] font-bold text-[var(--text-muted)] opacity-40"
+              >
+                —
+              </span>
+            );
+          }
+
+          const cellSeverity = topicSeverity(wrong);
+          return (
+            <span
+              key={col.mockExamId}
+              title={`${col.label} (${col.shortDate}): ${wrong} yanlış`}
+              className="inline-block h-4 w-4 rounded-sm border"
+              style={{
+                background: topicSeverityBg(cellSeverity),
+                borderColor: `${topicSeverityColor(cellSeverity)}55`,
+              }}
+            />
+          );
+        })}
+      </div>
+      <span
+        className="text-[9px] font-semibold"
+        style={{ color: topicSeverityColor(row.severity) }}
+      >
+        Ort. {row.avgWrong.toFixed(1)} · {severityLabel(row.severity)}
+      </span>
+    </div>
+  );
+}
+
 type TopicMetaPatch = {
   status?: string;
   tracking_method?: string;
@@ -195,6 +317,9 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
       wrong_count: number | null;
     }[]
   >([]);
+  const [rawTopicErrors, setRawTopicErrors] = useState<RawTopicErrorRecord[]>(
+    []
+  );
   const [topicUpdateError, setTopicUpdateError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,7 +343,7 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
         supabase
           .from("study_resource_topics")
           .select(
-            "id, name, target_count, order_index, status, tracking_method, student_note, coach_note, last_studied_at"
+            "id, name, target_count, order_index, topic_id, status, tracking_method, student_note, coach_note, last_studied_at"
           )
           .eq("resource_id", resource.id)
           .order("order_index", { ascending: true }),
@@ -253,6 +378,76 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
       cancelled = true;
     };
   }, [mounted, resource.id, studentId]);
+
+  const linkedCentralTopicIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const t of resourceTopics) {
+      if (t.topic_id != null) ids.add(t.topic_id);
+    }
+    return [...ids].sort((a, b) => a - b);
+  }, [resourceTopics]);
+
+  const linkedCentralKey = linkedCentralTopicIds.join(",");
+
+  useEffect(() => {
+    if (!studentId || linkedCentralTopicIds.length === 0) {
+      setRawTopicErrors([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("mock_exam_topic_errors")
+        .select(
+          `topic_id, wrong_count, correct_count, empty_count, not_in_exam,
+           topic:topics(id, name, order_index),
+           result:mock_exam_results!inner(
+             id, subject_id, mock_exam_id,
+             mock_exam:mock_exams!inner(id, exam_date, student_id, wrong_penalty_divisor)
+           )`
+        )
+        .eq("result.mock_exam.student_id", studentId)
+        .in("topic_id", linkedCentralTopicIds);
+
+      if (cancelled) return;
+
+      if (fetchError || !data) {
+        setRawTopicErrors([]);
+        return;
+      }
+
+      setRawTopicErrors(data as RawTopicErrorRecord[]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // linkedCentralKey: id listesi stabil string
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, linkedCentralKey]);
+
+  const topicExamAnalysis = useMemo(() => {
+    if (rawTopicErrors.length === 0) {
+      return {
+        examColumns: [] as ExamColumnDef[],
+        rows: [] as TopicErrorAnalysisRow[],
+        byTopicId: new Map<number, TopicErrorAnalysisRow>(),
+      };
+    }
+    const exams = examsFromRawErrors(rawTopicErrors);
+    const analysis = buildTopicErrorAnalysis(rawTopicErrors, exams);
+    const byTopicId = new Map(
+      analysis.rows.map((r) => [r.topicId, r] as const)
+    );
+    return {
+      examColumns: analysis.examColumns,
+      rows: analysis.rows,
+      byTopicId,
+    };
+  }, [rawTopicErrors]);
 
   // topics: resourceTopics + tasks'tan turetiliyor. Manuel takip alanlari
   // resourceTopics'te tutuldugu icin bir alan degistiginde ekstra network
@@ -550,6 +745,17 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
 
                           {topic.id !== null && (
                             <div className="mt-3 space-y-2.5 border-t border-[var(--border)] pt-3">
+                              <TopicExamMatrixStrip
+                                row={
+                                  topic.topic_id != null
+                                    ? topicExamAnalysis.byTopicId.get(
+                                        topic.topic_id
+                                      )
+                                    : null
+                                }
+                                examColumns={topicExamAnalysis.examColumns}
+                              />
+
                               <div className="flex flex-wrap items-center gap-2">
                                 <select
                                   value={normalizeStatus(topic.status)}

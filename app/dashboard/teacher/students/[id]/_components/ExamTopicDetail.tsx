@@ -17,6 +17,8 @@ import {
   topicSeverityBg,
   topicSeverityColor,
   topicTrendColor,
+  topicErrorCellBg,
+  topicErrorCellTone,
   type LastNFilter,
   type NetTrendDirection,
   type NormalizedExam,
@@ -242,18 +244,6 @@ function NetTopicInsightCard({
       )}
     </div>
   );
-}
-
-function cellTone(wrong: number): string {
-  if (wrong <= 0) return "text-[var(--text-muted)]";
-  if (wrong === 1) return "text-yellow-400";
-  return "text-red-400";
-}
-
-function cellBg(wrong: number): string {
-  if (wrong <= 0) return "bg-white/[0.02]";
-  if (wrong === 1) return "bg-yellow-500/10";
-  return "bg-red-500/10";
 }
 
 export default function ExamTopicDetail({
@@ -543,7 +533,7 @@ function TopicTableRow({
           <td key={col.mockExamId} className="px-2 py-3 text-center">
             {appeared ? (
               <span
-                className={`inline-flex min-w-[2rem] justify-center rounded-lg px-2 py-1 text-xs font-bold tabular-nums ${cellTone(wrong)} ${cellBg(wrong)}`}
+                className={`inline-flex min-w-[2rem] justify-center rounded-lg px-2 py-1 text-xs font-bold tabular-nums ${topicErrorCellTone(wrong)} ${topicErrorCellBg(wrong)}`}
               >
                 {wrong > 0 ? wrong : "—"}
               </span>

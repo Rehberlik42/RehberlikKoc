@@ -15,9 +15,14 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useCentralTopics, type CentralTopic } from "@/lib/use-central-topics";
 import {
+  buildTopicErrorAnalysis,
   topicSeverity,
   topicSeverityBg,
   topicSeverityColor,
+  type ExamColumnDef,
+  type NormalizedExam,
+  type RawTopicErrorRecord,
+  type TopicErrorAnalysisRow,
   type TopicSeverity,
 } from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
 import {
@@ -172,12 +177,44 @@ function severityLabel(severity: TopicSeverity): string {
   }
 }
 
-function SystemRiskBadge({
-  severity,
+/** Ham hata kayıtlarından buildTopicErrorAnalysis için minimal NormalizedExam listesi */
+function examsFromRawErrors(raw: RawTopicErrorRecord[]): NormalizedExam[] {
+  const map = new Map<number, NormalizedExam>();
+  for (const row of raw) {
+    const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
+    if (!resultRaw) continue;
+    const mockExamRaw = Array.isArray(resultRaw.mock_exam)
+      ? resultRaw.mock_exam[0]
+      : resultRaw.mock_exam;
+    if (!mockExamRaw?.id) continue;
+    if (map.has(mockExamRaw.id)) continue;
+    map.set(mockExamRaw.id, {
+      id: mockExamRaw.id,
+      exam_date: mockExamRaw.exam_date,
+      title: null,
+      examId: 0,
+      examName: "",
+      results: [],
+    });
+  }
+  return [...map.values()].sort(
+    (a, b) =>
+      new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+  );
+}
+
+/**
+ * Kart içi mini konu×deneme şeridi — ExamTopicDetail hücre mantığı
+ * (appeared / çıkmadı + yanlış adedine göre severity renkleri).
+ */
+function TopicExamMatrixStrip({
+  row,
+  examColumns,
 }: {
-  severity: TopicSeverity | null;
+  row: TopicErrorAnalysisRow | null | undefined;
+  examColumns: ExamColumnDef[];
 }) {
-  if (severity == null) {
+  if (!row || examColumns.length === 0) {
     return (
       <span
         className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-white/[0.03] px-2 py-1 text-[10px] font-semibold text-[var(--text-muted)]"
@@ -189,22 +226,50 @@ function SystemRiskBadge({
     );
   }
 
-  const color = topicSeverityColor(severity);
-  const bg = topicSeverityBg(severity);
-
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-semibold"
-      style={{
-        color,
-        background: bg,
-        borderColor: `${color}40`,
-      }}
-      title={`Ortalama yanlışa göre sistem riski: ${severityLabel(severity)}`}
+    <div
+      className="inline-flex max-w-full flex-col gap-1"
+      title={`Ort. ${row.avgWrong.toFixed(1)} yanlış · ${severityLabel(row.severity)}`}
     >
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
-      Sistem riski: {severityLabel(severity)}
-    </span>
+      <div className="inline-flex flex-wrap items-center gap-0.5">
+        {examColumns.map((col) => {
+          const wrongRaw = row.wrongByExamId[col.mockExamId];
+          const appeared = wrongRaw !== null;
+          const wrong = wrongRaw ?? 0;
+
+          if (!appeared) {
+            return (
+              <span
+                key={col.mockExamId}
+                title={`${col.label} (${col.shortDate}): çıkmadı`}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-[9px] font-bold text-[var(--text-muted)] opacity-40"
+              >
+                —
+              </span>
+            );
+          }
+
+          const cellSeverity = topicSeverity(wrong);
+          return (
+            <span
+              key={col.mockExamId}
+              title={`${col.label} (${col.shortDate}): ${wrong} yanlış`}
+              className="inline-block h-4 w-4 rounded-sm border"
+              style={{
+                background: topicSeverityBg(cellSeverity),
+                borderColor: `${topicSeverityColor(cellSeverity)}55`,
+              }}
+            />
+          );
+        })}
+      </div>
+      <span
+        className="text-[9px] font-semibold"
+        style={{ color: topicSeverityColor(row.severity) }}
+      >
+        Ort. {row.avgWrong.toFixed(1)} · {severityLabel(row.severity)}
+      </span>
+    </div>
   );
 }
 
@@ -436,10 +501,10 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [subjectId, setSubjectId] = useState<number | null>(null);
-  // Merkezi topic_id -> sistem riski (null = veri yok)
-  const [systemRiskByCentralId, setSystemRiskByCentralId] = useState<
-    Record<number, TopicSeverity | null>
-  >({});
+  // Bağlı merkezi konular için toplu deneme hata kayıtları (konu×deneme matrisi)
+  const [rawTopicErrors, setRawTopicErrors] = useState<RawTopicErrorRecord[]>(
+    []
+  );
 
   const { topics: curriculumTopics } = useCentralTopics(subjectId);
 
@@ -569,7 +634,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
     };
   }, [selectedStudentId, resource.id]);
 
-  // Secili ogrenci + bagli merkezi konular icin deneme riski hesapla
+  // Secili ogrenci + bagli merkezi konular icin deneme matrisi
   const linkedCentralTopicIds = useMemo(() => {
     const ids = new Set<number>();
     for (const t of resourceTopics) {
@@ -582,7 +647,7 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
 
   useEffect(() => {
     if (!selectedStudentId || linkedCentralTopicIds.length === 0) {
-      setSystemRiskByCentralId({});
+      setRawTopicErrors([]);
       return;
     }
 
@@ -593,10 +658,11 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       const { data, error: fetchError } = await supabase
         .from("mock_exam_topic_errors")
         .select(
-          `topic_id, wrong_count, not_in_exam,
+          `topic_id, wrong_count, correct_count, empty_count, not_in_exam,
+           topic:topics(id, name, order_index),
            result:mock_exam_results!inner(
-             id, mock_exam_id,
-             mock_exam:mock_exams!inner(id, exam_date, student_id)
+             id, subject_id, mock_exam_id,
+             mock_exam:mock_exams!inner(id, exam_date, student_id, wrong_penalty_divisor)
            )`
         )
         .eq("result.mock_exam.student_id", selectedStudentId)
@@ -605,76 +671,11 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
       if (cancelled) return;
 
       if (fetchError || !data) {
-        setSystemRiskByCentralId({});
+        setRawTopicErrors([]);
         return;
       }
 
-      // topic_id -> mockExamId -> { wrong, examDate, appeared }
-      const byTopic = new Map<
-        number,
-        Map<number, { wrong: number; examDate: string; appeared: boolean }>
-      >();
-
-      for (const row of data) {
-        const resultRaw = Array.isArray(row.result) ? row.result[0] : row.result;
-        if (!resultRaw) continue;
-        const mockExamRaw = Array.isArray(resultRaw.mock_exam)
-          ? resultRaw.mock_exam[0]
-          : resultRaw.mock_exam;
-        const mockExamId = mockExamRaw?.id ?? resultRaw.mock_exam_id;
-        const examDate = mockExamRaw?.exam_date ?? "";
-        if (!mockExamId) continue;
-
-        const topicMap =
-          byTopic.get(row.topic_id) ??
-          new Map<number, { wrong: number; examDate: string; appeared: boolean }>();
-
-        if (row.not_in_exam === true) {
-          if (!topicMap.has(mockExamId)) {
-            topicMap.set(mockExamId, { wrong: 0, examDate, appeared: false });
-          }
-        } else {
-          const existing = topicMap.get(mockExamId);
-          if (existing && existing.appeared) {
-            existing.wrong += row.wrong_count ?? 0;
-          } else {
-            topicMap.set(mockExamId, {
-              wrong: row.wrong_count ?? 0,
-              examDate,
-              appeared: true,
-            });
-          }
-        }
-        byTopic.set(row.topic_id, topicMap);
-      }
-
-      const next: Record<number, TopicSeverity | null> = {};
-      for (const centralId of linkedCentralTopicIds) {
-        const examMap = byTopic.get(centralId);
-        if (!examMap) {
-          next[centralId] = null;
-          continue;
-        }
-
-        const appeared = [...examMap.values()]
-          .filter((c) => c.appeared)
-          .sort(
-            (a, b) =>
-              new Date(b.examDate).getTime() - new Date(a.examDate).getTime()
-          )
-          .slice(0, 5);
-
-        if (appeared.length === 0) {
-          next[centralId] = null;
-          continue;
-        }
-
-        const avgWrong =
-          appeared.reduce((s, c) => s + c.wrong, 0) / appeared.length;
-        next[centralId] = topicSeverity(avgWrong);
-      }
-
-      setSystemRiskByCentralId(next);
+      setRawTopicErrors(data as RawTopicErrorRecord[]);
     })();
 
     return () => {
@@ -683,6 +684,22 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
     // linkedCentralKey: id listesi stabil string; linkedCentralTopicIds referansi degisse bile ayni icerikte tekrar fetch yok
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStudentId, linkedCentralKey]);
+
+  const topicExamAnalysis = useMemo(() => {
+    if (rawTopicErrors.length === 0) {
+      return { examColumns: [] as ExamColumnDef[], rows: [] as TopicErrorAnalysisRow[], byTopicId: new Map<number, TopicErrorAnalysisRow>() };
+    }
+    const exams = examsFromRawErrors(rawTopicErrors);
+    const analysis = buildTopicErrorAnalysis(rawTopicErrors, exams);
+    const byTopicId = new Map(
+      analysis.rows.map((r) => [r.topicId, r] as const)
+    );
+    return {
+      examColumns: analysis.examColumns,
+      rows: analysis.rows,
+      byTopicId,
+    };
+  }, [rawTopicErrors]);
 
   // topics: resourceTopics + fetched tasks'tan turetiliyor. Manuel takip alanlari
   // (status/tracking_method/coach_note/last_studied_at) resourceTopics'te tutuldugu
@@ -1148,12 +1165,16 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <SystemRiskBadge
-                                            severity={
+                                          <TopicExamMatrixStrip
+                                            row={
                                               topic.topic_id != null
-                                                ? (systemRiskByCentralId[topic.topic_id] ??
-                                                  null)
+                                                ? topicExamAnalysis.byTopicId.get(
+                                                    topic.topic_id
+                                                  )
                                                 : null
+                                            }
+                                            examColumns={
+                                              topicExamAnalysis.examColumns
                                             }
                                           />
                                           <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">

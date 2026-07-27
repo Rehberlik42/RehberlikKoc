@@ -63,6 +63,20 @@ export function topicSeverityBg(severity: TopicSeverity): string {
   }
 }
 
+/** ExamTopicDetail hücre metin rengi (yanlış adedine göre) */
+export function topicErrorCellTone(wrong: number): string {
+  if (wrong <= 0) return "text-[var(--text-muted)]";
+  if (wrong === 1) return "text-yellow-400";
+  return "text-red-400";
+}
+
+/** ExamTopicDetail hücre arka planı (yanlış adedine göre) */
+export function topicErrorCellBg(wrong: number): string {
+  if (wrong <= 0) return "bg-white/[0.02]";
+  if (wrong === 1) return "bg-yellow-500/10";
+  return "bg-red-500/10";
+}
+
 export function topicTrendColor(trend: TopicTrend): string {
   switch (trend) {
     case "improving":
