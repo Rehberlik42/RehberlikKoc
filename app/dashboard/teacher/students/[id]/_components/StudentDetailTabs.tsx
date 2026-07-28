@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 
-type TabId = "overview" | "program" | "analysis" | "targets";
+type TabId = "overview" | "program" | "analysis" | "targets" | "matrix";
 
 interface Props {
   overview: React.ReactNode;
   program: React.ReactNode;
   analysis: React.ReactNode;
   targets?: React.ReactNode;
+  matrix?: React.ReactNode;
 }
 
 const TABS: { id: TabId; label: string }[] = [
@@ -16,6 +17,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "program", label: "Haftalık Program" },
   { id: "analysis", label: "Deneme Analizi" },
   { id: "targets", label: "Hedefler" },
+  { id: "matrix", label: "Kaynak Matrisi" },
 ];
 
 export default function StudentDetailTabs({
@@ -23,6 +25,7 @@ export default function StudentDetailTabs({
   program,
   analysis,
   targets,
+  matrix,
 }: Props) {
   const [active, setActive] = useState<TabId>("overview");
 
@@ -68,7 +71,9 @@ export default function StudentDetailTabs({
             ? program
             : active === "analysis"
               ? analysis
-              : targets}
+              : active === "targets"
+                ? targets
+                : matrix}
       </div>
     </div>
   );

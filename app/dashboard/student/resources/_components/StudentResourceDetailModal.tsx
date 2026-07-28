@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, BookOpen, Loader2, X } from "lucide-react";
+import {
+  AlertCircle,
+  BookOpen,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Link2,
+  Loader2,
+  Unlink,
+  X,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   buildTopicErrorAnalysis,
@@ -58,6 +68,204 @@ interface TopicProgressRow {
   coach_note: string | null;
   last_studied_at: string | null;
   topic_id: number | null;
+}
+
+interface CentralTopic {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  order_index: number;
+}
+
+/** Adım 1 TopicEditor'daki Bağla picker'ının detay modalına uyarlanmış hali */
+function CentralTopicLinkPicker({
+  linkedTopicId,
+  curriculumTopics,
+  disabled,
+  onLink,
+  compact = false,
+}: {
+  linkedTopicId: number | null | undefined;
+  curriculumTopics: CentralTopic[];
+  disabled?: boolean;
+  compact?: boolean;
+  onLink: (topicId: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pickerStep, setPickerStep] = useState<"root" | "children">("root");
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const parentIdsWithChildren = useMemo(
+    () =>
+      new Set(
+        curriculumTopics
+          .map((t) => t.parent_id)
+          .filter((id): id is number => id !== null)
+      ),
+    [curriculumTopics]
+  );
+
+  const hasHierarchy = parentIdsWithChildren.size > 0;
+
+  const rootTopics = useMemo(() => {
+    if (!hasHierarchy) return curriculumTopics;
+    return curriculumTopics.filter((t) => t.parent_id === null);
+  }, [curriculumTopics, hasHierarchy]);
+
+  const childTopics = useMemo(() => {
+    if (selectedParentId == null) return [];
+    return curriculumTopics.filter((t) => t.parent_id === selectedParentId);
+  }, [curriculumTopics, selectedParentId]);
+
+  const linkedName = useMemo(() => {
+    if (linkedTopicId == null) return null;
+    return curriculumTopics.find((t) => t.id === linkedTopicId)?.name ?? null;
+  }, [linkedTopicId, curriculumTopics]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const openPicker = () => {
+    if (disabled) return;
+    setPickerStep("root");
+    setSelectedParentId(null);
+    setOpen((v) => !v);
+  };
+
+  const selectTopic = (id: number) => {
+    onLink(id);
+    setOpen(false);
+  };
+
+  const selectRoot = (t: CentralTopic) => {
+    if (hasHierarchy && parentIdsWithChildren.has(t.id)) {
+      setSelectedParentId(t.id);
+      setPickerStep("children");
+      return;
+    }
+    selectTopic(t.id);
+  };
+
+  if (disabled) return null;
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={openPicker}
+        title={
+          linkedName
+            ? `Bağlı: ${linkedName}`
+            : "Merkezi müfredat konusuna bağla"
+        }
+        aria-label={compact ? "Bağla" : undefined}
+        className={`flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+          compact
+            ? "max-w-[2rem] justify-center p-1.5 gap-0"
+            : "max-w-[11rem]"
+        } ${
+          linkedTopicId != null
+            ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--accent)]"
+        }`}
+      >
+        <Link2 className="h-3 w-3 shrink-0" />
+        {!compact && (
+          <span className="truncate">
+            {linkedName
+              ? `Bağlı: ${linkedName}`
+              : linkedTopicId != null
+                ? "Bağlı"
+                : "Bağla"}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150">
+          {linkedTopicId != null && (
+            <button
+              type="button"
+              onClick={() => {
+                onLink(null);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/10"
+            >
+              <Unlink className="h-3.5 w-3.5" />
+              Bağlantıyı kaldır
+            </button>
+          )}
+
+          {curriculumTopics.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+              Bu ders için merkezi konu yok.
+            </p>
+          ) : pickerStep === "children" ? (
+            <div className="max-h-56 overflow-y-auto py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerStep("root");
+                  setSelectedParentId(null);
+                }}
+                className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              >
+                <ChevronLeft className="h-3 w-3" />
+                Ana üniteye dön
+              </button>
+              {childTopics.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => selectTopic(t.id)}
+                  className="flex w-full items-center px-3 py-2 text-left text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]"
+                >
+                  {t.name}
+                </button>
+              ))}
+              {childTopics.length === 0 && (
+                <p className="px-3 py-2 text-xs text-[var(--text-muted)]">
+                  Alt konu yok.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="max-h-56 overflow-y-auto py-1">
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                {hasHierarchy ? "Ana ünite / konu" : "Konu seç"}
+              </p>
+              {rootTopics.map((t) => {
+                const isParent = parentIdsWithChildren.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => selectRoot(t)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]"
+                  >
+                    <span className="truncate">{t.name}</span>
+                    {isParent && (
+                      <span className="shrink-0 text-[9px] text-[var(--text-muted)]">
+                        alt konular →
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function calcResourceNet(correct: number, wrong: number): number {
@@ -159,6 +367,17 @@ const STATUS_OPTIONS = [
   { value: "tekrar_gerekli", label: "Tekrar Gerekli" },
 ] as const;
 
+const STATUS_CYCLE = STATUS_OPTIONS.map((o) => o.value);
+
+const STATUS_CHIP_CLS: Record<string, string> = {
+  calisilmadi:
+    "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]",
+  baslandi: "border-sky-500/40 bg-sky-500/15 text-sky-300",
+  devam_ediyor: "border-amber-500/40 bg-amber-500/15 text-amber-200",
+  tamamlandi: "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
+  tekrar_gerekli: "border-rose-500/40 bg-rose-500/15 text-rose-300",
+};
+
 const TRACKING_OPTIONS = [
   { value: "sayfa_bazli", label: "Sayfa Bazlı" },
   { value: "test_bazli", label: "Test Bazlı" },
@@ -172,6 +391,19 @@ const TRACKING_VALUES = TRACKING_OPTIONS.map((o) => o.value) as readonly string[
 
 function normalizeStatus(value: string | null | undefined): string {
   return value && STATUS_VALUES.includes(value) ? value : "calisilmadi";
+}
+
+function nextStatus(current: string): string {
+  const idx = STATUS_CYCLE.indexOf(normalizeStatus(current) as string);
+  const i = idx >= 0 ? idx : 0;
+  return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
+}
+
+function statusLabel(value: string): string {
+  return (
+    STATUS_OPTIONS.find((o) => o.value === normalizeStatus(value))?.label ??
+    "Çalışılmadı"
+  );
 }
 
 function normalizeTracking(value: string | null | undefined): string {
@@ -307,6 +539,10 @@ type TopicMetaPatch = {
   last_studied_at?: string | null;
 };
 
+type TopicLinkPatch = {
+  topic_id?: number | null;
+};
+
 export default function StudentResourceDetailModal({ resource, studentId, onClose }: Props) {
   const [resourceTopics, setResourceTopics] = useState<ResourceTopicRow[]>([]);
   const [taskRows, setTaskRows] = useState<
@@ -324,6 +560,83 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [expandedTopicIds, setExpandedTopicIds] = useState<Set<number>>(
+    () => new Set()
+  );
+
+  function toggleTopicDetails(topicId: number) {
+    setExpandedTopicIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(topicId)) next.delete(topicId);
+      else next.add(topicId);
+      return next;
+    });
+  }
+
+  const [curriculumTopics, setCurriculumTopics] = useState<CentralTopic[]>([]);
+  const [centralSubjectId, setCentralSubjectId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const subjectName = resource.subject?.name ?? null;
+    if (!subjectName) {
+      setCentralSubjectId(null);
+      setCurriculumTopics([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("id")
+        .eq("name", subjectName)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error || !data?.id) {
+        setCentralSubjectId(null);
+        setCurriculumTopics([]);
+        return;
+      }
+      setCentralSubjectId(data.id as number);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, resource.subject?.name]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (centralSubjectId == null) {
+      setCurriculumTopics([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("topics")
+        .select("id, name, parent_id, order_index")
+        .eq("subject_id", centralSubjectId)
+        .order("order_index", { ascending: true });
+
+      if (cancelled) return;
+      if (error) {
+        setCurriculumTopics([]);
+        return;
+      }
+      setCurriculumTopics((data ?? []) as CentralTopic[]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, centralSubjectId]);
 
   useEffect(() => {
     setMounted(true);
@@ -459,6 +772,25 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
 
   // Optimistic guncelle + DB'ye yaz + hata olursa geri al
   async function updateTopicMeta(topicId: number, patch: TopicMetaPatch) {
+    const snapshot = resourceTopics;
+    setTopicUpdateError(null);
+    setResourceTopics((rows) =>
+      rows.map((t) => (t.id === topicId ? { ...t, ...patch } : t))
+    );
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("study_resource_topics")
+      .update(patch)
+      .eq("id", topicId);
+
+    if (updateError) {
+      setResourceTopics(snapshot);
+      setTopicUpdateError("Kaydedilemedi: " + updateError.message);
+    }
+  }
+
+  async function updateTopicLink(topicId: number, patch: TopicLinkPatch) {
     const snapshot = resourceTopics;
     setTopicUpdateError(null);
     setResourceTopics((rows) =>
@@ -660,161 +992,148 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
                       Bu kaynağa henüz konu eklenmemiş
                     </p>
                   </div>
-                ) : (
-                  <div className="space-y-3">
+                  ) : (
+                  <div className="max-h-[420px] overflow-y-auto pr-1 space-y-0">
                     {topics.map((topic) => {
-                      const hasProgress = topic.solved > 0;
-                      const allDone = topic.target_count > 0 && topic.completionPct >= 100;
-                      const barWidth =
-                        topic.target_count > 0
-                          ? Math.min(100, (topic.solved / topic.target_count) * 100)
-                          : hasProgress
-                            ? 100
-                            : 0;
+                      const detailsOpen =
+                        topic.id != null &&
+                        expandedTopicIds.has(topic.id);
+
+                      const status = normalizeStatus(topic.status);
+
+                      const centralTopic =
+                        topic.topic_id != null
+                          ? curriculumTopics.find(
+                              (t) => t.id === topic.topic_id
+                            ) ?? null
+                          : null;
+                      const indentCls =
+                        centralTopic?.parent_id != null ? "pl-6" : "";
+
+                      const riskRow =
+                        topic.topic_id != null
+                          ? topicExamAnalysis.byTopicId.get(topic.topic_id) ??
+                            null
+                          : null;
+                      const riskTitle =
+                        topic.topic_id == null || !riskRow
+                          ? "Veri yok"
+                          : severityLabel(riskRow.severity);
+                      const riskDotStyle = riskRow
+                        ? {
+                            backgroundColor: topicSeverityColor(riskRow.severity),
+                          }
+                        : undefined;
 
                       return (
                         <div
                           key={topic.id ?? "uncategorized"}
-                          className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
+                          className="py-2"
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                          <div className="flex items-center justify-between gap-3 px-1">
+                            <button
+                              type="button"
+                              disabled={topic.id == null}
+                              onClick={() => {
+                                if (topic.id == null) return;
+                                toggleTopicDetails(topic.id as number);
+                              }}
+                              className={`flex min-w-0 flex-1 items-center gap-2 text-left transition-colors ${
+                                topic.id == null
+                                  ? "cursor-default"
+                                  : "cursor-pointer hover:text-[var(--accent)]"
+                              }`}
+                            >
+                              <span className="shrink-0">
+                                {topic.id != null ? (
+                                  detailsOpen ? (
+                                    <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                                  ) : (
+                                    <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                                  )
+                                ) : null}
+                              </span>
+                              <span className={`min-w-0 truncate ${indentCls}`}>
                                 {topic.name}
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                                {hasProgress ? (
-                                  <>
-                                    <span className="font-semibold text-[var(--text-secondary)]">
-                                      {topic.solved}
-                                    </span>
-                                    {topic.target_count > 0 && (
-                                      <>
-                                        <span className="text-[var(--text-muted)]"> / </span>
-                                        {topic.target_count} soru
-                                      </>
-                                    )}
-                                  </>
-                                ) : (
-                                  <span className="text-[var(--text-muted)]">
-                                    {topic.target_count > 0
-                                      ? `0 / ${topic.target_count} soru`
-                                      : "Henüz çözüm yok"}
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                            {topic.target_count > 0 && (
-                              <span
-                                className={`text-xs font-bold ${
-                                  allDone ? "text-green-400" : "text-[var(--accent)]"
-                                }`}
-                              >
-                                %{topic.completionPct}
                               </span>
-                            )}
-                          </div>
+                            </button>
 
-                          {topic.target_count > 0 && (
-                            <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/8">
-                              <div
-                                className={`h-full rounded-full transition-all ${
-                                  allDone
-                                    ? "bg-green-500"
-                                    : "bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--primary-3)]"
-                                }`}
-                                style={{
-                                  width: `${hasProgress ? Math.max(barWidth, 2) : 0}%`,
-                                }}
-                              />
-                            </div>
-                          )}
-
-                          {hasProgress && (
-                            <p className="mt-2 text-[10px] text-[var(--text-muted)]">
-                              <span className="text-green-400/90">D{topic.correct}</span>
-                              <span className="mx-1 text-[var(--text-muted)]">·</span>
-                              <span className="text-red-400/90">Y{topic.wrong}</span>
-                              <span className="mx-1 text-[var(--text-muted)]">·</span>
-                              <span>
-                                net {topic.net >= 0 ? "+" : ""}
-                                {topic.net.toFixed(2)}
-                              </span>
-                            </p>
-                          )}
-
-                          {topic.id !== null && (
-                            <div className="mt-3 space-y-2.5 border-t border-[var(--border)] pt-3">
-                              <TopicExamMatrixStrip
-                                row={
-                                  topic.topic_id != null
-                                    ? topicExamAnalysis.byTopicId.get(
-                                        topic.topic_id
-                                      )
-                                    : null
-                                }
-                                examColumns={topicExamAnalysis.examColumns}
-                              />
-
-                              <div className="flex flex-wrap items-center gap-2">
-                                <select
-                                  value={normalizeStatus(topic.status)}
-                                  onChange={(e) =>
-                                    updateTopicMeta(topic.id as number, {
-                                      status: e.target.value,
-                                    })
-                                  }
-                                  aria-label="Konu durumu"
-                                  className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                >
-                                  {STATUS_OPTIONS.map((o) => (
-                                    <option key={o.value} value={o.value}>
-                                      {o.label}
-                                    </option>
-                                  ))}
-                                </select>
-
-                                <select
-                                  value={normalizeTracking(topic.tracking_method)}
-                                  onChange={(e) =>
-                                    updateTopicMeta(topic.id as number, {
-                                      tracking_method: e.target.value,
-                                    })
-                                  }
-                                  aria-label="Takip yöntemi"
-                                  className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                >
-                                  {TRACKING_OPTIONS.map((o) => (
-                                    <option key={o.value} value={o.value}>
-                                      {o.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                                <span>
-                                  Son çalışma:{" "}
-                                  <span className="font-medium text-[var(--text-secondary)]">
-                                    {formatLastStudied(topic.last_studied_at)}
-                                  </span>
-                                </span>
+                            <div className="flex items-center gap-2">
+                              {topic.id !== null && (
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    updateTopicMeta(topic.id as number, {
-                                      last_studied_at: new Date().toISOString(),
-                                    })
-                                  }
-                                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--accent)] transition-colors hover:text-[var(--text-primary)]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void updateTopicMeta(topic.id as number, {
+                                      status: nextStatus(status),
+                                      last_studied_at:
+                                        new Date().toISOString(),
+                                    });
+                                  }}
+                                  aria-label={`Durum: ${statusLabel(status)}. Sonraki duruma geç`}
+                                  className={`shrink-0 rounded-full border px-2 py-1 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
+                                    STATUS_CHIP_CLS[status] ??
+                                    STATUS_CHIP_CLS.calisilmadi
+                                  }`}
                                 >
-                                  Bugün olarak işaretle
+                                  {statusLabel(status)}
                                 </button>
-                              </div>
+                              )}
+
+                              {topic.id !== null &&
+                                topic.topic_id == null && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="shrink-0"
+                                  >
+                                    <CentralTopicLinkPicker
+                                      linkedTopicId={topic.topic_id}
+                                      curriculumTopics={curriculumTopics}
+                                      disabled={centralSubjectId == null}
+                                      compact
+                                      onLink={(centralTopicId) =>
+                                        void updateTopicLink(
+                                          topic.id as number,
+                                          { topic_id: centralTopicId }
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                )}
+
+                              <span
+                                className={`h-2.5 w-2.5 rounded-full ${
+                                  riskRow ? "" : "bg-[var(--text-muted)]/50"
+                                }`}
+                                style={riskDotStyle}
+                                title={riskTitle}
+                              />
+                            </div>
+                          </div>
+
+                          {detailsOpen && topic.id != null && (
+                            <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-3 space-y-2.5">
+                              {topic.topic_id != null && (
+                                <TopicExamMatrixStrip
+                                  row={
+                                    topicExamAnalysis.byTopicId.get(
+                                      topic.topic_id
+                                    )
+                                  }
+                                  examColumns={topicExamAnalysis.examColumns}
+                                />
+                              )}
+
+                              <p className="text-[11px] text-[var(--text-muted)]">
+                                Son çalışma:{" "}
+                                <span className="font-medium text-[var(--text-secondary)]">
+                                  {formatLastStudied(topic.last_studied_at)}
+                                </span>
+                              </p>
 
                               <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                                  Notum
+                                  Öğrenci Notu
                                 </label>
                                 <textarea
                                   value={topic.student_note ?? ""}
@@ -825,7 +1144,8 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
                                   }
                                   onBlur={(e) =>
                                     updateTopicMeta(topic.id as number, {
-                                      student_note: e.target.value.trim() || null,
+                                      student_note:
+                                        e.target.value.trim() || null,
                                     })
                                   }
                                   rows={2}
@@ -834,9 +1154,13 @@ export default function StudentResourceDetailModal({ resource, studentId, onClos
                                 />
                               </div>
 
-                              {topic.coach_note && (
+                              {topic.coach_note ? (
                                 <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
                                   Koç: {topic.coach_note}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-[var(--text-muted)]">
+                                  Koç notu yok
                                 </p>
                               )}
                             </div>

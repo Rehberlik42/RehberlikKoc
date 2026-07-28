@@ -438,7 +438,10 @@ export default function StudentAddResourceModal({
             </div>
 
             <div className="border-t border-[var(--border)] px-5 pb-5 sm:px-6 sm:pb-6">
-              <TopicEditor topics={topics} onChange={setTopics} />
+              <TopicEditor
+                subjectId={subjectId ? parseInt(subjectId, 10) : null}
+                contentKind="soru_bankasi"
+              />
 
               <button
                 type="submit"

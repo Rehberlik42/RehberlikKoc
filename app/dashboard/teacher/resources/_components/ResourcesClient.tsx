@@ -109,7 +109,7 @@ function ResourceGridCard({
         style={{ backgroundColor: resource.cover_color }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-        <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-3 top-3 flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
           <button
             type="button"
             onClick={(e) => {
@@ -365,6 +365,8 @@ export default function ResourcesClient({
 
   const handleDeleted = (id: string) => {
     setResources((prev) => prev.filter((r) => r.id !== id));
+    setDetailResource((prev) => (prev?.id === id ? null : prev));
+    setDeleteTarget(null);
     toast.success("Kaynak silindi.");
     router.refresh();
   };
@@ -568,6 +570,7 @@ export default function ResourcesClient({
           resource={detailResource}
           students={students}
           onClose={() => setDetailResource(null)}
+          onDelete={() => setDeleteTarget(detailResource)}
         />
       )}
     </>

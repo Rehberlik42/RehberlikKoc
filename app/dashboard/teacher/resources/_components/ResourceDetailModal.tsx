@@ -13,6 +13,7 @@ import {
   Unlink,
   Users,
   X,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCentralTopics, type CentralTopic } from "@/lib/use-central-topics";
@@ -41,6 +42,7 @@ interface Props {
   resource: StudyResource;
   students: StudentLite[];
   onClose: () => void;
+  onDelete?: () => void;
 }
 
 function emptyTotals(): TopicProgressTotals {
@@ -334,10 +336,12 @@ function CentralTopicLinkPicker({
   curriculumTopics,
   disabled,
   onLink,
+  compact = false,
 }: {
   linkedTopicId: number | null | undefined;
   curriculumTopics: CentralTopic[];
   disabled?: boolean;
+  compact?: boolean;
   onLink: (topicId: number | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -414,20 +418,25 @@ function CentralTopicLinkPicker({
             ? `Bağlı: ${linkedName}`
             : "Merkezi müfredat konusuna bağla"
         }
-        className={`flex max-w-[11rem] items-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+        aria-label={compact ? "Bağla" : undefined}
+        className={`flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+          compact ? "max-w-[2rem] justify-center p-1.5 gap-0" : "max-w-[11rem]"
+        } ${
           linkedTopicId != null
             ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
             : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--accent)]"
         }`}
       >
         <Link2 className="h-3 w-3 shrink-0" />
-        <span className="truncate">
-          {linkedName
-            ? `Bağlı: ${linkedName}`
-            : linkedTopicId != null
-              ? "Bağlı"
-              : "Bağla"}
-        </span>
+        {!compact && (
+          <span className="truncate">
+            {linkedName
+              ? `Bağlı: ${linkedName}`
+              : linkedTopicId != null
+                ? "Bağlı"
+                : "Bağla"}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -510,7 +519,7 @@ function CentralTopicLinkPicker({
   );
 }
 
-export default function ResourceDetailModal({ resource, students, onClose }: Props) {
+export default function ResourceDetailModal({ resource, students, onClose, onDelete }: Props) {
   const [resourceTopics, setResourceTopics] = useState<ResourceTopicRow[]>([]);
   const [progressByTopicId, setProgressByTopicId] = useState<
     Record<number, TopicStudentProgress>
@@ -1072,14 +1081,26 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="shrink-0 rounded-lg border border-[var(--border)] bg-black/30 p-2 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:text-[var(--text-primary)]"
-                aria-label="Kapat"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="rounded-lg border border-[var(--border)] bg-black/30 p-2 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:bg-red-500/40 hover:text-[var(--text-primary)]"
+                    aria-label="Kaynağı sil"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg border border-[var(--border)] bg-black/30 p-2 text-[var(--text-secondary)] backdrop-blur-sm transition-colors hover:text-[var(--text-primary)]"
+                  aria-label="Kapat"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1219,66 +1240,83 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                               </p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {topics.map((topic) => {
-                                const hasProgress = topic.solved > 0;
-                                const status = normalizeStatus(topic.status);
-                                const detailsOpen =
-                                  topic.id != null &&
-                                  expandedTopicIds.has(topic.id);
+                        <div className="max-h-[420px] overflow-y-auto pr-1">
+                          <div className="divide-y divide-[var(--border)]">
+                            {topics.map((topic) => {
+                              const status = normalizeStatus(topic.status);
+                              const detailsOpen =
+                                topic.id != null &&
+                                expandedTopicIds.has(topic.id);
 
-                                return (
-                                  <div
-                                    key={topic.id ?? "uncategorized"}
-                                    className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
-                                  >
-                                    <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-[var(--text-primary)]">
-                                          {topic.name}
-                                        </p>
-                                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                                          {hasProgress ? (
-                                            <>
-                                              <span className="font-semibold text-[var(--text-secondary)]">
-                                                {topic.solved} soru çözüldü
-                                              </span>
-                                              <span className="mx-1.5 text-[var(--text-muted)]">
-                                                ·
-                                              </span>
-                                              <span className="text-green-400/90">
-                                                D{topic.correct}
-                                              </span>
-                                              <span className="mx-1 text-[var(--text-muted)]">
-                                                ·
-                                              </span>
-                                              <span className="text-red-400/90">
-                                                Y{topic.wrong}
-                                              </span>
-                                              <span className="mx-1 text-[var(--text-muted)]">
-                                                ·
-                                              </span>
-                                              <span>
-                                                net {topic.net >= 0 ? "+" : ""}
-                                                {topic.net.toFixed(2)}
-                                              </span>
-                                            </>
+                              const centralTopic =
+                                topic.topic_id != null
+                                  ? curriculumTopics.find(
+                                      (t) => t.id === topic.topic_id
+                                    ) ?? null
+                                  : null;
+                              const indentCls =
+                                centralTopic?.parent_id != null ? "pl-6" : "";
+
+                              const riskRow =
+                                topic.topic_id != null
+                                  ? topicExamAnalysis.byTopicId.get(
+                                      topic.topic_id
+                                    ) ?? null
+                                  : null;
+                              const riskTitle =
+                                topic.topic_id == null || !riskRow
+                                  ? "Veri yok"
+                                  : severityLabel(riskRow.severity);
+                              const riskDotStyle = riskRow
+                                ? {
+                                    backgroundColor: topicSeverityColor(
+                                      riskRow.severity
+                                    ),
+                                  }
+                                : undefined;
+                              return (
+                                <div
+                                  key={topic.id ?? "uncategorized"}
+                                  className="py-2"
+                                >
+                                  <div className="flex items-center justify-between gap-3 px-1">
+                                    <button
+                                      type="button"
+                                      disabled={topic.id == null}
+                                      onClick={() => {
+                                        if (topic.id == null) return;
+                                        toggleTopicDetails(topic.id as number);
+                                      }}
+                                      className={`flex min-w-0 flex-1 items-center gap-2 text-left transition-colors ${
+                                        topic.id == null
+                                          ? "cursor-default"
+                                          : "cursor-pointer hover:text-[var(--accent)]"
+                                      }`}
+                                    >
+                                      <span className="shrink-0">
+                                        {topic.id != null ? (
+                                          detailsOpen ? (
+                                            <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                                           ) : (
-                                            <span className="text-[var(--text-muted)]">
-                                              Henüz çözüm yok
-                                            </span>
-                                          )}
-                                        </p>
-                                      </div>
+                                            <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                                          )
+                                        ) : null}
+                                      </span>
+                                      <span className={`min-w-0 truncate ${indentCls}`}>
+                                        {topic.name}
+                                      </span>
+                                    </button>
 
+                                    <div className="flex items-center gap-2">
                                       {topic.id !== null && (
                                         <button
                                           type="button"
-                                          onClick={() =>
-                                            void cycleTopicStatus(topic.id as number)
-                                          }
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void cycleTopicStatus(topic.id as number);
+                                          }}
                                           aria-label={`Durum: ${statusLabel(status)}. Sonraki duruma geç`}
-                                          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
+                                          className={`shrink-0 rounded-full border px-2 py-1 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
                                             STATUS_CHIP_CLS[status] ??
                                             STATUS_CHIP_CLS.calisilmadi
                                           }`}
@@ -1286,27 +1324,17 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                           {statusLabel(status)}
                                         </button>
                                       )}
-                                    </div>
 
-                                    {topic.id !== null && (
-                                      <div className="mt-3 space-y-2.5 border-t border-[var(--border)] pt-3">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <TopicExamMatrixStrip
-                                            row={
-                                              topic.topic_id != null
-                                                ? topicExamAnalysis.byTopicId.get(
-                                                    topic.topic_id
-                                                  )
-                                                : null
-                                            }
-                                            examColumns={
-                                              topicExamAnalysis.examColumns
-                                            }
-                                          />
+                                      {topic.id !== null && topic.topic_id == null && (
+                                        <div
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="shrink-0"
+                                        >
                                           <CentralTopicLinkPicker
                                             linkedTopicId={topic.topic_id}
                                             curriculumTopics={curriculumTopics}
                                             disabled={subjectId == null}
+                                            compact
                                             onLink={(centralTopicId) =>
                                               void updateTopicLink(
                                                 topic.id as number,
@@ -1315,115 +1343,126 @@ export default function ResourceDetailModal({ resource, students, onClose }: Pro
                                             }
                                           />
                                         </div>
+                                      )}
 
-                                        <p className="text-[11px] text-[var(--text-muted)]">
-                                          Son çalışma:{" "}
-                                          <span className="font-medium text-[var(--text-secondary)]">
-                                            {formatLastStudied(
-                                              topic.last_studied_at
-                                            )}
-                                          </span>
-                                        </p>
-
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            toggleTopicDetails(topic.id as number)
-                                          }
-                                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-                                        >
-                                          {detailsOpen ? (
-                                            <ChevronDown className="h-3.5 w-3.5" />
-                                          ) : (
-                                            <ChevronRight className="h-3.5 w-3.5" />
-                                          )}
-                                          Detaylar
-                                        </button>
-
-                                        {detailsOpen && (
-                                          <div className="space-y-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-3">
-                                            {topic.student_note ? (
-                                              <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
-                                                Öğrenci: {topic.student_note}
-                                              </p>
-                                            ) : (
-                                              <p className="text-[11px] text-[var(--text-muted)]">
-                                                Öğrenci notu yok
-                                              </p>
-                                            )}
-
-                                            <div className="flex flex-col gap-1">
-                                              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                                                Koç Notu
-                                              </label>
-                                              <textarea
-                                                value={topic.coach_note ?? ""}
-                                                onChange={(e) =>
-                                                  setProgressLocal(
-                                                    topic.id as number,
-                                                    {
-                                                      coach_note: e.target.value,
-                                                    }
-                                                  )
-                                                }
-                                                onBlur={(e) =>
-                                                  void upsertTopicProgress(
-                                                    topic.id as number,
-                                                    {
-                                                      coach_note:
-                                                        e.target.value.trim() ||
-                                                        null,
-                                                    }
-                                                  )
-                                                }
-                                                rows={2}
-                                                placeholder="Bu konuyla ilgili not ekle…"
-                                                className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                              />
-                                            </div>
-
-                                            <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                                              <span className="font-semibold uppercase tracking-wider">
-                                                Koç önceliği
-                                              </span>
-                                              <select
-                                                value={normalizeCoachPriority(
-                                                  topic.coach_priority
-                                                )}
-                                                onChange={(e) =>
-                                                  void upsertTopicProgress(
-                                                    topic.id as number,
-                                                    {
-                                                      coach_priority:
-                                                        e.target.value === ""
-                                                          ? null
-                                                          : e.target.value,
-                                                    }
-                                                  )
-                                                }
-                                                aria-label="Koç önceliği"
-                                                className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                                              >
-                                                {COACH_PRIORITY_OPTIONS.map(
-                                                  (o) => (
-                                                    <option
-                                                      key={o.label}
-                                                      value={o.value}
-                                                    >
-                                                      {o.label}
-                                                    </option>
-                                                  )
-                                                )}
-                                              </select>
-                                            </label>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
+                                      <span
+                                        className={`h-2.5 w-2.5 rounded-full ${
+                                          riskRow ? "" : "bg-[var(--text-muted)]/50"
+                                        }`}
+                                        style={riskDotStyle}
+                                        title={riskTitle}
+                                      />
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
+
+                                  {detailsOpen && topic.id != null && (
+                                    <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-3">
+                                      {topic.topic_id != null && (
+                                        <TopicExamMatrixStrip
+                                          row={
+                                            topicExamAnalysis.byTopicId.get(
+                                              topic.topic_id
+                                            )
+                                          }
+                                          examColumns={
+                                            topicExamAnalysis.examColumns
+                                          }
+                                        />
+                                      )}
+
+                                      <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                                        Son çalışma:{" "}
+                                        <span className="font-medium text-[var(--text-secondary)]">
+                                          {formatLastStudied(
+                                            topic.last_studied_at
+                                          )}
+                                        </span>
+                                      </p>
+
+                                      <div className="mt-3 space-y-2.5">
+                                        {topic.student_note ? (
+                                          <p className="text-[11px] italic leading-relaxed text-[var(--text-secondary)]">
+                                            Öğrenci: {topic.student_note}
+                                          </p>
+                                        ) : (
+                                          <p className="text-[11px] text-[var(--text-muted)]">
+                                            Öğrenci notu yok
+                                          </p>
+                                        )}
+
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                            Koç Notu
+                                          </label>
+                                          <textarea
+                                            value={topic.coach_note ?? ""}
+                                            onChange={(e) =>
+                                              setProgressLocal(
+                                                topic.id as number,
+                                                {
+                                                  coach_note:
+                                                    e.target.value,
+                                                }
+                                              )
+                                            }
+                                            onBlur={(e) =>
+                                              void upsertTopicProgress(
+                                                topic.id as number,
+                                                {
+                                                  coach_note:
+                                                    e.target.value.trim() ||
+                                                    null,
+                                                }
+                                              )
+                                            }
+                                            rows={2}
+                                            placeholder="Bu konuyla ilgili not ekle…"
+                                            className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                          />
+                                        </div>
+
+                                        <label className="inline-flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                                          <span className="font-semibold uppercase tracking-wider">
+                                            Koç önceliği
+                                          </span>
+                                          <select
+                                            value={normalizeCoachPriority(
+                                              topic.coach_priority
+                                            )}
+                                            onChange={(e) =>
+                                              void upsertTopicProgress(
+                                                topic.id as number,
+                                                {
+                                                  coach_priority:
+                                                    e.target.value === ""
+                                                      ? null
+                                                      : e.target.value,
+                                                }
+                                              )
+                                            }
+                                            aria-label="Koç önceliği"
+                                            className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                                          >
+                                            {COACH_PRIORITY_OPTIONS.map(
+                                              (o) => (
+                                                <option
+                                                  key={o.label}
+                                                  value={o.value}
+                                                >
+                                                  {o.label}
+                                                </option>
+                                              )
+                                            )}
+                                          </select>
+                                        </label>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                           )}
                         </div>
                       </>

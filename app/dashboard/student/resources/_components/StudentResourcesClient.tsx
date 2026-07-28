@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Library, Plus, CheckCheck, AlertCircle } from "lucide-react";
+import { Library, Plus, CheckCheck, AlertCircle, LayoutGrid, List } from "lucide-react";
 import type {
   ExamOption,
   SubjectOption,
 } from "@/app/dashboard/teacher/resources/_components/resource-types";
 import StudentResourceDetailModal from "./StudentResourceDetailModal";
 import StudentAddResourceModal from "./StudentAddResourceModal";
+import StudentResourceMatrix from "./StudentResourceMatrix";
 
 export interface StudentAssignedResource {
   assignmentId: string;
@@ -36,6 +37,7 @@ interface Props {
 }
 
 type ToastState = { type: "success" | "error"; message: string };
+type ViewMode = "list" | "matrix";
 
 function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
   useEffect(() => {
@@ -191,6 +193,7 @@ export default function StudentResourcesClient({
 }: Props) {
   const [detailResource, setDetailResource] = useState<StudentAssignedResource | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showAddButton = canAddResources && teacherId != null;
@@ -221,7 +224,36 @@ export default function StudentResourcesClient({
         )}
       </div>
 
-      {initialResources.length === 0 ? (
+      <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-[11px] font-semibold">
+        <button
+          type="button"
+          onClick={() => setViewMode("list")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+            viewMode === "list"
+              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+          }`}
+        >
+          <List className="h-3.5 w-3.5" />
+          Liste
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("matrix")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+            viewMode === "matrix"
+              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+          }`}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" />
+          Matris
+        </button>
+      </div>
+
+      {viewMode === "matrix" ? (
+        <StudentResourceMatrix studentId={studentId} subjects={subjectOptions} />
+      ) : initialResources.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center">
           <Library className="mb-4 h-10 w-10 text-[var(--text-muted)]" />
           <p className="text-sm text-[var(--text-muted)]">
@@ -251,8 +283,7 @@ export default function StudentResourcesClient({
           ))}
         </div>
       )}
-
-      {detailResource && (
+      {viewMode === "list" && detailResource && (
         <StudentResourceDetailModal
           resource={detailResource}
           studentId={studentId}

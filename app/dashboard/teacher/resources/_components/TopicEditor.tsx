@@ -11,17 +11,27 @@ interface CurriculumTopic {
   order_index: number;
 }
 
+function tracksTopicsByContentKind(contentKind: string): boolean {
+  return contentKind === "soru_bankasi" || contentKind === "konu_anlatimi";
+}
+
 interface TopicEditorProps {
   /** Seçili ders id'si — değişince konuları yeniden çeker. */
   subjectId?: number | null;
+  contentKind: string;
 }
 
-export default function TopicEditor({ subjectId = null }: TopicEditorProps) {
+export default function TopicEditor({
+  subjectId = null,
+  contentKind,
+}: TopicEditorProps) {
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const tracksTopics = tracksTopicsByContentKind(contentKind);
+
   useEffect(() => {
-    if (subjectId == null) {
+    if (!tracksTopics || subjectId == null) {
       setTopics([]);
       return;
     }
@@ -49,7 +59,7 @@ export default function TopicEditor({ subjectId = null }: TopicEditorProps) {
     return () => {
       cancelled = true;
     };
-  }, [subjectId]);
+  }, [subjectId, tracksTopics]);
 
   const { rootTopics, childrenByParent, parentIds } = useMemo(() => {
     const parentIds = new Set(
@@ -73,7 +83,11 @@ export default function TopicEditor({ subjectId = null }: TopicEditorProps) {
         Kazanımlar (Otomatik)
       </h3>
 
-      {subjectId == null ? (
+      {!tracksTopics ? (
+        <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
+          Bu kaynak türü konu bazlı takip edilmiyor.
+        </p>
+      ) : subjectId == null ? (
         <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
           Önce ders seçin
         </p>

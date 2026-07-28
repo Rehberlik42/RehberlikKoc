@@ -28,6 +28,7 @@ import TeacherTopicProgress, {
   type TeacherTopicProgressSubject,
 } from "./_components/TeacherTopicProgress";
 import StudentDetailTabs from "./_components/StudentDetailTabs";
+import ResourceMatrix from "./_components/ResourceMatrix";
 import TeacherWeeklyPlanLazy from "./_components/TeacherWeeklyPlanLazy";
 import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
@@ -477,6 +478,9 @@ export default async function StudentDetailPage({
             netSeriesBySubjectId={netSeriesBySubjectId}
             existingTargets={existingTargets}
           />
+        }
+        matrix={
+          <ResourceMatrix studentId={id} subjects={subjectFormOptions} />
         }
       />
     </div>
