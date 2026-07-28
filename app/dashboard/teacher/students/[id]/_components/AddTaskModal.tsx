@@ -81,33 +81,62 @@ interface StudyResourceTopicOption {
   name: string;
   target_count: number;
   order_index: number;
+  /** Merkezi topics.id — Faz B senkronu için dolu olmalı */
+  topic_id: number | null;
 }
 
 interface StudyResourceOption {
   id: number;
   name: string;
+  content_kind: string;
   exam: { name: string } | null;
   subject: { name: string } | null;
   topics: StudyResourceTopicOption[];
 }
 
+/** Konu takibi yapılabilen kaynak türleri (matris / progress ile uyumlu) */
+const TRACKED_CONTENT_KINDS = new Set(["soru_bankasi", "konu_anlatimi"]);
+
+/**
+ * Bu görev türlerinde Kaynak listesi yalnızca soru bankası / konu anlatımı gösterir.
+ * deneme, tekrar, manuel vb. tüm türlere açık kalır.
+ */
+const TOPIC_TRACKED_TASK_TYPES = new Set<TaskType>([
+  "soru_cozumu",
+  "yanlis_analizi",
+]);
+
+function taskTypeUsesTrackedResources(taskType: TaskType): boolean {
+  return TOPIC_TRACKED_TASK_TYPES.has(taskType);
+}
+
 function mapStudyResource(row: {
   id: number;
   name: string;
+  content_kind?: string | null;
   exam: { name: string } | { name: string }[] | null;
   subject: { name: string } | { name: string }[] | null;
-  topics: StudyResourceTopicOption[] | null;
+  topics:
+    | (StudyResourceTopicOption & { topic_id?: number | null })[]
+    | null;
 }): StudyResourceOption {
   const examRaw = row.exam;
   const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
   const subjectRaw = row.subject;
   const subject = Array.isArray(subjectRaw) ? subjectRaw[0] ?? null : subjectRaw;
-  const topics = [...(row.topics ?? [])].sort(
-    (a, b) => a.order_index - b.order_index
-  );
+  const topics = [...(row.topics ?? [])]
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      target_count: t.target_count,
+      order_index: t.order_index,
+      topic_id: t.topic_id ?? null,
+    }))
+    .sort((a, b) => a.order_index - b.order_index);
   return {
     id: row.id,
     name: row.name,
+    content_kind: row.content_kind ?? "soru_bankasi",
     exam: exam as { name: string } | null,
     subject: subject as { name: string } | null,
     topics,
@@ -310,7 +339,28 @@ export default function AddTaskModal({
   }, [topics, hasHierarchy, anaUniteId]);
 
   const selectedResource = resources.find((r) => String(r.id) === resourceId);
-  const resourceTopics = selectedResource?.topics ?? [];
+
+  /** Görev türüne göre listelenecek kaynaklar */
+  const selectableResources = useMemo(() => {
+    const base = taskTypeUsesTrackedResources(taskType)
+      ? resources.filter((r) => TRACKED_CONTENT_KINDS.has(r.content_kind))
+      : resources;
+
+    // Düzenlemede mevcut seçim filtreden düşmesin
+    if (!resourceId) return base;
+    if (base.some((r) => String(r.id) === resourceId)) return base;
+    const current = resources.find((r) => String(r.id) === resourceId);
+    return current ? [...base, current] : base;
+  }, [resources, taskType, resourceId]);
+
+  /** Merkezi topics'e bağlı kaynak konuları (topic_id dolu) */
+  const linkedResourceTopics = useMemo(
+    () =>
+      (selectedResource?.topics ?? []).filter((t) => t.topic_id != null),
+    [selectedResource]
+  );
+
+  const resourceIsTopicBased = linkedResourceTopics.length > 0;
 
   const visibleSteps = useMemo(
     () =>
@@ -397,8 +447,9 @@ export default function AddTaskModal({
       const { data } = await supabase
         .from("study_resources")
         .select(
-          "id, name, exam:exams(name), subject:subjects(name), topics:study_resource_topics(id, name, target_count, order_index)"
+          "id, name, content_kind, exam:exams(name), subject:subjects(name), topics:study_resource_topics(id, name, target_count, order_index, topic_id)"
         )
+        .eq("is_active", true)
         .order("order_index");
 
       if (!cancelled) {
@@ -439,10 +490,19 @@ export default function AddTaskModal({
   }, []);
 
   const handleTaskTypeChange = useCallback((v: string) => {
-    setTaskType(v as TaskType);
+    const next = v as TaskType;
+    setTaskType(next);
     // Tür değişince eski detay alanlarını temizle (edit dahil).
     setDetails({});
-  }, []);
+    // Konu-takip türüne geçildiyse uyumsuz kaynağı temizle
+    setResourceId((prev) => {
+      if (!prev || !taskTypeUsesTrackedResources(next)) return prev;
+      const res = resources.find((r) => String(r.id) === prev);
+      if (res && TRACKED_CONTENT_KINDS.has(res.content_kind)) return prev;
+      setResourceTopicId("");
+      return "";
+    });
+  }, [resources]);
 
   const handleSubjectChange = useCallback((id: string) => {
     setSubjectId(id);
@@ -467,6 +527,13 @@ export default function AddTaskModal({
     setResourceId(id);
     setResourceTopicId("");
   }, []);
+
+  // Konu bazlı olmayan kaynakta study_resource_topic_id taşınmasın
+  useEffect(() => {
+    if (resourceId && !resourceIsTopicBased && resourceTopicId) {
+      setResourceTopicId("");
+    }
+  }, [resourceId, resourceIsTopicBased, resourceTopicId]);
 
   const canGoNext = (() => {
     switch (step) {
@@ -587,9 +654,14 @@ export default function AddTaskModal({
         ? parseInt(topicId)
         : null;
     const study_resource_id = resourceId ? parseInt(resourceId, 10) : null;
-    const study_resource_topic_id = resourceTopicId
-      ? parseInt(resourceTopicId, 10)
-      : null;
+    // Yalnızca merkezi topics'e bağlı (topic_id dolu) satır kaydedilir
+    const selectedSrt = linkedResourceTopics.find(
+      (t) => String(t.id) === resourceTopicId
+    );
+    const study_resource_topic_id =
+      selectedSrt && selectedSrt.topic_id != null
+        ? selectedSrt.id
+        : null;
 
     if (existingTask) {
       const { error } = await supabase
@@ -875,6 +947,13 @@ export default function AddTaskModal({
                 )}
               </div>
 
+              {taskTypeUsesTrackedResources(taskType) ? (
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  Bu görev türünde yalnızca soru bankası / konu anlatımı
+                  kaynakları listelenir.
+                </p>
+              ) : null}
+
               <SearchableSelect
                 label="Kaynak"
                 icon={<BookMarked className="h-3.5 w-3.5" />}
@@ -883,7 +962,7 @@ export default function AddTaskModal({
                 disabled={resourcesLoading}
                 options={[
                   { value: "", label: "— Kaynak seçin (opsiyonel) —" },
-                  ...resources.map((r) => {
+                  ...selectableResources.map((r) => {
                     const hintParts: string[] = [];
                     if (r.exam?.name) hintParts.push(r.exam.name);
                     if (r.subject?.name) hintParts.push(r.subject.name);
@@ -898,28 +977,38 @@ export default function AddTaskModal({
                   }),
                 ]}
                 placeholder="— Kaynak seçin (opsiyonel) —"
-                emptyText="Henüz kaynak yok"
+                emptyText={
+                  taskTypeUsesTrackedResources(taskType)
+                    ? "Bu tür için uygun kaynak yok"
+                    : "Henüz kaynak yok"
+                }
               />
 
-              <SearchableSelect
-                label="Kaynak Konusu"
-                icon={<Tag className="h-3.5 w-3.5" />}
-                value={resourceTopicId}
-                onChange={setResourceTopicId}
-                disabled={!resourceId || resourceTopics.length === 0}
-                options={[
-                  { value: "", label: "— Konu seçin —" },
-                  ...resourceTopics.map((t) => ({
-                    value: String(t.id),
-                    label:
-                      t.target_count > 0
-                        ? `${t.name} (${t.target_count} soru)`
-                        : t.name,
-                  })),
-                ]}
-                placeholder="— Konu seçin —"
-                emptyText="Bu kaynakta konu yok"
-              />
+              {resourceId && !resourceIsTopicBased ? (
+                <p className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)]/50 px-3 py-3 text-xs text-[var(--text-muted)]">
+                  Bu kaynak konu bazlı değil.
+                </p>
+              ) : (
+                <SearchableSelect
+                  label="Kaynak Konusu"
+                  icon={<Tag className="h-3.5 w-3.5" />}
+                  value={resourceTopicId}
+                  onChange={setResourceTopicId}
+                  disabled={!resourceId || linkedResourceTopics.length === 0}
+                  options={[
+                    { value: "", label: "— Konu seçin —" },
+                    ...linkedResourceTopics.map((t) => ({
+                      value: String(t.id),
+                      label:
+                        t.target_count > 0
+                          ? `${t.name} (${t.target_count} soru)`
+                          : t.name,
+                    })),
+                  ]}
+                  placeholder="— Konu seçin —"
+                  emptyText="Bu kaynakta konu yok"
+                />
+              )}
             </div>
           )}
 
