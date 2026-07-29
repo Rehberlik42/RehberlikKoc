@@ -18,6 +18,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useCentralTopics, type CentralTopic } from "@/lib/use-central-topics";
 import {
+  normalizeStatus,
+  statusChipClass,
+  StatusIcon,
+} from "@/lib/resource-status-ui";
+import {
   buildTopicErrorAnalysis,
   topicSeverity,
   topicSeverityBg,
@@ -136,15 +141,6 @@ const STATUS_OPTIONS = [
 
 const STATUS_CYCLE = STATUS_OPTIONS.map((o) => o.value);
 
-const STATUS_CHIP_CLS: Record<string, string> = {
-  calisilmadi:
-    "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]",
-  baslandi: "border-sky-500/40 bg-sky-500/15 text-sky-300",
-  devam_ediyor: "border-amber-500/40 bg-amber-500/15 text-amber-200",
-  tamamlandi: "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
-  tekrar_gerekli: "border-rose-500/40 bg-rose-500/15 text-rose-300",
-};
-
 const COACH_PRIORITY_OPTIONS = [
   { value: "", label: "Sistem kararına bırak" },
   { value: "dusuk", label: "Düşük" },
@@ -152,7 +148,6 @@ const COACH_PRIORITY_OPTIONS = [
   { value: "yuksek", label: "Yüksek" },
 ] as const;
 
-const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
 const PRIORITY_VALUES = ["dusuk", "orta", "yuksek"] as const;
 
 type TopicStudentProgress = {
@@ -172,12 +167,6 @@ const DEFAULT_TOPIC_PROGRESS: TopicStudentProgress = {
 };
 
 type ResourceStatus = (typeof STATUS_OPTIONS)[number]["value"];
-
-function normalizeStatus(value: string | null | undefined): ResourceStatus {
-  return value && STATUS_VALUES.includes(value)
-    ? (value as ResourceStatus)
-    : "calisilmadi";
-}
 
 function normalizeCoachPriority(value: string | null | undefined): string {
   return value && (PRIORITY_VALUES as readonly string[]).includes(value)
@@ -1318,11 +1307,12 @@ export default function ResourceDetailModal({ resource, students, onClose, onDel
                                             void cycleTopicStatus(topic.id as number);
                                           }}
                                           aria-label={`Durum: ${statusLabel(status)}. Sonraki duruma geç`}
-                                          className={`shrink-0 rounded-full border px-2 py-1 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
-                                            STATUS_CHIP_CLS[status] ??
-                                            STATUS_CHIP_CLS.calisilmadi
-                                          }`}
+                                          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${statusChipClass(status)}`}
                                         >
+                                          <StatusIcon
+                                            status={status}
+                                            className="h-3 w-3"
+                                          />
                                           {statusLabel(status)}
                                         </button>
                                       )}

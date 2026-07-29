@@ -274,7 +274,9 @@ export default function StudentTargets({
   }
 
   return (
-    <div className="space-y-5">
+    // Ders satırları tek sütun + sağa yapışık küçük input olduğu için sayfanın
+    // tam genişliğinde ad ile input arası aşırı açılıyor; bu sekme kendi içinde sınırlı.
+    <div className="mx-auto max-w-5xl space-y-5">
       <Toaster
         position="top-center"
         toastOptions={{

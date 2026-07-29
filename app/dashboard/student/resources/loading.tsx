@@ -3,7 +3,7 @@ import RouteLoadingIcon from "@/app/dashboard/_components/RouteLoadingIcon";
 
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6">
+    <div className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6">
       <RouteLoadingIcon
         icon={Library}
         animation="riffle"

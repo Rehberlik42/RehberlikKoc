@@ -39,6 +39,13 @@ interface Props {
 type ToastState = { type: "success" | "error"; message: string };
 type ViewMode = "list" | "matrix";
 
+/**
+ * Liste görünümü şimdilik kapalı: matris tek görünüm. Kart/detay modal kodu
+ * yerinde duruyor, bu bayrak `true` yapılınca Liste/Matris geçişi geri gelir.
+ * Tip, TS'in dalları erişilemez sayıp daraltmaması için bilerek `boolean`.
+ */
+const SHOW_LIST_VIEW: boolean = false;
+
 function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
@@ -193,13 +200,15 @@ export default function StudentResourcesClient({
 }: Props) {
   const [detailResource, setDetailResource] = useState<StudentAssignedResource | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    SHOW_LIST_VIEW ? "list" : "matrix"
+  );
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showAddButton = canAddResources && teacherId != null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8">
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -224,34 +233,36 @@ export default function StudentResourcesClient({
         )}
       </div>
 
-      <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-[11px] font-semibold">
-        <button
-          type="button"
-          onClick={() => setViewMode("list")}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-            viewMode === "list"
-              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
-              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-          }`}
-        >
-          <List className="h-3.5 w-3.5" />
-          Liste
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("matrix")}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-            viewMode === "matrix"
-              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
-              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-          }`}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-          Matris
-        </button>
-      </div>
+      {SHOW_LIST_VIEW ? (
+        <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-[11px] font-semibold">
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+              viewMode === "list"
+                ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            }`}
+          >
+            <List className="h-3.5 w-3.5" />
+            Liste
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("matrix")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+              viewMode === "matrix"
+                ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Matris
+          </button>
+        </div>
+      ) : null}
 
-      {viewMode === "matrix" ? (
+      {!SHOW_LIST_VIEW || viewMode === "matrix" ? (
         <StudentResourceMatrix studentId={studentId} subjects={subjectOptions} />
       ) : initialResources.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center">
@@ -283,7 +294,7 @@ export default function StudentResourcesClient({
           ))}
         </div>
       )}
-      {viewMode === "list" && detailResource && (
+      {SHOW_LIST_VIEW && viewMode === "list" && detailResource && (
         <StudentResourceDetailModal
           resource={detailResource}
           studentId={studentId}

@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Clock, Grid3X3, Loader2, RefreshCw } from "lucide-react";
+import { Grid3X3, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  normalizeStatus,
+  StatusChip,
+  statusChipClass,
+  StatusIcon,
+} from "@/lib/resource-status-ui";
 
 export interface ResourceMatrixSubject {
   id: number;
@@ -73,7 +79,6 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const STATUS_CYCLE = STATUS_OPTIONS.map((o) => o.value);
-const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
 
 const DEFAULT_PROGRESS: TopicProgress = {
   status: "calisilmadi",
@@ -92,12 +97,6 @@ const EMPTY_MATRIX: SubjectMatrixData = {
 };
 
 type ResourceStatus = (typeof STATUS_OPTIONS)[number]["value"];
-
-function normalizeStatus(value: string | null | undefined): ResourceStatus {
-  return value && STATUS_VALUES.includes(value)
-    ? (value as ResourceStatus)
-    : "calisilmadi";
-}
 
 function nextStatus(current: string): ResourceStatus {
   const idx = STATUS_CYCLE.indexOf(normalizeStatus(current));
@@ -133,58 +132,6 @@ function buildTopicRows(topics: CurriculumTopic[]): TopicRow[] {
   };
   walk(null, 0);
   return rows;
-}
-
-function statusChipClass(status: string): string {
-  switch (normalizeStatus(status)) {
-    case "tamamlandi":
-      return "border-emerald-500/55 bg-emerald-500/15 text-emerald-400";
-    case "baslandi":
-    case "devam_ediyor":
-      return "border-amber-500/55 bg-amber-500/15 text-amber-400";
-    case "tekrar_gerekli":
-      return "border-rose-500/55 bg-rose-500/15 text-rose-400";
-    default:
-      return "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]/40";
-  }
-}
-
-function StatusIcon({
-  status,
-  className = "h-3.5 w-3.5",
-}: {
-  status: string;
-  className?: string;
-}) {
-  switch (normalizeStatus(status)) {
-    case "tamamlandi":
-      return <Check className={className} strokeWidth={2.5} aria-hidden />;
-    case "baslandi":
-    case "devam_ediyor":
-      return <Clock className={className} strokeWidth={2.5} aria-hidden />;
-    case "tekrar_gerekli":
-      return <RefreshCw className={className} strokeWidth={2.5} aria-hidden />;
-    default:
-      return null;
-  }
-}
-
-function StatusChip({
-  status,
-  size = "md",
-}: {
-  status: string;
-  size?: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "h-5 w-5" : "h-7 w-7";
-  const icon = size === "sm" ? "h-2.5 w-2.5" : "h-3.5 w-3.5";
-  return (
-    <span
-      className={`inline-flex ${dim} items-center justify-center rounded-full border ${statusChipClass(status)}`}
-    >
-      <StatusIcon status={status} className={icon} />
-    </span>
-  );
 }
 
 function cellKey(resourceId: string, topicId: number): string {
@@ -325,6 +272,506 @@ async function fetchSubjectMatrix(
   };
 }
 
+interface MatrixStats {
+  resourceCount: number;
+  topicCount: number;
+  /** Konu×kaynak kombinasyonundan gerçekten var olan ("—" olmayan) hücre sayısı — yüzdelerin paydası */
+  filledCells: number;
+  completed: number;
+  inProgress: number;
+  needsReview: number;
+  notStarted: number;
+  progressPct: number;
+  byResource: ResourceProgress[];
+}
+
+interface ResourceProgress {
+  id: string;
+  name: string;
+  completed: number;
+  /** Bu kaynağın sütununda gerçekten var olan hücre sayısı */
+  filled: number;
+  pct: number;
+}
+
+type StatusGroup =
+  | "completed"
+  | "in_progress"
+  | "needs_review"
+  | "not_started";
+
+/**
+ * Beş DB durumunu, D1 istatistiklerinin ve D5 filtrelerinin ortak kullandığı
+ * dört kategoriye indirir — sayım ve filtreleme aynı kuralı paylaşsın diye
+ * kategori mantığı yalnızca burada duruyor.
+ */
+function statusGroup(status: ResourceStatus): StatusGroup {
+  if (status === "tamamlandi") return "completed";
+  if (status === "baslandi" || status === "devam_ediyor") return "in_progress";
+  if (status === "tekrar_gerekli") return "needs_review";
+  return "not_started";
+}
+
+function computeMatrixStats({
+  topicRows,
+  resources,
+  srtByCell,
+  progressBySrtId,
+}: SubjectMatrixData): MatrixStats {
+  let filledCells = 0;
+  let completed = 0;
+  let inProgress = 0;
+  let needsReview = 0;
+  let notStarted = 0;
+  const byResource: ResourceProgress[] = [];
+
+  for (const res of resources) {
+    let resFilled = 0;
+    let resCompleted = 0;
+
+    for (const topic of topicRows) {
+      const srtId = srtByCell.get(cellKey(res.id, topic.id));
+      if (srtId == null) continue;
+
+      resFilled += 1;
+      const status = normalizeStatus(
+        (progressBySrtId.get(srtId) ?? DEFAULT_PROGRESS).status
+      );
+      switch (statusGroup(status)) {
+        case "completed":
+          resCompleted += 1;
+          break;
+        case "in_progress":
+          inProgress += 1;
+          break;
+        case "needs_review":
+          needsReview += 1;
+          break;
+        default:
+          notStarted += 1;
+      }
+    }
+
+    filledCells += resFilled;
+    completed += resCompleted;
+    byResource.push({
+      id: res.id,
+      name: res.name,
+      completed: resCompleted,
+      filled: resFilled,
+      pct: resFilled === 0 ? 0 : Math.round((resCompleted / resFilled) * 100),
+    });
+  }
+
+  return {
+    resourceCount: resources.length,
+    topicCount: topicRows.length,
+    filledCells,
+    completed,
+    inProgress,
+    needsReview,
+    notStarted,
+    progressPct:
+      filledCells === 0 ? 0 : Math.round((completed / filledCells) * 100),
+    byResource,
+  };
+}
+
+function formatPct(count: number, total: number): string {
+  return total === 0 ? "—" : `%${Math.round((count / total) * 100)}`;
+}
+
+const STAT_TONES = {
+  neutral: "border-[var(--border)] bg-[var(--surface-2)]/60",
+  /** Ölçek kutuları (Kaynak/Konu) — durum renklerinden ve birbirinden ayrışsın */
+  sky: "border-sky-500/30 bg-sky-500/10",
+  violet: "border-violet-500/30 bg-violet-500/10",
+  emerald: "border-emerald-500/30 bg-emerald-500/10",
+  amber: "border-amber-500/30 bg-amber-500/10",
+  rose: "border-rose-500/30 bg-rose-500/10",
+  muted: "border-[var(--border)] bg-[var(--surface-2)]/30",
+} as const;
+
+function StatBox({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+  tone?: keyof typeof STAT_TONES;
+}) {
+  return (
+    <div className={`rounded-xl border px-3 py-2.5 ${STAT_TONES[tone]}`}>
+      <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-[var(--text-muted)]">
+        {label}
+      </p>
+      <p className="text-xl font-black leading-tight text-[var(--text-primary)]">
+        {value}
+      </p>
+      {hint ? (
+        <p className="text-[10px] font-semibold tabular-nums text-[var(--text-muted)]">
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ProgressDonut({ pct }: { pct: number }) {
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const clamped = Math.min(Math.max(pct, 0), 100);
+  const offset = circ * (1 - clamped / 100);
+
+  return (
+    <div className="relative mx-auto h-14 w-14">
+      <svg
+        viewBox="0 0 56 56"
+        className="h-14 w-14 -rotate-90"
+        role="img"
+        aria-label={`Genel ilerleme %${clamped}`}
+      >
+        <circle
+          cx="28"
+          cy="28"
+          r={r}
+          fill="none"
+          stroke="rgba(255,255,255,0.07)"
+          strokeWidth="6"
+        />
+        <circle
+          cx="28"
+          cy="28"
+          r={r}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          style={{
+            transition: "stroke-dashoffset 600ms cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black tabular-nums text-[var(--text-primary)]">
+        %{clamped}
+      </span>
+    </div>
+  );
+}
+
+function MatrixStatsStrip({ stats }: { stats: MatrixStats }) {
+  const { filledCells } = stats;
+
+  return (
+    <div className="flex items-stretch gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 p-3">
+      <div className="flex shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2">
+        <p className="max-w-[4.5rem] text-center text-[10px] font-semibold uppercase leading-tight tracking-wide text-[var(--accent)]">
+          Genel İlerleme
+        </p>
+        <ProgressDonut pct={stats.progressPct} />
+      </div>
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3 2xl:grid-cols-6">
+        <StatBox label="Kaynak" value={stats.resourceCount} tone="sky" />
+        <StatBox label="Konu" value={stats.topicCount} tone="violet" />
+        <StatBox
+          label="Tamam"
+          value={stats.completed}
+          hint={formatPct(stats.completed, filledCells)}
+          tone="emerald"
+        />
+        <StatBox
+          label="Devam"
+          value={stats.inProgress}
+          hint={formatPct(stats.inProgress, filledCells)}
+          tone="amber"
+        />
+        <StatBox
+          label="Tekrar"
+          value={stats.needsReview}
+          hint={formatPct(stats.needsReview, filledCells)}
+          tone="rose"
+        />
+        <StatBox
+          label="Boş"
+          value={stats.notStarted}
+          hint={formatPct(stats.notStarted, filledCells)}
+          tone="muted"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ResourceProgressBars({ items }: { items: ResourceProgress[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 p-2.5">
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        Kaynak Bazında Tamamlanma
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((res) => (
+          <div
+            key={res.id}
+            className="min-w-[8.5rem] flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/40 px-2.5 py-2"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span
+                className="truncate text-[10px] font-semibold text-[var(--text-primary)]"
+                title={res.name}
+              >
+                {res.name}
+              </span>
+              <span className="shrink-0 text-[10px] font-bold tabular-nums text-[var(--accent)]">
+                {res.filled === 0 ? "—" : `%${res.pct}`}
+              </span>
+            </div>
+            <div
+              className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-2)]"
+              role="progressbar"
+              aria-valuenow={res.pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${res.name} tamamlanma oranı`}
+            >
+              <div
+                className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-500 ease-out"
+                style={{ width: `${res.pct}%` }}
+              />
+            </div>
+            <p className="mt-1 text-[9px] tabular-nums text-[var(--text-muted)]">
+              {res.filled === 0
+                ? "Kazanım eşleşmesi yok"
+                : `${res.completed}/${res.filled} kazanım`}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type MatrixFilter = "all" | StatusGroup;
+
+const FILTER_OPTIONS: {
+  id: MatrixFilter;
+  label: string;
+  activeCls: string;
+}[] = [
+  {
+    id: "needs_review",
+    label: "Sadece Eksikler",
+    activeCls: "border-rose-500/40 bg-rose-500/15 text-rose-600",
+  },
+  {
+    id: "in_progress",
+    label: "Devam Edenler",
+    activeCls: "border-amber-500/40 bg-amber-500/15 text-amber-600",
+  },
+  {
+    id: "completed",
+    label: "Tamamlananlar",
+    activeCls: "border-emerald-500/40 bg-emerald-500/15 text-emerald-600",
+  },
+  {
+    id: "not_started",
+    label: "Başlanmayanlar",
+    activeCls:
+      "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]",
+  },
+  {
+    id: "all",
+    label: "Tümünü Göster",
+    activeCls:
+      "border-[var(--primary)]/40 bg-[var(--primary)]/15 text-[var(--accent)]",
+  },
+];
+
+function MatrixFilterBar({
+  active,
+  onChange,
+}: {
+  active: MatrixFilter;
+  onChange: (filter: MatrixFilter) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        Filtre:
+      </span>
+      {FILTER_OPTIONS.map((opt) => {
+        const isActive = opt.id === active;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            aria-pressed={isActive}
+            onClick={() => onChange(opt.id)}
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+              isActive
+                ? opt.activeCls
+                : "border-[var(--border)] bg-[var(--surface-2)]/40 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatLastStudied(value: string | null | undefined): string {
+  if (!value) return "Henüz kayıt yok";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Henüz kayıt yok";
+  return parsed.toLocaleDateString("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+const DETAIL_LABEL_CLS =
+  "text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]";
+
+function TopicDetailPane({
+  topic,
+  resources,
+  activeResource,
+  progress,
+  noteValue,
+  saving,
+  onSelectResource,
+  onStatusSelect,
+  onNoteChange,
+  onNoteBlur,
+}: {
+  topic: TopicRow | null;
+  resources: MatrixResource[];
+  activeResource: MatrixResource | null;
+  progress: TopicProgress | null;
+  noteValue: string;
+  saving: boolean;
+  onSelectResource: (resourceId: string) => void;
+  onStatusSelect: (status: ResourceStatus) => void;
+  onNoteChange: (value: string) => void;
+  onNoteBlur: () => void;
+}) {
+  return (
+    <aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 p-3 2xl:sticky 2xl:top-4 2xl:w-72 2xl:shrink-0">
+      <p className={DETAIL_LABEL_CLS}>Konu Detayı</p>
+
+      {topic == null ? (
+        <p className="mt-3 text-xs text-[var(--text-muted)]">
+          Detayları görmek için bir konuya tıklayın.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-3">
+          <h4 className="text-sm font-bold leading-snug text-[var(--text-primary)]">
+            {topic.name}
+          </h4>
+
+          {resources.length === 0 || activeResource == null ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              Bu konu, atanmış kaynakların hiçbirinde tanımlı değil.
+            </p>
+          ) : (
+            <>
+              {resources.length > 1 ? (
+                <div className="space-y-1">
+                  <p className={DETAIL_LABEL_CLS}>Kaynak</p>
+                  <div className="flex flex-wrap gap-1">
+                    {resources.map((res) => {
+                      const active = res.id === activeResource.id;
+                      return (
+                        <button
+                          key={res.id}
+                          type="button"
+                          onClick={() => onSelectResource(res.id)}
+                          title={res.name}
+                          aria-pressed={active}
+                          className={`max-w-full truncate rounded-lg border px-2 py-1 text-[10px] font-semibold transition-colors ${
+                            active
+                              ? "border-[var(--primary)]/40 bg-[var(--primary)]/15 text-[var(--accent)]"
+                              : "border-[var(--border)] bg-[var(--surface-2)]/50 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          {res.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p
+                  className="truncate text-[11px] text-[var(--text-secondary)]"
+                  title={activeResource.name}
+                >
+                  <span className="text-[var(--text-muted)]">Kaynak: </span>
+                  {activeResource.name}
+                </p>
+              )}
+
+              <div className="space-y-1.5">
+                <p className={DETAIL_LABEL_CLS}>Durum</p>
+                <div className="flex flex-wrap gap-1">
+                  {STATUS_OPTIONS.map((opt) => {
+                    const active =
+                      normalizeStatus(progress?.status) === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={saving}
+                        aria-pressed={active}
+                        onClick={() => onStatusSelect(opt.value)}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors disabled:opacity-50 ${
+                          active
+                            ? `${statusChipClass(opt.value)} ring-2 ring-[var(--primary)]/30`
+                            : "border-[var(--border)] bg-[var(--surface-2)]/50 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        <StatusIcon status={opt.value} className="h-3 w-3" />
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <label className="block space-y-1.5">
+                <span className={`block ${DETAIL_LABEL_CLS}`}>Koç Notu</span>
+                <textarea
+                  value={noteValue}
+                  onChange={(e) => onNoteChange(e.target.value)}
+                  onBlur={onNoteBlur}
+                  rows={3}
+                  placeholder="Bu konu için not ekle…"
+                  className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                />
+              </label>
+
+              <div className="space-y-0.5">
+                <p className={DETAIL_LABEL_CLS}>Son Çalışma</p>
+                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                  {formatLastStudied(progress?.last_studied_at)}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+}
+
 function OtherResourcesSection({ items }: { items: MatrixResource[] }) {
   if (items.length === 0) return null;
 
@@ -402,6 +849,15 @@ function SubjectMatrixPanel({
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<SubjectMatrixData>(EMPTY_MATRIX);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{
+    topicId: number;
+    resourceId: string | null;
+  } | null>(null);
+  const [noteDraft, setNoteDraft] = useState<{
+    srtId: number;
+    value: string;
+  } | null>(null);
+  const [activeFilter, setActiveFilter] = useState<MatrixFilter>("all");
 
   const [addOpen, setAddOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -594,22 +1050,21 @@ function SubjectMatrixPanel({
     await loadMatrix();
   };
 
-  const handleCellClick = async (
-    resourceId: string,
-    topicId: number,
-    srtId: number
+  /**
+   * Tek upsert yolu: hem hücre tıklaması hem sağdaki Konu Detayı bölmesi buradan
+   * geçiyor, böylece iki taraf aynı state üzerinde anında tutarlı kalıyor.
+   */
+  const persistProgress = async (
+    srtId: number,
+    key: string,
+    build: (prev: TopicProgress) => TopicProgress,
+    failureMessage = "Durum kaydedilemedi"
   ) => {
-    const key = cellKey(resourceId, topicId);
     if (savingKey) return;
 
     const snapshot = new Map(data.progressBySrtId);
     const prev = data.progressBySrtId.get(srtId) ?? DEFAULT_PROGRESS;
-    const newStatus = nextStatus(prev.status);
-    const next: TopicProgress = {
-      ...prev,
-      status: newStatus,
-      last_studied_at: new Date().toISOString(),
-    };
+    const next = build(prev);
 
     setSavingKey(key);
     setData((d) => ({
@@ -637,12 +1092,120 @@ function SubjectMatrixPanel({
 
     if (upsertError) {
       setData((d) => ({ ...d, progressBySrtId: snapshot }));
-      setError("Durum kaydedilemedi: " + upsertError.message);
+      setError(`${failureMessage}: ${upsertError.message}`);
     }
   };
 
+  const handleCellClick = (
+    resourceId: string,
+    topicId: number,
+    srtId: number
+  ) =>
+    persistProgress(srtId, cellKey(resourceId, topicId), (prev) => ({
+      ...prev,
+      status: nextStatus(prev.status),
+      last_studied_at: new Date().toISOString(),
+    }));
+
   const { topicRows, resources, otherResources, srtByCell, progressBySrtId } =
     data;
+
+  const stats = useMemo(() => computeMatrixStats(data), [data]);
+
+  /** Konunun, verilen filtreye uyan en az bir dolu hücresi var mı */
+  const topicMatchesFilter = useCallback(
+    (topicId: number, filter: MatrixFilter) => {
+      if (filter === "all") return true;
+      return resources.some((res) => {
+        const srtId = srtByCell.get(cellKey(res.id, topicId));
+        if (srtId == null) return false;
+        const status = normalizeStatus(
+          (progressBySrtId.get(srtId) ?? DEFAULT_PROGRESS).status
+        );
+        return statusGroup(status) === filter;
+      });
+    },
+    [resources, srtByCell, progressBySrtId]
+  );
+
+  /**
+   * Yalnızca tabloda gösterilen satırları daraltır; D1/D2 hep panelin tamamını
+   * yansıttığı için `stats` bilerek filtreden etkilenmiyor.
+   */
+  const visibleTopicRows = useMemo(() => {
+    if (activeFilter === "all") return topicRows;
+    return topicRows.filter((topic) =>
+      topicMatchesFilter(topic.id, activeFilter)
+    );
+  }, [activeFilter, topicRows, topicMatchesFilter]);
+
+  /** Yeni filtrede görünmeyecek bir konu seçiliyse D4 bölmesini boş duruma döndürür */
+  const handleFilterChange = useCallback(
+    (filter: MatrixFilter) => {
+      setActiveFilter(filter);
+      setSelection((prev) =>
+        prev && !topicMatchesFilter(prev.topicId, filter) ? null : prev
+      );
+    },
+    [topicMatchesFilter]
+  );
+
+  /** Seçili konu; resourceId null ise eşleşen ilk kaynak gösterilir */
+  const selectedTopicId = selection?.topicId ?? null;
+
+  const selectedTopic = useMemo(
+    () => topicRows.find((t) => t.id === selectedTopicId) ?? null,
+    [topicRows, selectedTopicId]
+  );
+
+  /** Seçili konunun gerçekten bulunduğu kaynaklar ("—" olmayan sütunlar) */
+  const selectedTopicResources = useMemo(() => {
+    if (selectedTopicId == null) return [];
+    return resources.filter((r) =>
+      srtByCell.has(cellKey(r.id, selectedTopicId))
+    );
+  }, [resources, srtByCell, selectedTopicId]);
+
+  const activeResource =
+    selectedTopicResources.find((r) => r.id === selection?.resourceId) ??
+    selectedTopicResources[0] ??
+    null;
+
+  const activeSrtId =
+    selectedTopicId != null && activeResource
+      ? srtByCell.get(cellKey(activeResource.id, selectedTopicId)) ?? null
+      : null;
+
+  const activeProgress =
+    activeSrtId != null
+      ? progressBySrtId.get(activeSrtId) ?? DEFAULT_PROGRESS
+      : null;
+
+  /**
+   * Not taslağı hedefiyle birlikte tutuluyor; böylece seçim değişince effect
+   * içinde setState yapmadan otomatik olarak kayıtlı değere dönüyor.
+   */
+  const noteValue =
+    noteDraft && noteDraft.srtId === activeSrtId
+      ? noteDraft.value
+      : activeProgress?.coach_note ?? "";
+
+  const handleNoteBlur = () => {
+    if (activeSrtId == null || !noteDraft || noteDraft.srtId !== activeSrtId) {
+      return;
+    }
+
+    const trimmed = noteDraft.value.trim();
+    const current = progressBySrtId.get(activeSrtId) ?? DEFAULT_PROGRESS;
+    if ((current.coach_note ?? "") === trimmed) return;
+
+    void persistProgress(
+      activeSrtId,
+      `note:${activeSrtId}`,
+      (prev) => ({ ...prev, coach_note: trimmed === "" ? null : trimmed }),
+      "Not kaydedilemedi"
+    );
+  };
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
@@ -674,122 +1237,206 @@ function SubjectMatrixPanel({
         </div>
       ) : (
         <>
+          <MatrixStatsStrip stats={stats} />
+          <ResourceProgressBars items={stats.byResource} />
+          {resources.length > 0 ? (
+            <MatrixFilterBar
+              active={activeFilter}
+              onChange={handleFilterChange}
+            />
+          ) : null}
           {resources.length === 0 ? (
             <p className="text-xs text-[var(--text-muted)]">
               Bu derse henüz kaynak atanmadı. Kaynaklar sayfasından atadığınızda
               burada sütun olarak görünecek.
             </p>
           ) : null}
-          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40">
-            <table className="w-full min-w-[20rem] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)]">
-                  <th className="sticky left-0 z-10 min-w-[8rem] bg-[var(--surface)] px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Kazanım
-                  </th>
-                  {resources.length === 0 ? (
-                    <th className="min-w-[6rem] px-1.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                      Kaynak
-                    </th>
-                  ) : null}
-                  {resources.map((res) => (
-                    <th
-                      key={res.id}
-                      className="min-w-[4.5rem] max-w-[7rem] px-1.5 py-2 text-center align-bottom"
-                    >
-                      <div className="mx-auto flex max-w-[6rem] flex-col items-center gap-1">
-                        <span
-                          className="line-clamp-2 text-[10px] font-semibold leading-tight text-[var(--text-primary)]"
-                          title={res.name}
-                        >
-                          {res.name}
-                        </span>
-                        <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-1 py-0.5 text-[8px] font-semibold text-[var(--text-muted)]">
-                          {CONTENT_KIND_LABELS[res.content_kind] ??
-                            res.content_kind}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {topicRows.map((topic, rowIndex) => (
-                  <tr
-                    key={topic.id}
-                    className="border-b border-[var(--border)]/60 last:border-0"
-                  >
-                    <td
-                      className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-1.5"
-                      style={{ paddingLeft: `${8 + topic.depth * 12}px` }}
-                    >
-                      <span
-                        className={`text-[11px] ${
-                          topic.depth === 0
-                            ? "font-semibold text-[var(--text-primary)]"
-                            : "text-[var(--text-secondary)]"
-                        }`}
-                      >
-                        {topic.name}
-                      </span>
-                    </td>
-                    {resources.length === 0 ? (
-                      rowIndex === 0 ? (
-                        <td
-                          rowSpan={topicRows.length}
-                          className="px-2 py-1.5 text-center align-middle text-[11px] text-[var(--text-muted)]"
-                        >
-                          Henüz kaynak atanmadı
-                        </td>
-                      ) : null
-                    ) : (
-                      resources.map((res) => {
-                        const key = cellKey(res.id, topic.id);
-                        const srtId = srtByCell.get(key);
-                        if (srtId == null) {
-                          return (
-                            <td
-                              key={res.id}
-                              className="px-1.5 py-1.5 text-center text-[var(--text-muted)]"
-                            >
-                              <span className="text-xs">—</span>
-                            </td>
-                          );
-                        }
-
-                        const progress =
-                          progressBySrtId.get(srtId) ?? DEFAULT_PROGRESS;
-                        const status = normalizeStatus(progress.status);
-                        const isSaving = savingKey === key;
+          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-start">
+            <div className="min-w-0 flex-1 space-y-3">
+              {visibleTopicRows.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40 px-4 py-10 text-center">
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Bu filtreye uyan konu yok.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40">
+                  <table className="w-full min-w-[20rem] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="sticky left-0 z-10 min-w-[8rem] bg-[var(--surface)] px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                          Kazanım
+                        </th>
+                        {resources.length === 0 ? (
+                          <th className="min-w-[6rem] px-1.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            Kaynak
+                          </th>
+                        ) : null}
+                        {resources.map((res) => (
+                          <th
+                            key={res.id}
+                            className="min-w-[4.5rem] max-w-[7rem] px-1.5 py-2 text-center align-bottom"
+                          >
+                            <div className="mx-auto flex max-w-[6rem] flex-col items-center gap-1">
+                              <span
+                                className="line-clamp-2 text-[10px] font-semibold leading-tight text-[var(--text-primary)]"
+                                title={res.name}
+                              >
+                                {res.name}
+                              </span>
+                              <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-1 py-0.5 text-[8px] font-semibold text-[var(--text-muted)]">
+                                {CONTENT_KIND_LABELS[res.content_kind] ??
+                                  res.content_kind}
+                              </span>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleTopicRows.map((topic, rowIndex) => {
+                        const isSelectedRow = topic.id === selectedTopicId;
 
                         return (
-                          <td key={res.id} className="px-1.5 py-1.5 text-center">
-                            <button
-                              type="button"
-                              disabled={isSaving}
-                              onClick={() =>
-                                void handleCellClick(res.id, topic.id, srtId)
-                              }
-                              title={`${statusLabel(status)} — tıklayarak değiştir`}
-                              className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition-transform hover:scale-105 disabled:opacity-50 ${statusChipClass(status)}`}
-                              aria-label={`${topic.name} / ${res.name}: ${statusLabel(status)}`}
+                          <tr
+                            key={topic.id}
+                            className="border-b border-[var(--border)]/60 last:border-0"
+                          >
+                            <td
+                              className={`sticky left-0 z-10 px-2 py-1.5 ${
+                                isSelectedRow
+                                  ? "bg-[var(--primary)]/10"
+                                  : "bg-[var(--surface)]"
+                              }`}
+                              style={{
+                                paddingLeft: `${8 + topic.depth * 12}px`,
+                              }}
                             >
-                              {isSaving ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <StatusIcon status={status} />
-                              )}
-                            </button>
-                          </td>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelection({
+                                    topicId: topic.id,
+                                    resourceId: null,
+                                  })
+                                }
+                                title="Konu detayını aç"
+                                className={`w-full truncate text-left text-[11px] transition-colors hover:text-[var(--accent)] ${
+                                  topic.depth === 0
+                                    ? "font-semibold text-[var(--text-primary)]"
+                                    : "text-[var(--text-secondary)]"
+                                } ${isSelectedRow ? "text-[var(--accent)]" : ""}`}
+                              >
+                                {topic.name}
+                              </button>
+                            </td>
+                            {resources.length === 0 ? (
+                              rowIndex === 0 ? (
+                                <td
+                                  rowSpan={visibleTopicRows.length}
+                                  className="px-2 py-1.5 text-center align-middle text-[11px] text-[var(--text-muted)]"
+                                >
+                                  Henüz kaynak atanmadı
+                                </td>
+                              ) : null
+                            ) : (
+                              resources.map((res) => {
+                                const key = cellKey(res.id, topic.id);
+                                const srtId = srtByCell.get(key);
+                                if (srtId == null) {
+                                  return (
+                                    <td
+                                      key={res.id}
+                                      className="px-1.5 py-1.5 text-center text-[var(--text-muted)]"
+                                    >
+                                      <span className="text-xs">—</span>
+                                    </td>
+                                  );
+                                }
+
+                                const progress =
+                                  progressBySrtId.get(srtId) ??
+                                  DEFAULT_PROGRESS;
+                                const status = normalizeStatus(progress.status);
+                                const isSaving = savingKey === key;
+
+                                return (
+                                  <td
+                                    key={res.id}
+                                    className="px-1.5 py-1.5 text-center"
+                                  >
+                                    <button
+                                      type="button"
+                                      disabled={isSaving}
+                                      onClick={() =>
+                                        void handleCellClick(
+                                          res.id,
+                                          topic.id,
+                                          srtId
+                                        )
+                                      }
+                                      title={`${statusLabel(status)} — tıklayarak değiştir`}
+                                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition-transform hover:scale-105 disabled:opacity-50 ${statusChipClass(status)}`}
+                                      aria-label={`${topic.name} / ${res.name}: ${statusLabel(status)}`}
+                                    >
+                                      {isSaving ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <StatusIcon status={status} />
+                                      )}
+                                    </button>
+                                  </td>
+                                );
+                              })
+                            )}
+                          </tr>
                         );
-                      })
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {resources.length > 0 ? <MatrixLegend /> : null}
+            </div>
+            {resources.length > 0 ? (
+              <TopicDetailPane
+                topic={selectedTopic}
+                resources={selectedTopicResources}
+                activeResource={activeResource}
+                progress={activeProgress}
+                noteValue={noteValue}
+                saving={savingKey !== null}
+                onSelectResource={(resourceId) =>
+                  setSelection((prev) =>
+                    prev ? { ...prev, resourceId } : prev
+                  )
+                }
+                onStatusSelect={(status) => {
+                  if (
+                    activeSrtId == null ||
+                    activeResource == null ||
+                    selectedTopicId == null
+                  ) {
+                    return;
+                  }
+                  void persistProgress(
+                    activeSrtId,
+                    cellKey(activeResource.id, selectedTopicId),
+                    (prev) => ({
+                      ...prev,
+                      status,
+                      last_studied_at: new Date().toISOString(),
+                    })
+                  );
+                }}
+                onNoteChange={(value) => {
+                  if (activeSrtId == null) return;
+                  setNoteDraft({ srtId: activeSrtId, value });
+                }}
+                onNoteBlur={handleNoteBlur}
+              />
+            ) : null}
           </div>
-          {resources.length > 0 ? <MatrixLegend /> : null}
         </>
       )}
 
