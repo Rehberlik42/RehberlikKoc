@@ -389,12 +389,16 @@ const TRACKING_OPTIONS = [
 const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as readonly string[];
 const TRACKING_VALUES = TRACKING_OPTIONS.map((o) => o.value) as readonly string[];
 
-function normalizeStatus(value: string | null | undefined): string {
-  return value && STATUS_VALUES.includes(value) ? value : "calisilmadi";
+type ResourceStatus = (typeof STATUS_OPTIONS)[number]["value"];
+
+function normalizeStatus(value: string | null | undefined): ResourceStatus {
+  return value && STATUS_VALUES.includes(value)
+    ? (value as ResourceStatus)
+    : "calisilmadi";
 }
 
-function nextStatus(current: string): string {
-  const idx = STATUS_CYCLE.indexOf(normalizeStatus(current) as string);
+function nextStatus(current: string): ResourceStatus {
+  const idx = STATUS_CYCLE.indexOf(normalizeStatus(current));
   const i = idx >= 0 ? idx : 0;
   return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
 }

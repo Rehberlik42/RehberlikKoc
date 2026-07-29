@@ -109,7 +109,7 @@ async function fetchDistinctResourceLabels(
     const { data, error } = await query;
     if (error) throw error;
 
-    const rows = data ?? [];
+    const rows = (data ?? []) as Record<string, string | null>[];
     if (rows.length === 0) break;
 
     for (const row of rows) {
