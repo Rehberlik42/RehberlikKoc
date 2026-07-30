@@ -51,17 +51,27 @@ export default async function RecommendationsPage() {
   if (!user) redirect("/");
 
   // ─── 1) Son denemelerden zayif dersleri tespit et ──────────────────────────
-  // Ogrencinin son 5 denemesinin ders bazli ortalamalarini al, en dusuk netliler oncelikli
-  const { data: rawResults } = await supabase
-    .from("mock_exam_results")
-    .select(
-      `net, subject_id,
-       subject:subjects(id, name, color, exam:exams(name)),
-       mock_exam:mock_exams!inner(student_id, exam_date)`
-    )
-    .eq("mock_exam.student_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(60);
+  // AKR1/AKR2 ile aynı desen: önce exam_date'e göre benzersiz son 5 mock_exam,
+  // sonra yalnızca o denemelere ait mock_exam_results satırlarıyla ders ortalaması.
+  const { data: recentExamRows } = await supabase
+    .from("mock_exams")
+    .select("id")
+    .eq("student_id", user.id)
+    .order("exam_date", { ascending: false })
+    .limit(5);
+
+  const recentExamIds = (recentExamRows ?? []).map((exam) => exam.id as number);
+
+  const { data: rawResults } =
+    recentExamIds.length > 0
+      ? await supabase
+          .from("mock_exam_results")
+          .select(
+            `net, subject_id,
+             subject:subjects(id, name, color, exam:exams(name))`
+          )
+          .in("mock_exam_id", recentExamIds)
+      : { data: [] };
 
   const mockResults = (rawResults ?? []) as unknown as MockExamResultRow[];
 
