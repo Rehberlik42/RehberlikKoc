@@ -14,6 +14,9 @@ import {
   Inbox,
 } from "lucide-react";
 import ResourceCard from "./ResourceCard";
+import TopicResourceSuggestions, {
+  type TopicResourceSuggestion,
+} from "./TopicResourceSuggestions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface SubjectInsight {
@@ -50,6 +53,7 @@ interface Props {
   targetSubjects: SubjectInsight[];
   targetedResources: ResourceItem[];
   allResources: ResourceItem[];
+  topicResourceSuggestions: TopicResourceSuggestion[];
 }
 
 // ─── Type icon helper ─────────────────────────────────────────────────────────
@@ -185,6 +189,7 @@ export default function RecommendationsClient({
   targetSubjects,
   targetedResources,
   allResources,
+  topicResourceSuggestions,
 }: Props) {
   const hasTargeted = targetedResources.length > 0;
   const [scope, setScope] = useState<"recommended" | "all">(
@@ -236,6 +241,8 @@ export default function RecommendationsClient({
 
       {/* Weakness strip */}
       <WeaknessStrip subjects={targetSubjects} />
+
+      <TopicResourceSuggestions suggestions={topicResourceSuggestions} />
 
       {/* Controls */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/40 backdrop-blur-md p-5 space-y-4">
