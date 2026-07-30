@@ -59,8 +59,55 @@ import {
   Send,
   X,
 } from "lucide-react";
+import HelpGuideButton from "@/components/ui/HelpGuideButton";
 
 export type { ProgramSubject } from "./program-types";
+
+const WEEKLY_PLAN_GUIDE = {
+  title: "Haftalık Program",
+  sections: [
+    {
+      heading: "Taslak Modu ve Yayınla",
+      content: [
+        "Taslak Modu açıkken eklediğiniz yeni görevler öğrenciye görünmez; kartlarda Taslak rozeti çıkar.",
+        "Hazır olduğunuzda Yayınla (veya Yayınla (N)) ile o haftadaki tüm taslakları yayınlarsınız. Taslak yoksa buton pasiftir (Yayınlanacak taslak yok).",
+      ],
+    },
+    {
+      heading: "Haftayı Kopyala ve Programı Temizle",
+      content: [
+        "Haftayı Kopyala: görünen haftanın görevlerini sonraki haftaya ekler. Sonraki haftada zaten görev varsa onay ister (Evet, Kopyala).",
+        "Programı Temizle: bu haftadaki tüm görevleri siler. Onay penceresinde Evet, Temizle ile onaylarsınız. Haftada görev yoksa buton pasiftir.",
+      ],
+    },
+    {
+      heading: "Şablonlar",
+      content: [
+        "Şablon Olarak Kaydet: bu haftanın görevlerini şablon olarak saklar (görev yoksa pasif).",
+        "Şablondan Oluştur: kayıtlı bir şablonu seçip mevcut haftaya uygular / ekler.",
+      ],
+    },
+    {
+      heading: "Yoğunluk rozeti",
+      content: [
+        "Günlük Hedef tanımlıysa her gün sütununda dk / hedef yanında bir rozet görünür:",
+        "rahat — hedefin %70’inin altında",
+        "dengeli — hedefin %70–100’ü arası",
+        "yoğun — hedefin %100–130’ü arası",
+        "aşırı — hedefin %130’unun üstü",
+        "Günlük Hedef tanımsızsa rozet çıkmaz. Hedefi başlıktaki Günlük Hedef satırından düzenleyebilirsiniz.",
+      ],
+    },
+    {
+      heading: "İpuçları",
+      content: [
+        "Bu Hafta ile bugünün haftasına döner; oklarla hafta gezersiniz.",
+        "Özet, Program Özeti penceresini açar.",
+        "Görevleri tutamaktan sürükleyerek günler arasında taşıyabilirsiniz. Güne Görev Ekle, Branş Denemesi veya Kitap Okuma ile hızlı ekleme yapabilirsiniz.",
+      ],
+    },
+  ],
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2161,7 +2208,15 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                 <Calendar className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">Haftalık Program</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                    Haftalık Program
+                  </h3>
+                  <HelpGuideButton
+                    title={WEEKLY_PLAN_GUIDE.title}
+                    sections={WEEKLY_PLAN_GUIDE.sections}
+                  />
+                </div>
                 <p className="text-[11px] text-[var(--text-muted)]">
                   {tasks.length > 0
                     ? `${tasks.length} görev bu hafta · tutamacı sürükleyerek taşı`

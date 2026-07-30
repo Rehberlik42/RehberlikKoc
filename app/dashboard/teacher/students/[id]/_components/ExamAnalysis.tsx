@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { BarChart3, ChevronRight, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import AddExamModal from "./AddExamModal";
 import ExamTopicDetail from "./ExamTopicDetail";
 import FocusCard from "./FocusCard";
@@ -24,6 +25,52 @@ import {
   type RawTopicErrorRecord,
 } from "./exam-analysis-utils";
 
+const EXAM_ANALYSIS_GUIDE = {
+  title: "Deneme Analizi",
+  sections: [
+    {
+      heading: "Bu ekranda ne yaparsın?",
+      content: [
+        "Üstteki Deneme Ekle ile öğrenci adına yeni deneme sonucu girersiniz.",
+        "Sınav Türü (TYT / AYT / TYT+AYT) ve Kapsam (Son 3 / Son 5 / Son 10 / Tümü) ile listeyi daraltırsınız. Net ortalamaları seçilen kapsama göre hesaplanır.",
+        "Bir derse tıklayınca konu bazlı hata performansına geçersiniz; ← Deneme Analizi ile geri dönersiniz.",
+      ],
+    },
+    {
+      heading: "Deneme ekleme ve net hesabı",
+      content: [
+        "Formda Sınav Türü, Tarih, isteğe bağlı Deneme Adı / Yayın alanlarını doldurup Ders Bazlı Sonuçlar satırlarına D (Doğru), Y (Yanlış), B (Boş) girersiniz.",
+        "Net formülü: Doğru − Yanlış ÷ katsayı. TYT/AYT gibi standart türlerde katsayı sabittir (4 yanlış 1 doğru götürür).",
+        "Sınav adı Ara Sınıf içeren türlerde Yanlış Götürme Katsayısı seçilir: 4 yanlış 1 doğru götürür, 3 yanlış 1 doğru götürür veya Yanlış doğruyu götürmez.",
+        "Tahmini Toplam Net anlık güncellenir. Kaydetmek için Denemeyi Kaydet’e basın.",
+      ],
+    },
+    {
+      heading: "Konu bazlı sonuçlar ve Çıkmadı",
+      content: [
+        "Ders satırına veri girince altında Konu bazlı sonuçlar açılır. Her konu için D / Y / B girilebilir.",
+        "Çıkmadı (ipucu: Bu konuda soru çıkmadı): o konuda bu sınavda hiç soru çıkmamış demektir. D/Y/B kapanır; boş bırakılmış konudan farklıdır. Analizde o hücre — olarak görünür (Bu denemede çıkmadı).",
+        "Konu toplamı ile ders toplamı uyuşmazsa form uyarı verir; yine de kaydedebilirsiniz.",
+      ],
+    },
+    {
+      heading: "Taslak durumu",
+      content: [
+        "Herhangi bir derste konu bazlı soru toplamı ders satırındaki D+Y+B ile uyuşmuyorsa deneme otomatik taslak olarak kaydedilir.",
+        "Toast: Deneme taslak olarak kaydedildi (konu/ders toplamı uyuşmuyor). Toplam net: …",
+        "Uyuşma tamamsa deneme tamamlandı kaydedilir. Taslak denemeler de bu ekranın ortalamalarına dahil edilir.",
+      ],
+    },
+    {
+      heading: "Konu × deneme renkleri",
+      content: [
+        "Ders detayında satır ortalamasına göre: Yeşil: az hata (≤0.5 ort.) · Sarı: orta (0.5–1.5) · Kırmızı: sık/çok hata (>1.5).",
+        "Tek hücrede yanlış sayısı: 0 → — · 1 → sarı · 2+ → kırmızı. Çıkmadı konular — kalır.",
+        "Trend sütununda İyileşiyor / Kötüleşiyor / Sabit görünebilir. Liste görünümünde 🎯 Bu Hafta Odak önerileri çıkar.",
+      ],
+    },
+  ],
+};
 interface SelectedSubject {
   id: number;
   name: string;
@@ -347,7 +394,15 @@ export default function ExamAnalysis({
               <BarChart3 className="h-4 w-4 text-[var(--accent)]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">Deneme Analizi</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                  Deneme Analizi
+                </h3>
+                <HelpGuideButton
+                  title={EXAM_ANALYSIS_GUIDE.title}
+                  sections={EXAM_ANALYSIS_GUIDE.sections}
+                />
+              </div>
               <p className="text-[11px] text-[var(--text-muted)]">
                 {selectedSubject
                   ? "Konu bazlı hata performansı"

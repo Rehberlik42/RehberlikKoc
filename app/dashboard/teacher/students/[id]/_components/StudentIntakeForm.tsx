@@ -10,6 +10,42 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import HelpGuideButton from "@/components/ui/HelpGuideButton";
+
+const INTAKE_GUIDE = {
+  title: "Öğrenci Anamnez Formu",
+  sections: [
+    {
+      heading: "Genel form ne işe yarar?",
+      content: [
+        "Öğrenciyi tanımaya ve danışmanlık sürecini planlamaya yönelik bilgiler toplanır.",
+        "Bölümler: Başvuru Nedeni, Hedefler, Akademik Geçmiş, Deneme Performansı, Çalışma Alışkanlıkları, Motivasyon, Yaşam Düzeni, Aile, Sosyal Yaşam, Kendini Değerlendirme, Güçlü / Gelişim Yönleri ve 17. Danışman Gözlemi.",
+        "Alttaki Kaydet tüm bölümleri tek kayıt olarak kaydeder (ekranda da yazdığı gibi: Tüm bölümler tek kayıt olarak kaydedilir.). Başarıda Anamnez başarıyla kaydedildi. görünür.",
+      ],
+    },
+    {
+      heading: "17. Danışman Gözlemi",
+      content: [
+        "Bu bölüm sadece danışman/koç tarafından doldurulur.",
+        "İlk izlenim, iletişim, motivasyon, hazırbulunuşluk, risk / koruyucu faktörler, ön değerlendirme ve ilk görüşme hedefleri gibi mesleki notlar içindir.",
+        "Genel formun Kaydet butonuyla birlikte kaydedilir.",
+      ],
+    },
+    {
+      heading: "Hassas Bilgiler bölümü neden bazı koçlarda yok?",
+      content: [
+        "Hassas Bilgiler (kaygı, tetikleyiciler, psikolojik destek, ilaç, tanı) yalnızca süperadmin’in koç hesabında Hassas Veri Erişimi iznini Açık yaptığı koçlara görünür.",
+        "İzin yoksa bu bölüm hiç yüklenmez ve ekranda görünmez — form kırık değildir; erişim kısıtlıdır.",
+        "İzinli koçlarda bölüm Kısıtlı erişim rozetiyle çıkar; Bu bilgiler yalnızca yetkilendirilmiş danışmanlar tarafından görüntülenebilir. Genel formdan bağımsızdır: kayıt için Hassas Bilgileri Kaydet kullanılır.",
+      ],
+    },
+    {
+      heading: "İpuçları",
+      content:
+        "Form kayıtlı / Son güncelleme satırı genel anamnezin durumunu gösterir. Hassas kayıt ayrıdır (Hassas kayıt mevcut veya Henüz hassas bilgi kaydı yok.).",
+    },
+  ],
+};
 
 const INPUT_CLS =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]/60";
@@ -600,9 +636,15 @@ export default function StudentIntakeForm({
             <ClipboardList className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <div>
-            <h2 className="font-bold text-[var(--text-primary)]">
-              Öğrenci Anamnez Formu
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-[var(--text-primary)]">
+                Öğrenci Anamnez Formu
+              </h2>
+              <HelpGuideButton
+                title={INTAKE_GUIDE.title}
+                sections={INTAKE_GUIDE.sections}
+              />
+            </div>
             <p className="mt-0.5 text-xs text-[var(--text-muted)]">
               Öğrenciyi tanımaya ve danışmanlık sürecini planlamaya yönelik
               bilgiler.

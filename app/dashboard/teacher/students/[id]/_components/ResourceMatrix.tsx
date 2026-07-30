@@ -3,12 +3,52 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Grid3X3, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import {
   normalizeStatus,
   StatusChip,
   statusChipClass,
   StatusIcon,
 } from "@/lib/resource-status-ui";
+
+const RESOURCE_MATRIX_GUIDE = {
+  title: "Kaynak Matrisi",
+  sections: [
+    {
+      heading: "Nasıl çalışır",
+      content: [
+        "Üstteki şeritten bir ders grubu seçin. Grubun hem TYT hem AYT dersi varsa iki matris yan yana açılır (ör. TYT · Matematik ve AYT · Matematik).",
+        "Her satır bir kazanım (konu), her sütun o derse atanmış bir kaynaktır. Hücreye tıklayınca durum sırayla değişir: Çalışılmadı → Başlandı → Devam Ediyor → Tamamlandı → Tekrar Gerekli → tekrar Çalışılmadı.",
+        "Konu adına tıklayınca sağda Konu Detayı paneli açılır. Oradan aynı durumları seçebilir, Koç Notu yazabilir ve Son Çalışma tarihini görürsünüz.",
+        "Hücrede — işareti, o kaynağın bu konuyla eşleşmediğini gösterir (Bu kaynakta yok).",
+      ],
+    },
+    {
+      heading: "Durum renkleri",
+      content: [
+        "Yeşil dolu: Tamamlandı",
+        "Amber (yarı dolu): Başlandı / Devam Ediyor",
+        "Kırmızı dolu: Tekrar Gerekli",
+        "Boş çerçeve: Çalışılmadı",
+      ],
+    },
+    {
+      heading: "Filtreler",
+      content: [
+        "Sadece Eksikler: en az bir hücresi Tekrar Gerekli olan konular",
+        "Devam Edenler: en az bir hücresi Başlandı veya Devam Ediyor olan konular",
+        "Tamamlananlar: en az bir hücresi Tamamlandı olan konular",
+        "Başlanmayanlar: en az bir hücresi Çalışılmadı olan konular",
+        "Tümünü Göster: filtreyi kaldırır. Üstteki istatistik şeridi filtrelerden etkilenmez.",
+      ],
+    },
+    {
+      heading: "İpuçları",
+      content:
+        "Üstteki Genel İlerleme / Kaynak / Konu / Tamam / Devam / Tekrar / Boş sayaçları seçili ders grubundaki genel durumu özetler. Kaynak Bazında Tamamlanma çubuğu her kaynağın kendi ilerlemesini gösterir.",
+    },
+  ],
+};
 
 export interface ResourceMatrixSubject {
   id: number;
@@ -1511,9 +1551,15 @@ export default function ResourceMatrix({ studentId, subjects }: Props) {
           <Grid3X3 className="h-3 w-3" />
           Kaynak Matrisi
         </div>
-        <h2 className="mt-2 text-lg font-bold text-[var(--text-primary)]">
-          Konu × Kaynak Takibi
-        </h2>
+        <div className="mt-2 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[var(--text-primary)]">
+            Konu × Kaynak Takibi
+          </h2>
+          <HelpGuideButton
+            title={RESOURCE_MATRIX_GUIDE.title}
+            sections={RESOURCE_MATRIX_GUIDE.sections}
+          />
+        </div>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
           Ders grubu seçin; TYT ve AYT matrisleri yan yana görünür. Hücreye
           tıklayarak durumu güncelleyin.

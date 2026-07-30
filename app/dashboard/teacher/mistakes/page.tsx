@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { NotebookPen } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
+import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import CoachMistakeOverview from "./_components/CoachMistakeOverview";
 import WeeklyStudentSummaryTable from "./_components/WeeklyStudentSummaryTable";
 import {
@@ -12,6 +13,54 @@ import {
 } from "./_components/mistake-analysis-utils";
 
 export const dynamic = "force-dynamic";
+
+const MISTAKE_GUIDE = {
+  title: "Hata Defteri Gözlem",
+  sections: [
+    {
+      heading: "Bu sayfada ne görürsün?",
+      content: [
+        "Öğrencilerin hata defteri kayıtlarından üretilen sinyal kartları ve Haftalık öğrenci özeti tablosu burada toplanır.",
+        "Öğrenci adına tıklayınca öğrenci detay sayfasına gidersiniz (hata girişi ve tekrar işaretleme öğrenci tarafında yapılır).",
+      ],
+    },
+    {
+      heading: "Sarı / Kırmızı ne demek?",
+      content: [
+        "Sarı (turuncu): Dikkatsizlik — öğrenci soruyu bildiği halde dikkatsizlikle yanlış yapmış sayar.",
+        "Kırmızı (pembe): Bilgi eksiği — konu/bilgi eksikliği nedeniyle yanlış yapılmış sayar.",
+        "Haftalık tablodaki Sarı / Kırmızı sütunu o hafta girilen kayıt sayılarını ayırır. Listelerde Aktif · Sarı / Aktif · Kırmızı görünür; durum tamamlanınca Tamamlandı olur.",
+      ],
+    },
+    {
+      heading: "Tekrar tarihleri",
+      content: [
+        "Yeni kayıtta ilk tekrar tarihi, çözüm tarihinden 21 gün sonradır.",
+        "Tekrar doğru bitmezse (veya bilgi eksiğinde ara aşamada doğru gelirse) bir sonraki kontrol yine bugünden 21 gün sonraya yazılır.",
+        "Aktif kaydın tekrar tarihi bugünden önceyse kartlarda gecikmiş sayılır (ör. Tekrarlarını Aksatanlar).",
+      ],
+    },
+    {
+      heading: "Öğrenci Doğru Yaptım / Yanlış Yaptım deyince ne olur?",
+      content: [
+        "Dikkatsizlik + Doğru Yaptım → kayıt Tamamlandı olur.",
+        "Dikkatsizlik + Yanlış Yaptım → Yeniden sınıflandırılsın mı? sorulur. Hayır: sarı kalır, 21 gün sonra yeni tekrar. Evet: Bu sorudan ne öğrendim? notu yazılır, kayıt Bilgi eksiğine dönüşür ve 21 gün sonra tekrar başlar.",
+        "Bilgi eksiği iki kontrollü ilerler (Aşama 1/2, sonra 2/2). İlk Doğru Yaptım ikinci kontrole alır; ikinci Doğru Yaptım kaydı Tamamlandı yapar. Herhangi bir aşamada Yanlış Yaptım süreci başa alır ve 21 gün sonra yeniden 1. kontrolden başlar.",
+      ],
+    },
+    {
+      heading: "Sinyal kartları",
+      content: [
+        "Tekrarlarını Aksatanlar — gecikmiş soru eşiğini aşanlar",
+        "Çok Kırmızı Biriktirenler — aktif bilgi eksiği birikenler",
+        "Aynı Konuda Tekrar Hata Yapanlar — aynı konuda birden fazla kayıt",
+        "Dikkatsizlik Dediği Hâlde Tekrar Yanlış Yapanlar — dikkatsizlikten bilgi eksiğine dönüşenler",
+        "Düzenli Soru Girmeyenler — uzun süredir kayıt girmeyenler",
+        "Kalıcı Öğrenme Oranı Düşük Dersler — bilgi eksiği tamamlanma oranı düşük dersler",
+      ],
+    },
+  ],
+};
 
 export default async function TeacherMistakesOverviewPage() {
   const { user, supabase } = await getCurrentUser();
@@ -101,6 +150,11 @@ export default async function TeacherMistakesOverviewPage() {
         <h2 className="flex items-center gap-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
           <NotebookPen className="h-7 w-7 text-[var(--accent)]" />
           Hata Defteri Gözlem
+          <HelpGuideButton
+            title={MISTAKE_GUIDE.title}
+            sections={MISTAKE_GUIDE.sections}
+            className="h-8 w-8"
+          />
         </h2>
         <p className="text-sm text-[var(--text-muted)]">
           Tüm öğrencilerin tekrar, birikim ve öğrenme sinyallerine tek bakışta
