@@ -44,6 +44,42 @@ export async function logoutSuperadmin() {
   redirect("/superadmin/login");
 }
 
+export async function updateTeacherSensitiveDataAccess(
+  teacherId: string,
+  enabled: boolean
+): Promise<ActionResult> {
+  await requireSuperadminSession();
+
+  if (!teacherId || typeof enabled !== "boolean") {
+    return { error: "Geçersiz koç veya erişim değeri." };
+  }
+
+  const admin = createAdminClient();
+  const { data: updatedProfile, error } = await admin
+    .from("profiles")
+    .update({ sensitive_data_access: enabled })
+    .eq("id", teacherId)
+    .eq("role", "teacher")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!updatedProfile) {
+    return { error: "Koç profili bulunamadı." };
+  }
+
+  revalidatePath("/superadmin");
+  return {
+    success: true,
+    message: enabled
+      ? "Hassas veri erişimi açıldı."
+      : "Hassas veri erişimi kapatıldı.",
+  };
+}
+
 function parseClientBase(formData: FormData): ClientFormData | { error: string } {
   const company_name = String(formData.get("company_name") ?? "").trim();
   const contact_name = String(formData.get("contact_name") ?? "").trim();

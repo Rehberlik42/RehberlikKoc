@@ -10,6 +10,7 @@ export interface SaasClient {
   email?: string | null;
   phone?: string | null;
   auth_user_id?: string | null;
+  sensitive_data_access: boolean;
   created_at?: string;
 }
 

@@ -22,5 +22,40 @@ export default async function SuperadminPage() {
     );
   }
 
-  return <ClientsPanel clients={(clients ?? []) as SaasClient[]} />;
+  const rawClients = (clients ?? []) as Omit<
+    SaasClient,
+    "sensitive_data_access"
+  >[];
+  const teacherIds = rawClients
+    .map((client) => client.auth_user_id)
+    .filter((id): id is string => Boolean(id));
+  const sensitiveAccessByTeacher = new Map<string, boolean>();
+
+  if (teacherIds.length > 0) {
+    const { data: teacherProfiles, error: profilesError } = await admin
+      .from("profiles")
+      .select("id, sensitive_data_access")
+      .in("id", teacherIds)
+      .eq("role", "teacher");
+
+    if (profilesError) {
+      console.error("Superadmin teacher profiles fetch error:", profilesError);
+    } else {
+      for (const profile of teacherProfiles ?? []) {
+        sensitiveAccessByTeacher.set(
+          profile.id,
+          profile.sensitive_data_access === true
+        );
+      }
+    }
+  }
+
+  const clientsWithAccess: SaasClient[] = rawClients.map((client) => ({
+    ...client,
+    sensitive_data_access: client.auth_user_id
+      ? (sensitiveAccessByTeacher.get(client.auth_user_id) ?? false)
+      : false,
+  }));
+
+  return <ClientsPanel clients={clientsWithAccess} />;
 }

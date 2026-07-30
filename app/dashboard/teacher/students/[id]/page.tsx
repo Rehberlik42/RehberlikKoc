@@ -33,6 +33,12 @@ import TeacherWeeklyPlanLazy from "./_components/TeacherWeeklyPlanLazy";
 import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
 import ResourcePermissionToggle from "./_components/ResourcePermissionToggle";
+import StudentIntakeForm, {
+  type StudentIntakeRecord,
+} from "./_components/StudentIntakeForm";
+import StudentIntakeSensitiveForm, {
+  type StudentIntakeSensitiveRecord,
+} from "./_components/StudentIntakeSensitiveForm";
 import SmartResourceSuggestions, {
   buildSmartResourceSuggestions,
   findWeakTopics,
@@ -72,17 +78,39 @@ export default async function StudentDetailPage({
   const { user, supabase } = await getCurrentUser();
   if (!user) redirect("/");
 
-  // ─── Bu öğrenci bu öğretmene ait mi? ─────────────────────────────────────
-  const { data: rawStudent } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, grade, school, phone, bio, created_at, can_add_resources")
-    .eq("id", id)
-    .eq("teacher_id", user.id)
-    .eq("role", "student")
-    .maybeSingle();
+  // Öğrenci sahipliği ve koçun hassas veri izni birbirinden bağımsızdır.
+  const [{ data: rawStudent }, { data: currentCoachProfile }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select(
+          "id, full_name, avatar_url, grade, school, phone, bio, created_at, can_add_resources"
+        )
+        .eq("id", id)
+        .eq("teacher_id", user.id)
+        .eq("role", "student")
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("sensitive_data_access")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
 
   if (!rawStudent) notFound();
   const student = rawStudent as unknown as StudentDetail;
+  const canAccessSensitiveData =
+    currentCoachProfile?.sensitive_data_access === true;
+
+  // Ternary'nin false dalında tablo istemcisi dahi oluşturulmaz; yetkisiz
+  // koç için student_intake_sensitive'e hiçbir network sorgusu gitmez.
+  const sensitiveIntakeRequest = canAccessSensitiveData
+    ? supabase
+        .from("student_intake_sensitive")
+        .select("*")
+        .eq("student_id", id)
+        .maybeSingle()
+    : Promise.resolve({ data: null, error: null });
 
   // ─── Hızlı metrikler + performans verileri (paralel) ───────────────────
   const [
@@ -97,6 +125,8 @@ export default async function StudentDetailPage({
     { data: progressRecords },
     { data: rawStudentTargets },
     { data: rawTopicErrors, error: topicErrorsError },
+    { data: rawStudentIntake },
+    { data: rawStudentIntakeSensitive },
   ] = await Promise.all([
     supabase
       .from("mock_exams")
@@ -165,6 +195,12 @@ export default async function StudentDetailPage({
          )`
       )
       .eq("result.mock_exam.student_id", id),
+    supabase
+      .from("student_intake")
+      .select("*")
+      .eq("student_id", id)
+      .maybeSingle(),
+    sensitiveIntakeRequest,
   ]);
 
   const chartData: NetChartPoint[] = (rawMockExams ?? []).map((m) => {
@@ -572,6 +608,25 @@ export default async function StudentDetailPage({
         }
         matrix={
           <ResourceMatrix studentId={id} subjects={subjectFormOptions} />
+        }
+        intake={
+          <div className="space-y-6">
+            <StudentIntakeForm
+              studentId={id}
+              initialRecord={
+                (rawStudentIntake as StudentIntakeRecord | null) ?? null
+              }
+            />
+            {canAccessSensitiveData ? (
+              <StudentIntakeSensitiveForm
+                studentId={id}
+                initialRecord={
+                  (rawStudentIntakeSensitive as StudentIntakeSensitiveRecord | null) ??
+                  null
+                }
+              />
+            ) : null}
+          </div>
         }
       />
     </div>

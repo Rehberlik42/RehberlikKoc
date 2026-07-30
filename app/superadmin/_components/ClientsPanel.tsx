@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Edit2, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import type { SaasClient } from "@/lib/superadmin/types";
 import {
   SUBSCRIPTION_LABELS,
@@ -10,6 +11,7 @@ import {
 import StatsCards from "./StatsCards";
 import ClientModal from "./ClientModal";
 import DeleteClientModal from "./DeleteClientModal";
+import { updateTeacherSensitiveDataAccess } from "../actions";
 
 const statusStyles: Record<
   SubscriptionStatus,
@@ -42,10 +44,28 @@ function formatDate(value: string | null) {
 }
 
 export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<SaasClient | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SaasClient | null>(null);
+  const [pendingTeacherId, setPendingTeacherId] = useState<string | null>(null);
+  const [sensitiveAccess, setSensitiveAccess] = useState<
+    Record<string, boolean>
+  >(() =>
+    Object.fromEntries(
+      clients
+        .filter((client) => client.auth_user_id)
+        .map((client) => [
+          client.auth_user_id as string,
+          client.sensitive_data_access,
+        ])
+    )
+  );
+  const [accessToast, setAccessToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const trialCount = clients.filter((c) => c.subscription_status === "trial").length;
   const activeCount = clients.filter((c) => c.subscription_status === "active").length;
@@ -59,6 +79,47 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
     handleModalClose();
     startTransition(() => {
       // Server action revalidatePath sonrasi sayfa yenilenir
+    });
+  };
+
+  const handleSensitiveAccessToggle = (client: SaasClient) => {
+    const teacherId = client.auth_user_id;
+    if (!teacherId || pendingTeacherId) return;
+
+    const current =
+      sensitiveAccess[teacherId] ?? client.sensitive_data_access;
+    const next = !current;
+    setPendingTeacherId(teacherId);
+    setAccessToast(null);
+
+    startTransition(async () => {
+      try {
+        const result = await updateTeacherSensitiveDataAccess(teacherId, next);
+        if ("error" in result) {
+          setAccessToast({ type: "error", message: result.error });
+          return;
+        }
+
+        setSensitiveAccess((values) => ({
+          ...values,
+          [teacherId]: next,
+        }));
+        setAccessToast({
+          type: "success",
+          message:
+            result.message ??
+            `${client.contact_name} için erişim güncellendi.`,
+        });
+        router.refresh();
+      } catch {
+        setAccessToast({
+          type: "error",
+          message: "Hassas veri erişimi güncellenemedi.",
+        });
+      } finally {
+        setPendingTeacherId(null);
+        setTimeout(() => setAccessToast(null), 3500);
+      }
     });
   };
 
@@ -112,6 +173,9 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
                 <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
                   Bitiş Tarihi
                 </th>
+                <th className="min-w-[18rem] px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
+                  Hassas Veri Erişimi
+                </th>
                 <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-[#8b93b8]">
                   Aksiyonlar
                 </th>
@@ -120,7 +184,7 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
             <tbody className="divide-y divide-[#eef0f8]">
               {clients.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-[#8b93b8]">
+                  <td colSpan={7} className="px-6 py-12 text-center text-[#8b93b8]">
                     Henüz müşteri eklenmemiş. İlk müşteriyi eklemek için yukarıdaki
                     butonu kullanın.
                   </td>
@@ -128,6 +192,10 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
               ) : (
                 clients.map((client) => {
                   const style = statusStyles[client.subscription_status];
+                  const isSensitiveAccessEnabled = client.auth_user_id
+                    ? (sensitiveAccess[client.auth_user_id] ??
+                      client.sensitive_data_access)
+                    : false;
                   return (
                     <tr
                       key={client.id}
@@ -153,6 +221,58 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
                       </td>
                       <td className="px-6 py-4 align-middle tabular-nums text-[#8b93b8]">
                         {formatDate(client.expires_at)}
+                      </td>
+                      <td className="px-6 py-4 align-middle">
+                        {client.auth_user_id ? (
+                          <div className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={isSensitiveAccessEnabled}
+                              aria-label={`${client.contact_name} hassas veri erişimi`}
+                              disabled={pendingTeacherId !== null}
+                              onClick={() =>
+                                handleSensitiveAccessToggle(client)
+                              }
+                              className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors disabled:cursor-wait disabled:opacity-60 ${
+                                isSensitiveAccessEnabled
+                                  ? "border-emerald-500 bg-emerald-500"
+                                  : "border-[#c9cee3] bg-[#e4e7f2]"
+                              }`}
+                            >
+                              <span
+                                className={`mt-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-sm transition-transform ${
+                                  isSensitiveAccessEnabled
+                                    ? "translate-x-5"
+                                    : "translate-x-0.5"
+                                }`}
+                              />
+                            </button>
+                            <div>
+                              <p
+                                className={`text-xs font-semibold ${
+                                  isSensitiveAccessEnabled
+                                    ? "text-emerald-700"
+                                    : "text-[#8b93b8]"
+                                }`}
+                              >
+                                {pendingTeacherId === client.auth_user_id
+                                  ? "Güncelleniyor…"
+                                  : isSensitiveAccessEnabled
+                                    ? "Açık"
+                                    : "Kapalı"}
+                              </p>
+                              <p className="mt-0.5 max-w-[15rem] text-[10px] leading-relaxed text-[#8b93b8]">
+                                Açıkken psikolojik geçmiş, tanı ve ilaç
+                                kullanımı bilgilerini görebilir.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#8b93b8]">
+                            Koç hesabı bağlı değil
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-4 align-middle">
                         <div className="flex justify-end gap-1.5">
@@ -202,6 +322,19 @@ export default function ClientsPanel({ clients }: { clients: SaasClient[] }) {
             startTransition(() => {});
           }}
         />
+      ) : null}
+
+      {accessToast ? (
+        <div
+          className={`fixed bottom-6 right-6 z-[70] flex max-w-sm items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold shadow-xl ${
+            accessToast.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          {accessToast.message}
+        </div>
       ) : null}
     </div>
   );

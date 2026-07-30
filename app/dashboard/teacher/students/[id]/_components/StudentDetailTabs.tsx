@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-type TabId = "overview" | "program" | "analysis" | "targets" | "matrix";
+type TabId =
+  | "overview"
+  | "program"
+  | "analysis"
+  | "targets"
+  | "matrix"
+  | "intake";
 
 interface Props {
   overview: React.ReactNode;
@@ -10,6 +16,7 @@ interface Props {
   analysis: React.ReactNode;
   targets?: React.ReactNode;
   matrix?: React.ReactNode;
+  intake?: React.ReactNode;
 }
 
 const TABS: { id: TabId; label: string }[] = [
@@ -18,6 +25,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "analysis", label: "Deneme Analizi" },
   { id: "targets", label: "Hedefler" },
   { id: "matrix", label: "Kaynak Matrisi" },
+  { id: "intake", label: "Anamnez" },
 ];
 
 export default function StudentDetailTabs({
@@ -26,6 +34,7 @@ export default function StudentDetailTabs({
   analysis,
   targets,
   matrix,
+  intake,
 }: Props) {
   const [active, setActive] = useState<TabId>("overview");
 
@@ -34,7 +43,7 @@ export default function StudentDetailTabs({
       <div
         role="tablist"
         aria-label="Öğrenci detay sekmeleri"
-        className="flex gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-1"
+        className="flex gap-1 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 p-1"
       >
         {TABS.map((tab) => {
           const isActive = active === tab.id;
@@ -45,7 +54,7 @@ export default function StudentDetailTabs({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActive(tab.id)}
-              className={`relative flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
+              className={`relative min-w-max flex-none rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 sm:min-w-0 sm:flex-1 ${
                 isActive
                   ? "bg-[var(--primary)]/15 text-[var(--text-primary)] shadow-[0_0_20px_rgba(123,47,255,0.15)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -73,7 +82,9 @@ export default function StudentDetailTabs({
               ? analysis
               : active === "targets"
                 ? targets
-                : matrix}
+                : active === "matrix"
+                  ? matrix
+                  : intake}
       </div>
     </div>
   );
