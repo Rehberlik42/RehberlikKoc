@@ -33,12 +33,19 @@ import TeacherWeeklyPlanLazy from "./_components/TeacherWeeklyPlanLazy";
 import ExamAnalysis from "./_components/ExamAnalysis";
 import StudentTargets from "./_components/StudentTargets";
 import ResourcePermissionToggle from "./_components/ResourcePermissionToggle";
+import SmartResourceSuggestions, {
+  buildSmartResourceSuggestions,
+  findWeakTopics,
+  type SmartResourceProgressRecord,
+  type SmartResourceTopicRecord,
+} from "./_components/SmartResourceSuggestions";
 import {
   computeSubjectAnalysis,
   computeSubjectNetTrend,
   filterExamsForAnalysis,
   normalizeAnalysisExams,
   type NormalizedExam,
+  type RawTopicErrorRecord,
 } from "./_components/exam-analysis-utils";
 import type { ProgressStatus } from "@/app/dashboard/student/progress/_components/TopicRow";
 
@@ -89,6 +96,7 @@ export default async function StudentDetailPage({
     { data: rawExams },
     { data: progressRecords },
     { data: rawStudentTargets },
+    { data: rawTopicErrors, error: topicErrorsError },
   ] = await Promise.all([
     supabase
       .from("mock_exams")
@@ -146,6 +154,17 @@ export default async function StudentDetailPage({
       .from("student_targets")
       .select("subject_id, target_net, note")
       .eq("student_id", id),
+    supabase
+      .from("mock_exam_topic_errors")
+      .select(
+        `topic_id, wrong_count, correct_count, empty_count, not_in_exam,
+         topic:topics(id, name, order_index),
+         result:mock_exam_results!inner(
+           id, subject_id, mock_exam_id,
+           mock_exam:mock_exams!inner(id, exam_date, title, student_id, wrong_penalty_divisor)
+         )`
+      )
+      .eq("result.mock_exam.student_id", id),
   ]);
 
   const chartData: NetChartPoint[] = (rawMockExams ?? []).map((m) => {
@@ -256,6 +275,71 @@ export default async function StudentDetailPage({
   const analysisExams: NormalizedExam[] = normalizeAnalysisExams(
     (rawAnalysisExams ?? []) as Parameters<typeof normalizeAnalysisExams>[0]
   );
+
+  const suggestionExams = [...analysisExams]
+    .sort(
+      (a, b) =>
+        new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime()
+    )
+    .slice(0, 5);
+  const weakTopics = findWeakTopics(
+    (rawTopicErrors ?? []) as RawTopicErrorRecord[],
+    suggestionExams
+  );
+  let suggestionLoadFailed = topicErrorsError != null;
+  let smartResourceSuggestions = buildSmartResourceSuggestions(
+    weakTopics,
+    [],
+    []
+  );
+
+  if (!suggestionLoadFailed && weakTopics.length > 0) {
+    const { data: resourceTopicRows, error: resourceTopicError } = await supabase
+      .from("study_resource_topics")
+      .select(
+        "id, topic_id, resource:study_resources!inner(id, name, content_kind, is_active, teacher_id)"
+      )
+      .in(
+        "topic_id",
+        weakTopics.map((topic) => topic.id)
+      )
+      .in("resource.content_kind", ["soru_bankasi", "konu_anlatimi"])
+      .eq("resource.is_active", true)
+      .eq("resource.teacher_id", user.id);
+
+    if (resourceTopicError) {
+      suggestionLoadFailed = true;
+    } else {
+      const resourceTopics =
+        (resourceTopicRows ?? []) as SmartResourceTopicRecord[];
+      const resourceTopicIds = resourceTopics.map((row) => row.id);
+      let resourceProgress: SmartResourceProgressRecord[] = [];
+
+      if (resourceTopicIds.length > 0) {
+        const { data: resourceProgressRows, error: resourceProgressError } =
+          await supabase
+            .from("study_resource_topic_progress")
+            .select("study_resource_topic_id, status")
+            .eq("student_id", id)
+            .in("study_resource_topic_id", resourceTopicIds);
+
+        if (resourceProgressError) {
+          suggestionLoadFailed = true;
+        } else {
+          resourceProgress =
+            (resourceProgressRows ?? []) as SmartResourceProgressRecord[];
+        }
+      }
+
+      if (!suggestionLoadFailed) {
+        smartResourceSuggestions = buildSmartResourceSuggestions(
+          weakTopics,
+          resourceTopics,
+          resourceProgress
+        );
+      }
+    }
+  }
 
   const analysisExamOptions = Array.from(
     new Map(
@@ -461,14 +545,21 @@ export default async function StudentDetailPage({
           <TeacherWeeklyPlanLazy studentId={id} subjects={programSubjects} />
         }
         analysis={
-          <ExamAnalysis
-            studentId={id}
-            exams={analysisExamOptions}
-            analysisExams={analysisExams}
-            topicCountBySubjectId={topicCountBySubjectId}
-            examFormOptions={examFormOptions}
-            subjectFormOptions={subjectFormOptions}
-          />
+          <div className="space-y-6">
+            <ExamAnalysis
+              studentId={id}
+              exams={analysisExamOptions}
+              analysisExams={analysisExams}
+              topicCountBySubjectId={topicCountBySubjectId}
+              examFormOptions={examFormOptions}
+              subjectFormOptions={subjectFormOptions}
+            />
+            <SmartResourceSuggestions
+              suggestions={smartResourceSuggestions}
+              examCount={suggestionExams.length}
+              loadFailed={suggestionLoadFailed}
+            />
+          </div>
         }
         targets={
           <StudentTargets
