@@ -4,11 +4,14 @@ import {
   StatusChip,
   type ResourceStatus,
 } from "@/lib/resource-status-ui";
-import {
-  buildTopicErrorAnalysis,
-  type NormalizedExam,
-  type RawTopicErrorRecord,
+import type {
+  NormalizedExam,
+  RawTopicErrorRecord,
 } from "@/app/dashboard/teacher/students/[id]/_components/exam-analysis-utils";
+import {
+  findStudentWeakTopics as findWeakTopicsShared,
+  type WeakTopic,
+} from "@/lib/dora/weak-topics";
 
 const SUPPORTED_CONTENT_KINDS = new Set(["soru_bankasi", "konu_anlatimi"]);
 
@@ -44,12 +47,6 @@ export interface AssignedTopicProgressRecord {
   status: string | null;
 }
 
-interface WeakTopic {
-  id: number;
-  name: string;
-  avgWrong: number;
-}
-
 interface SuggestedAssignedResource {
   resourceTopicId: number;
   resourceId: string;
@@ -63,46 +60,12 @@ export interface TopicResourceSuggestion {
   resources: SuggestedAssignedResource[];
 }
 
-function resultSubjectId(row: RawTopicErrorRecord): number | null {
-  const result = Array.isArray(row.result) ? row.result[0] : row.result;
-  return result?.subject_id ?? null;
-}
-
+/** AKR2 uyumluluğu — ortak lib/dora/weak-topics mantığı */
 export function findStudentWeakTopics(
   rawErrors: RawTopicErrorRecord[],
   recentExams: NormalizedExam[]
 ): WeakTopic[] {
-  if (recentExams.length === 0) return [];
-
-  const errorsBySubject = new Map<number, RawTopicErrorRecord[]>();
-  for (const row of rawErrors) {
-    const subjectId = resultSubjectId(row);
-    if (subjectId == null) continue;
-    const rows = errorsBySubject.get(subjectId) ?? [];
-    rows.push(row);
-    errorsBySubject.set(subjectId, rows);
-  }
-
-  const weakByTopic = new Map<number, WeakTopic>();
-  for (const rows of errorsBySubject.values()) {
-    const analysis = buildTopicErrorAnalysis(rows, recentExams);
-    for (const topic of analysis.rows) {
-      if (topic.severity !== "bad") continue;
-      const current = weakByTopic.get(topic.topicId);
-      if (!current || topic.avgWrong > current.avgWrong) {
-        weakByTopic.set(topic.topicId, {
-          id: topic.topicId,
-          name: topic.topicName,
-          avgWrong: topic.avgWrong,
-        });
-      }
-    }
-  }
-
-  return [...weakByTopic.values()].sort(
-    (a, b) =>
-      b.avgWrong - a.avgWrong || a.name.localeCompare(b.name, "tr-TR")
-  );
+  return findWeakTopicsShared(rawErrors, recentExams);
 }
 
 export function assignedResourceTopicIds(
