@@ -25,6 +25,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { markIntentionalSignOut } from "@/lib/supabase/auth-session";
 import { resolveTheme } from "@/lib/themes";
 import NotificationsBell from "./NotificationsBell";
 
@@ -103,7 +104,8 @@ function Sidebar({
     : "?";
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    markIntentionalSignOut();
+    await supabase.auth.signOut({ scope: "local" });
     router.push("/");
   };
 

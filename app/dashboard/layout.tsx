@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
+import {
+  SESSION_EXPIRED_HREF,
+  isInvalidSessionError,
+} from "@/lib/supabase/auth-session";
 import DashboardShell, { type UserProfile } from "./_components/DashboardShell";
 import RouteProgressBar from "./_components/RouteProgressBar";
 
@@ -13,7 +17,9 @@ export default async function DashboardLayout({
   const { user, error: userError, supabase } = await getCurrentUser();
 
   if (userError || !user) {
-    redirect("/");
+    redirect(
+      isInvalidSessionError(userError) ? SESSION_EXPIRED_HREF : "/"
+    );
   }
 
   // Kullanicinin profilini cek (RLS: profiles_select_own politikasi gerekli)

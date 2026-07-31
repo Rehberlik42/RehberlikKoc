@@ -4,6 +4,10 @@ import {
   SUPERADMIN_SESSION_COOKIE,
   SUPERADMIN_SESSION_VALUE,
 } from "@/lib/superadmin/constants";
+import {
+  SESSION_EXPIRED_HREF,
+  isInvalidSessionError,
+} from "@/lib/supabase/auth-session";
 
 function handleSuperadminRoute(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,6 +36,35 @@ function handleSuperadminRoute(request: NextRequest) {
   }
 
   return NextResponse.next({ request });
+}
+
+function isSupabaseAuthCookie(name: string) {
+  return name.startsWith("sb-") && name.includes("auth-token");
+}
+
+function clearAuthCookies(request: NextRequest, response: NextResponse) {
+  for (const { name } of request.cookies.getAll()) {
+    if (isSupabaseAuthCookie(name)) {
+      response.cookies.set(name, "", { maxAge: 0, path: "/" });
+    }
+  }
+}
+
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach(({ name, value }) => {
+    to.cookies.set(name, value);
+  });
+}
+
+function redirectToLoginExpired(
+  request: NextRequest,
+  supabaseResponse: NextResponse
+) {
+  const url = new URL(SESSION_EXPIRED_HREF, request.nextUrl.origin);
+  const redirectResponse = NextResponse.redirect(url);
+  copyCookies(supabaseResponse, redirectResponse);
+  clearAuthCookies(request, redirectResponse);
+  return redirectResponse;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -63,19 +96,53 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getClaims(): JWT'yi yerel olarak dogrular — ag cagrisi YOK, token tuketmez.
-  // getUser() yerine bu kullanilmali; cift network cagrisindan kaynaklanan
-  // token-refresh cakismasini onler.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
-
   const { pathname } = request.nextUrl;
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => isSupabaseAuthCookie(c.name));
 
-  // Giris yapmamis kullanici /dashboard'a erismeye calisirsa → landing page
+  // getClaims → gerekirse getSession ile token yeniler.
+  // JWT expired gibi AuthError olmayan throw'lar da burada yakalanır
+  // (aksi halde proxy çöküp genel hata sayfası gösterir).
+  let user: unknown = null;
+  let claimsError: unknown = null;
+
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+    claimsError = error;
+    user = data?.claims ?? null;
+  } catch (error) {
+    claimsError = error;
+    user = null;
+  }
+
+  const sessionBroken =
+    isInvalidSessionError(claimsError) ||
+    (hasAuthCookie && !user && Boolean(claimsError));
+
+  if (sessionBroken) {
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // cookie temizliği aşağıda yine yapılır
+    }
+
+    if (pathname.startsWith("/dashboard")) {
+      return redirectToLoginExpired(request, supabaseResponse);
+    }
+
+    // Landing vs. diğer sayfalar: bozuk cookie'leri temizle, devam et
+    clearAuthCookies(request, supabaseResponse);
+    return supabaseResponse;
+  }
+
+  // Giriş yapmamış kullanıcı /dashboard'a erişmeye çalışırsa → landing
   if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    copyCookies(supabaseResponse, redirectResponse);
+    return redirectResponse;
   }
 
   return supabaseResponse;

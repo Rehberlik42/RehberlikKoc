@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   BarChart2,
@@ -21,8 +22,14 @@ import {
   EyeOff,
   Loader2,
   Users,
+  AlertCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  SESSION_EXPIRED_MESSAGE,
+  SESSION_EXPIRED_PARAM,
+  SESSION_EXPIRED_VALUE,
+} from "@/lib/supabase/auth-session";
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 const gradientText =
@@ -1427,6 +1434,42 @@ function Footer() {
   );
 }
 
+// ─── Session expired banner ───────────────────────────────────────────────────
+function SessionExpiredBanner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const expired =
+    searchParams.get(SESSION_EXPIRED_PARAM) === SESSION_EXPIRED_VALUE;
+
+  if (!expired) return null;
+
+  const dismiss = () => {
+    router.replace("/", { scroll: false });
+  };
+
+  return (
+    <div
+      role="status"
+      className="fixed top-16 left-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-400/30 bg-[#221c52]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md sm:top-20"
+    >
+      <div className="flex items-start gap-3">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+        <p className="flex-1 text-sm font-medium text-white/90">
+          {SESSION_EXPIRED_MESSAGE}
+        </p>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="rounded-lg p-1 text-white/40 transition-colors hover:text-white"
+          aria-label="Kapat"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [authModal, setAuthModal] = useState<AuthMode | null>(null);
@@ -1434,6 +1477,9 @@ export default function Home() {
   return (
     <div className={`${pageBg} text-white antialiased scroll-smooth`}>
       <PageBackground />
+      <Suspense fallback={null}>
+        <SessionExpiredBanner />
+      </Suspense>
       {authModal && (
         <AuthModal mode={authModal} onClose={() => setAuthModal(null)} />
       )}

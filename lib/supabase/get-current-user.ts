@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isInvalidSessionError } from "@/lib/supabase/auth-session";
 
 /**
  * Ayni HTTP istegi (request) icinde birden fazla server component
@@ -12,10 +13,35 @@ import { createClient } from "@/lib/supabase/server";
  */
 export const getCurrentUser = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
 
-  return { user, error, supabase };
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error && isInvalidSessionError(error)) {
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // ignore
+      }
+    }
+
+    return { user, error, supabase };
+  } catch (error) {
+    if (isInvalidSessionError(error)) {
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // ignore
+      }
+    }
+
+    return {
+      user: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+      supabase,
+    };
+  }
 });
