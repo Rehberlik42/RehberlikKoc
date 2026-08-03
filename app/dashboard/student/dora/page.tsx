@@ -44,17 +44,27 @@ export default async function StudentDoraPage() {
   return (
     <div className="mx-auto flex h-[calc(100vh-7.5rem)] max-w-6xl flex-col gap-4">
       <div className="shrink-0 space-y-1.5">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
-          <Sparkles className="h-3 w-3" />
-          AI Asistan
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
+            <Sparkles className="h-3 w-3" />
+            AI Asistan
+          </div>
+          <span className="inline-flex items-center rounded-full border border-amber-500/35 bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">
+            Beta
+          </span>
         </div>
-        <h2 className="flex items-center gap-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
+        <h2 className="flex flex-wrap items-center gap-2 text-2xl font-black text-[var(--text-primary)] sm:text-3xl">
           <Bot className="h-7 w-7 text-[var(--accent)]" />
           DORA ile Konuş
         </h2>
         <p className="max-w-2xl text-sm text-[var(--text-muted)]">
           Çalışma planın, zayıf konuların ve kaynakların hakkında samimi
           tavsiyeler — DORA yanında.
+        </p>
+        <p className="max-w-2xl text-xs leading-relaxed text-amber-400/90">
+          Beta sürüm: kullanım hakkımızdaki token miktarı sınırlı. Yoğun
+          dönemlerde cevap gecikebilir veya kısa süre kullanılamayabilir —
+          kısa ve odaklı sorular sorman yardımcı olur.
         </p>
       </div>
 

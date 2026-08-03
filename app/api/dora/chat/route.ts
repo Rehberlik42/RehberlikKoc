@@ -26,6 +26,29 @@ const MAX_HISTORY = 24;
 const FRIENDLY_ERROR =
   "Şu an cevap veremiyorum. Biraz sonra tekrar dener misin?";
 
+/** Canlı ListModels sorgusuyla doğrulanmış varsayılan (generateContent + Flash). */
+const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+
+function resolveGeminiModel(): string {
+  const fromEnv = process.env.GEMINI_MODEL?.trim();
+  return fromEnv || DEFAULT_GEMINI_MODEL;
+}
+
+function isModelUnavailableError(
+  status: number,
+  payload: unknown
+): boolean {
+  if (status === 404) return true;
+  const text = JSON.stringify(payload ?? {}).toLowerCase();
+  return (
+    text.includes("not found") ||
+    text.includes("is not found") ||
+    text.includes("not supported") ||
+    text.includes("no longer available") ||
+    text.includes("invalid model")
+  );
+}
+
 function titleFromMessage(message: string): string {
   const cleaned = message.replace(/\s+/g, " ").trim();
   if (!cleaned) return "Yeni sohbet";
@@ -191,10 +214,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const modelId = resolveGeminiModel();
     let assistantText: string | null = null;
     try {
       const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -208,7 +232,19 @@ export async function POST(request: Request) {
       const geminiJson: unknown = await geminiRes.json().catch(() => null);
 
       if (!geminiRes.ok) {
-        console.error("[dora/chat] Gemini HTTP", geminiRes.status, geminiJson);
+        if (isModelUnavailableError(geminiRes.status, geminiJson)) {
+          console.error(
+            `[dora/chat] Model adı geçersiz veya kullanılamıyor olabilir. GEMINI_MODEL ortam değişkenini kontrol edin (şu an: "${modelId}"). HTTP ${geminiRes.status}`,
+            geminiJson
+          );
+        } else {
+          console.error(
+            "[dora/chat] Gemini HTTP",
+            geminiRes.status,
+            `model=${modelId}`,
+            geminiJson
+          );
+        }
         return NextResponse.json(
           {
             error:
