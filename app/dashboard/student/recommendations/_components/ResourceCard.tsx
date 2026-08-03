@@ -56,9 +56,11 @@ const TYPE_CONFIG: Record<
 };
 
 // ─── ResourceCard ─────────────────────────────────────────────────────────────
+const TYPE_CONFIG_FALLBACK = TYPE_CONFIG.website;
+
 export default function ResourceCard({ resource }: { resource: ResourceItem }) {
   const supabase = createClient();
-  const meta = TYPE_CONFIG[resource.type];
+  const meta = TYPE_CONFIG[resource.type] ?? TYPE_CONFIG_FALLBACK;
 
   // View count artirma (best-effort, hata umursanmiyor)
   const handleClick = useCallback(async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import toast, { Toaster } from "react-hot-toast";
@@ -14,6 +14,7 @@ import {
   type TaskSolutionData,
   type TaskType,
 } from "../program/_components/plan-shared";
+import { useClientMotionReady } from "@/lib/hooks/use-client-motion-ready";
 
 function useAnimatedNumber(target: number, duration = 600) {
   const [value, setValue] = useState(target);
@@ -172,7 +173,9 @@ export default function TodayTasks({
 }) {
   const [tasks, setTasks] = useState<PlanTask[]>(initialTasks);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const seenTaskIds = useRef(new Set<string>());
+  // Render sırasında ref mutate etme — Strict Mode ikinci çağrıda animate=false
+  // üretip hydration mismatch yaratıyordu. İlk paint sunucuyla aynı (false).
+  const motionReady = useClientMotionReady();
 
   const completedCount = useMemo(
     () => tasks.filter((t) => t.is_completed).length,
@@ -216,12 +219,6 @@ export default function TodayTasks({
 
     toast.success(next ? "Görev tamamlandı!" : "Görev tekrar aktif");
   };
-
-  const shouldAnimate = useCallback((id: string) => {
-    if (seenTaskIds.current.has(id)) return false;
-    seenTaskIds.current.add(id);
-    return true;
-  }, []);
 
   return (
     <>
@@ -277,7 +274,7 @@ export default function TodayTasks({
                 <TaskCard
                   key={task.id}
                   task={task}
-                  animate={shouldAnimate(task.id)}
+                  animate={motionReady}
                   toggling={togglingId === task.id}
                   onToggleComplete={handleToggleComplete}
                 />

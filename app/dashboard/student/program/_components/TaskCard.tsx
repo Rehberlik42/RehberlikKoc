@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { BookMarked, Check, Clock, Loader2 } from "lucide-react";
 import {
-  TASK_TYPE_BADGE,
   calcDurationMinutes,
   calcTaskNet,
   formatTimeTR,
+  getTaskTypeBadge,
   isResourceLinked,
   type PlanTask,
   type TaskSolutionData,
@@ -27,7 +27,7 @@ export default function TaskCard({
     data?: TaskSolutionData
   ) => void;
 }) {
-  const badge = TASK_TYPE_BADGE[task.task_type];
+  const badge = getTaskTypeBadge(task.task_type);
   const linked = isResourceLinked(task);
   const hasTime = Boolean(task.start_time && task.end_time);
   const duration =

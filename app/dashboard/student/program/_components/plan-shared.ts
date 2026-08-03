@@ -1,4 +1,17 @@
-export type TaskType = "ders" | "deneme" | "bras_deneme";
+/** Koç tarafındaki görev türleriyle uyumlu tutulmalı. */
+export type TaskType =
+  | "ders"
+  | "deneme"
+  | "bras_deneme"
+  | "soru_cozumu"
+  | "video_izleme"
+  | "tekrar"
+  | "yanlis_analizi"
+  | "odev"
+  | "manuel"
+  | "kitap_okuma";
+
+export type TaskTypeBadge = { label: string; color: string };
 
 export interface TaskSolutionData {
   solved_count: number;
@@ -37,11 +50,31 @@ export const DAY_LABELS_FULL = [
   "Pazar",
 ] as const;
 
-export const TASK_TYPE_BADGE: Record<TaskType, { label: string; color: string }> = {
+export const TASK_TYPE_BADGE: Record<TaskType, TaskTypeBadge> = {
   ders: { label: "Ders", color: "#4F7CFF" },
   deneme: { label: "Deneme", color: "#A78BFF" },
   bras_deneme: { label: "Branş Denemesi", color: "#00D4FF" },
+  soru_cozumu: { label: "Soru Çözümü", color: "#4F7CFF" },
+  video_izleme: { label: "Video İzleme", color: "#FF6B9D" },
+  tekrar: { label: "Tekrar", color: "#FFB84F" },
+  yanlis_analizi: { label: "Yanlış Analizi", color: "#FF5757" },
+  odev: { label: "Ödev", color: "#7BE0AD" },
+  manuel: { label: "Manuel", color: "#94A3B8" },
+  kitap_okuma: { label: "Kitap Okuma", color: "#C17F45" },
 };
+
+/** Bilinmeyen/yeni task_type gelirse sayfa çökmesin diye nötr rozet. */
+export const TASK_TYPE_BADGE_FALLBACK: TaskTypeBadge = {
+  label: "Görev",
+  color: "#94A3B8",
+};
+
+export function getTaskTypeBadge(taskType: string | null | undefined): TaskTypeBadge {
+  if (taskType && taskType in TASK_TYPE_BADGE) {
+    return TASK_TYPE_BADGE[taskType as TaskType];
+  }
+  return TASK_TYPE_BADGE_FALLBACK;
+}
 
 export function isResourceLinked(task: Pick<PlanTask, "study_resource_id">): boolean {
   return task.study_resource_id != null;

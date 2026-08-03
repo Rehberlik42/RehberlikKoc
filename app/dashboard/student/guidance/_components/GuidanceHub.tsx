@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 import type { GuidanceContent, GuidanceFilter } from "@/lib/guidance";
 import { FILTER_CHIPS } from "@/lib/guidance";
+import { useClientMotionReady } from "@/lib/hooks/use-client-motion-ready";
 import GuidanceCard from "./GuidanceCard";
 import VideoModal from "./VideoModal";
 
@@ -16,7 +17,7 @@ export default function GuidanceHub({ initialContents, basePath }: Props) {
   const [filter, setFilter] = useState<GuidanceFilter>("all");
   const [query, setQuery] = useState("");
   const [videoItem, setVideoItem] = useState<GuidanceContent | null>(null);
-  const seenCardIds = useRef(new Set<number>());
+  const motionReady = useClientMotionReady();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -102,32 +103,27 @@ export default function GuidanceHub({ initialContents, basePath }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((item, index) => {
-            const shouldAnimate = !seenCardIds.current.has(item.id);
-            seenCardIds.current.add(item.id);
-
-            return (
-              <div
-                key={item.id}
-                className={
-                  shouldAnimate
-                    ? "animate-in fade-in fill-mode-both duration-300"
-                    : undefined
-                }
-                style={
-                  shouldAnimate
-                    ? { animationDelay: `${Math.min(index * 30, 240)}ms` }
-                    : undefined
-                }
-              >
-                <GuidanceCard
-                  item={item}
-                  onVideoOpen={setVideoItem}
-                  basePath={basePath}
-                />
-              </div>
-            );
-          })}
+          {filtered.map((item, index) => (
+            <div
+              key={item.id}
+              className={
+                motionReady
+                  ? "animate-in fade-in fill-mode-both duration-300"
+                  : undefined
+              }
+              style={
+                motionReady
+                  ? { animationDelay: `${Math.min(index * 30, 240)}ms` }
+                  : undefined
+              }
+            >
+              <GuidanceCard
+                item={item}
+                onVideoOpen={setVideoItem}
+                basePath={basePath}
+              />
+            </div>
+          ))}
         </div>
       )}
     </>

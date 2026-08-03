@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import toast, { Toaster } from "react-hot-toast";
 import { Loader2, ChevronLeft, ChevronRight, ListTodo } from "lucide-react";
@@ -19,6 +19,7 @@ import {
   type TaskSolutionData,
   type TaskType,
 } from "./plan-shared";
+import { useClientMotionReady } from "@/lib/hooks/use-client-motion-ready";
 function formatWeekRange(weekStart: Date): string {
   const weekEnd = addDays(weekStart, 6);
   const startDay = weekStart.getDate();
@@ -39,7 +40,7 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
   const [tasks, setTasks] = useState<PlanTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const seenTaskIds = useRef(new Set<string>());
+  const motionReady = useClientMotionReady();
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
   const weekStartStr = useMemo(() => toISODate(weekStart), [weekStart]);
   const weekEndStr = useMemo(() => toISODate(weekEnd), [weekEnd]);
@@ -122,11 +123,6 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
     }
 
     toast.success(next ? "Görev tamamlandı!" : "Görev tekrar aktif");
-  };
-  const shouldAnimate = (id: string) => {
-    if (seenTaskIds.current.has(id)) return false;
-    seenTaskIds.current.add(id);
-    return true;
   };
   const goToThisWeek = () => setWeekStart(startOfWeek(new Date()));
   const goToPrevWeek = () => setWeekStart((prev) => addDays(prev, -7));
@@ -249,7 +245,7 @@ export default function StudentWeeklyPlan({ studentId }: { studentId: string }) 
                           <TaskCard
                             key={task.id}
                             task={task}
-                            animate={shouldAnimate(task.id)}
+                            animate={motionReady}
                             toggling={togglingId === task.id}
                             onToggleComplete={handleToggleComplete}
                           />
