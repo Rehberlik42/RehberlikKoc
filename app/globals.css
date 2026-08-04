@@ -476,6 +476,16 @@ body {
 
 /* ─── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .fade-in,
+  .slide-in-from-right,
+  .slide-in-from-bottom-1,
+  .slide-in-from-bottom-2,
+  .slide-in-from-bottom-4,
+  .zoom-in-95 {
+    animation: none !important;
+    transition: none !important;
+  }
   .animate-aurora-1,
   .animate-aurora-2,
   .animate-aurora-3,

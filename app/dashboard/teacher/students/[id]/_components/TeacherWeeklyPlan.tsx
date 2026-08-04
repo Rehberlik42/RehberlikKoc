@@ -20,7 +20,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import {
+  getCachedProgramSubjects,
+  loadProgramSubjects,
+} from "@/lib/program/fetch-program-subjects";
+import { isTypingTarget, modKeyLabel } from "@/lib/program/form-keyboard";
 import AddTaskModal, { type ExistingTask } from "./AddTaskModal";
+import BatchComposer from "./batch/BatchComposer";
+import DayQuickAdd, {
+  type DayQuickAddHandle,
+} from "./quick-add/DayQuickAdd";
 import QuickAddBransDenemesiModal from "./QuickAddBransDenemesiModal";
 import QuickAddKitapOkumaModal from "./QuickAddKitapOkumaModal";
 import WeeklyProgramSummaryModal, {
@@ -56,6 +65,7 @@ import {
   ClipboardList,
   BookmarkPlus,
   LayoutTemplate,
+  Layers,
   Send,
   X,
 } from "lucide-react";
@@ -96,6 +106,31 @@ const WEEKLY_PLAN_GUIDE = {
         "yoğun — hedefin %100–130’ü arası",
         "aşırı — hedefin %130’unun üstü",
         "Günlük Hedef tanımsızsa rozet çıkmaz. Hedefi başlıktaki Günlük Hedef satırından düzenleyebilirsiniz.",
+      ],
+    },
+    {
+      heading: "Görev Ekle paneli",
+      content: [
+        "Görev Ekle sağda sabit bir panel açar; hafta gridi görünür ve tıklanabilir kalır.",
+        "Tek ekranda sırayla: görev türü → ders/konu araması → kaynak (opsiyonel) → detaylar → günler.",
+        "Kaydet ve yeni: görevi ekler, paneli kapatmaz; tür ve ders korunur, konu/detay sıfırlanır — hızlı ardışık giriş için.",
+        "Kaydet paneli kapatır. Escape ile de kapanır.",
+      ],
+    },
+    {
+      heading: "Toplu Ekle",
+      content: [
+        "Toplu Ekle, hafta gridinin yerine toplu besteleme modunu açar.",
+        "Solda zayıf / başlanmayan / tüm konular; sağda tür, süre, kaynak ve gün dağıtımı.",
+        "Önizle ile satır satır kontrol edebilir, yük uyarısına rağmen ekleyebilirsiniz.",
+      ],
+    },
+    {
+      heading: "Hızlı ekle",
+      content: [
+        "Gün kartının altındaki Hızlı ekle satırına konu yazın; eşleşenlerden seçince Ders görevi anında oluşur.",
+        "Sonda sayı varsa süre olur: örn. türev 40 → 40 dk. Karttaki Düzenle ile paneli açabilirsiniz.",
+        "Klavye: gridde N ile odaklı/bugünün gününde hızlı eklemeyi açar. Panelde Enter sonraki alan, Ctrl/⌘+Enter kaydet ve yeni, Ctrl/⌘+Shift+Enter kaydet, Esc kapat.",
       ],
     },
     {
@@ -153,7 +188,6 @@ const DAY_LABELS_FULL = [
 
 interface Props {
   studentId: string;
-  subjects: ProgramSubject[];
 }
 
 const TASK_TYPE_BADGE: Record<TaskType, { label: string; color: string }> = {
@@ -808,6 +842,17 @@ function TaskCard({
             {duration} dk
           </div>
         ) : null}
+
+        {onEdit && !isOverlay ? (
+          <button
+            type="button"
+            onClick={() => void onEdit(task.id)}
+            disabled={menuBusy}
+            className="mt-2 text-[10px] font-semibold text-[var(--accent)] transition-colors duration-150 hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 disabled:opacity-50"
+          >
+            Düzenle
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -897,6 +942,13 @@ function DayColumn({
   onSplit,
   menuBusy,
   dailyTargetMinutes,
+  studentId,
+  subjects,
+  taskCountForDate,
+  draftMode,
+  onQuickAddSuccess,
+  onQuickAddError,
+  quickAddRef,
 }: {
   dateStr: string;
   day: Date;
@@ -918,6 +970,13 @@ function DayColumn({
   onSplit: (taskId: string, dateStr: string) => Promise<void>;
   menuBusy: boolean;
   dailyTargetMinutes: number | null;
+  studentId: string;
+  subjects: ProgramSubject[];
+  taskCountForDate: (date: string) => number;
+  draftMode: boolean;
+  onQuickAddSuccess: (planDate: string) => void;
+  onQuickAddError: (message: string) => void;
+  quickAddRef?: (handle: DayQuickAddHandle | null) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dateStr });
 
@@ -936,7 +995,9 @@ function DayColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-h-[8rem] min-w-[240px] flex-col rounded-xl border p-2.5 transition-colors duration-300 lg:min-w-0 ${
+      data-plan-date={dateStr}
+      tabIndex={0}
+      className={`flex min-h-[8rem] min-w-[240px] flex-col rounded-xl border p-2.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 lg:min-w-0 ${
         isOver
           ? "border-[var(--primary)]/50 bg-[var(--primary)]/[0.08] shadow-[0_0_24px_rgba(123,47,255,0.15)]"
           : todayCol
@@ -1028,6 +1089,16 @@ function DayColumn({
           <BookOpen className="h-3 w-3" />
           Kitap Okuma
         </button>
+        <DayQuickAdd
+          ref={(handle) => quickAddRef?.(handle)}
+          studentId={studentId}
+          subjects={subjects}
+          planDate={dateStr}
+          taskCountForDate={taskCountForDate}
+          draftMode={draftMode}
+          onSuccess={onQuickAddSuccess}
+          onError={onQuickAddError}
+        />
       </div>
     </div>
   );
@@ -1035,9 +1106,15 @@ function DayColumn({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
+export default function TeacherWeeklyPlan({ studentId }: Props) {
   const supabase = createClient();
 
+  const [subjects, setSubjects] = useState<ProgramSubject[]>(
+    () => getCachedProgramSubjects() ?? []
+  );
+  const [subjectsLoading, setSubjectsLoading] = useState(
+    () => getCachedProgramSubjects() == null
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [tasks, setTasks] = useState<PlanTask[]>([]);
@@ -1070,10 +1147,12 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
   const [draftMode, setDraftMode] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
   const [menuBusy, setMenuBusy] = useState(false);
   const seenTaskIds = useRef(new Set<string>());
+  const dayQuickAddRefs = useRef(new Map<string, DayQuickAddHandle>());
   const pendingSplitRef = useRef<{
     taskId: string;
     row: RawStudyPlanTask;
@@ -1231,6 +1310,36 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
     fetchTasks();
   }, [fetchTasks]);
 
+  useEffect(() => {
+    if (getCachedProgramSubjects()) {
+      setSubjects(getCachedProgramSubjects()!);
+      setSubjectsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSubjectsLoading(true);
+    void loadProgramSubjects()
+      .then((data) => {
+        if (!cancelled) {
+          setSubjects(data);
+          setSubjectsLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setSubjectsLoading(false);
+        setToast({
+          type: "error",
+          message:
+            "Ders/konu listesi yüklenemedi: " +
+            (err instanceof Error ? err.message : "bilinmeyen hata"),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleTaskAdded = useCallback(
     async (planDate: string) => {
       const wasEdit = Boolean(addModal?.existingTask);
@@ -1251,6 +1360,58 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
   const handleTaskError = useCallback((message: string) => {
     setToast({ type: "error", message });
   }, []);
+
+  /** Hızlı ekleme: toast yok — ardışık girişi kesmesin */
+  const handleQuickAddSuccess = useCallback(
+    (planDate: string) => {
+      void (async () => {
+        const addedWeekStart = startOfWeek(new Date(planDate + "T12:00:00"));
+        if (addedWeekStart.getTime() !== weekStart.getTime()) {
+          setWeekStart(addedWeekStart);
+        } else {
+          await fetchTasks();
+        }
+      })();
+    },
+    [weekStart, fetchTasks]
+  );
+
+  // Grid: N → odaklı gün / bugün / ilk gün hızlı ekleme
+  useEffect(() => {
+    if (batchMode || addModal || bransModal || kitapModal || weekConfirm) {
+      return;
+    }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "n" && e.key !== "N") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      const focusedDay = document.activeElement?.closest(
+        "[data-plan-date]"
+      ) as HTMLElement | null;
+      const focusedDate = focusedDay?.getAttribute("data-plan-date");
+      const todayStr = toISODate(new Date());
+      const target =
+        (focusedDate && weekDateStrs.includes(focusedDate)
+          ? focusedDate
+          : null) ??
+        (weekDateStrs.includes(todayStr) ? todayStr : null) ??
+        weekDateStrs[0];
+
+      if (!target) return;
+      e.preventDefault();
+      dayQuickAddRefs.current.get(target)?.open();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [
+    batchMode,
+    addModal,
+    bransModal,
+    kitapModal,
+    weekConfirm,
+    weekDateStrs,
+  ]);
 
   const handleDelete = async (taskId: string) => {
     setDeletingId(taskId);
@@ -2080,7 +2241,7 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
             type="button"
             aria-label="Modalı kapat"
             onClick={() => !weekActionLoading && setWeekConfirm(null)}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50"
           />
           <div
             role="dialog"
@@ -2200,6 +2361,27 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
         </div>
       )}
 
+      {batchMode ? (
+        <BatchComposer
+          studentId={studentId}
+          subjects={subjects}
+          weekDays={weekDays}
+          tasks={tasks}
+          taskCountForDate={taskCountForDate}
+          dailyTargetMinutes={dailyTargetMinutes}
+          draftMode={draftMode}
+          onClose={() => setBatchMode(false)}
+          onSuccess={(count) => {
+            setBatchMode(false);
+            setToast({
+              type: "success",
+              message: `${count} görev eklendi`,
+            });
+            void fetchTasks();
+          }}
+          onError={(message) => setToast({ type: "error", message })}
+        />
+      ) : (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
         <div className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -2317,6 +2499,15 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                 Bu Hafta
               </button>
               <div className="mx-0.5 hidden h-6 w-px bg-[var(--border)] sm:block" />
+              <button
+                type="button"
+                onClick={() => setBatchMode(true)}
+                disabled={subjectsLoading || subjects.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                Toplu Ekle
+              </button>
               <label
                 className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
                   draftMode
@@ -2413,9 +2604,16 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
         </div>
 
         <div className="p-4">
-          {tasksLoading ? (
-            <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
-              <Loader2 className="h-5 w-5 animate-spin" />
+          {subjectsLoading || tasksLoading ? (
+            <div className="overflow-x-auto animate-pulse">
+              <div className="grid w-max min-w-full grid-cols-7 gap-3">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-64 min-w-[240px] rounded-xl bg-[var(--surface-2)]"
+                  />
+                ))}
+              </div>
             </div>
           ) : (
             <DndContext
@@ -2425,7 +2623,11 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
             >
-              <div className="overflow-x-auto lg:overflow-visible">
+              <div
+                className={`overflow-x-auto lg:overflow-visible ${
+                  addModal ? "lg:mr-[400px]" : ""
+                }`}
+              >
                 <div className="grid w-max min-w-full grid-cols-7 gap-3 lg:w-auto lg:grid-cols-4 xl:grid-cols-7">
                   {weekDays.map((day, colIndex) => {
                     const dateStr = toISODate(day);
@@ -2453,6 +2655,16 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
                         onSplit={handleSplitTask}
                         menuBusy={menuBusy}
                         dailyTargetMinutes={dailyTargetMinutes}
+                        studentId={studentId}
+                        subjects={subjects}
+                        taskCountForDate={taskCountForDate}
+                        draftMode={draftMode}
+                        onQuickAddSuccess={handleQuickAddSuccess}
+                        onQuickAddError={handleTaskError}
+                        quickAddRef={(handle) => {
+                          if (handle) dayQuickAddRefs.current.set(dateStr, handle);
+                          else dayQuickAddRefs.current.delete(dateStr);
+                        }}
                       />
                     );
                   })}
@@ -2469,24 +2681,30 @@ export default function TeacherWeeklyPlan({ studentId, subjects }: Props) {
             </DndContext>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-[var(--border)] pt-4 text-[10px] text-[var(--text-muted)]">
-            {(
-              Object.entries(TASK_TYPE_BADGE) as [
-                TaskType,
-                { label: string; color: string },
-              ][]
-            ).map(([type, { label, color }]) => (
-              <span key={type} className="inline-flex items-center gap-1.5">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
-                {label}
-              </span>
-            ))}
+          <div className="mt-4 flex flex-col items-center gap-2 border-t border-[var(--border)] pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] text-[var(--text-muted)]">
+              {(
+                Object.entries(TASK_TYPE_BADGE) as [
+                  TaskType,
+                  { label: string; color: string },
+                ][]
+              ).map(([type, { label, color }]) => (
+                <span key={type} className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {label}
+                </span>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--text-muted)]/70">
+              N hızlı ekle · {modKeyLabel()}+Enter panelde kaydet ve yeni
+            </p>
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }
