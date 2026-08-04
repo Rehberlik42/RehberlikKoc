@@ -24,9 +24,7 @@ import StudentNetChartLazy, {
 import StudentSessionsList, {
   type StudentSessionRow,
 } from "./_components/StudentSessionsList";
-import TeacherTopicProgress, {
-  type TeacherTopicProgressSubject,
-} from "./_components/TeacherTopicProgress";
+import TeacherTopicProgress from "./_components/TeacherTopicProgress";
 import StudentDetailTabs from "./_components/StudentDetailTabs";
 import ResourceMatrix from "./_components/ResourceMatrix";
 import TeacherWeeklyPlanLazy from "./_components/TeacherWeeklyPlanLazy";
@@ -53,8 +51,6 @@ import {
   type NormalizedExam,
   type RawTopicErrorRecord,
 } from "./_components/exam-analysis-utils";
-import type { ProgressStatus } from "@/app/dashboard/student/progress/_components/TopicRow";
-
 export const dynamic = "force-dynamic";
 
 interface StudentDetail {
@@ -121,8 +117,8 @@ export default async function StudentDetailPage({
     { data: rawAnalysisExams },
     { data: rawSessions },
     { data: rawSubjects },
+    { data: rawTopicSubjectIds },
     { data: rawExams },
-    { data: progressRecords },
     { data: rawStudentTargets },
     { data: rawTopicErrors, error: topicErrorsError },
     { data: rawStudentIntake },
@@ -165,21 +161,18 @@ export default async function StudentDetailPage({
       .eq("student_id", id)
       .order("study_date", { ascending: false })
       .limit(10),
+    // Form seçenekleri için hafif subjects (topics yok — TeacherTopicProgress client'ta yükler)
     supabase
       .from("subjects")
-      .select(
-        "id, name, color, order_index, exam_id, exam:exams(name), topics(id, name, order_index, parent_id)"
-      )
+      .select("id, name, color, order_index, exam_id, exam:exams(name)")
       .order("order_index"),
+    // topicCountBySubjectId için yalnızca subject_id
+    supabase.from("topics").select("subject_id"),
     supabase
       .from("exams")
       .select("id, name, description")
       .eq("is_active", true)
       .order("id"),
-    supabase
-      .from("topic_progress")
-      .select("topic_id, status, completion_percentage")
-      .eq("student_id", id),
     supabase
       .from("student_targets")
       .select("subject_id, target_net, note")
@@ -244,46 +237,6 @@ export default async function StudentDetailPage({
         : null,
     };
   });
-
-  const progressByTopic = new Map<
-    number,
-    { status: ProgressStatus; completion_percentage: number }
-  >();
-  (progressRecords ?? []).forEach((p) => {
-    progressByTopic.set(p.topic_id, {
-      status: p.status as ProgressStatus,
-      completion_percentage: p.completion_percentage,
-    });
-  });
-
-  const subjects: TeacherTopicProgressSubject[] = (rawSubjects ?? []).map(
-    (s) => {
-      const topicsArr = Array.isArray(s.topics) ? s.topics : [];
-      return {
-        id: s.id,
-        name: s.name,
-        color: s.color,
-        topics: topicsArr
-          .sort(
-            (a: { order_index: number }, b: { order_index: number }) =>
-              a.order_index - b.order_index
-          )
-          .map((t: { id: number; name: string }) => {
-            const prog = progressByTopic.get(t.id);
-            return {
-              id: t.id,
-              name: t.name,
-              progress: prog
-                ? {
-                    status: prog.status,
-                    completion_percentage: prog.completion_percentage,
-                  }
-                : null,
-            };
-          }),
-      };
-    }
-  );
 
   const analysisExams: NormalizedExam[] = normalizeAnalysisExams(
     (rawAnalysisExams ?? []) as Parameters<typeof normalizeAnalysisExams>[0]
@@ -362,12 +315,11 @@ export default async function StudentDetailPage({
     ).values()
   );
 
-  const topicCountBySubjectId = Object.fromEntries(
-    (rawSubjects ?? []).map((s) => [
-      s.id,
-      (Array.isArray(s.topics) ? s.topics : []).length,
-    ])
-  );
+  const topicCountBySubjectId: Record<number, number> = {};
+  for (const row of rawTopicSubjectIds ?? []) {
+    const sid = row.subject_id as number;
+    topicCountBySubjectId[sid] = (topicCountBySubjectId[sid] ?? 0) + 1;
+  }
 
   const examFormOptions = (rawExams ?? []).map((e) => ({
     id: e.id,
@@ -549,7 +501,7 @@ export default async function StudentDetailPage({
 
             <div className="mt-6 space-y-6">
               <StudentNetChartLazy data={chartData} />
-              <TeacherTopicProgress studentId={id} subjects={subjects} />
+              <TeacherTopicProgress studentId={id} />
               <StudentSessionsList sessions={sessions} />
             </div>
           </>

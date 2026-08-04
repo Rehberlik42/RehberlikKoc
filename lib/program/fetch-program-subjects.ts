@@ -28,6 +28,7 @@ function mapApiRows(rows: ProgramSubjectsApiRow[]): ProgramSubject[] {
       id: s.id,
       name: s.name,
       exam: examName,
+      color: s.color ?? null,
       topics: topicsArr
         .slice()
         .sort((a, b) => a.order_index - b.order_index)

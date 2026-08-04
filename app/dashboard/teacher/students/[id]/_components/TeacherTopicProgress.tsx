@@ -7,7 +7,10 @@ import {
   CheckCheck,
   AlertCircle,
   MapPin,
+  Loader2,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { loadProgramSubjects } from "@/lib/program/fetch-program-subjects";
 import TopicRow, {
   type ProgressStatus,
   STATUS_CONFIG,
@@ -26,7 +29,6 @@ export interface TeacherTopicProgressSubject {
 
 interface Props {
   studentId: string;
-  subjects: TeacherTopicProgressSubject[];
 }
 
 interface ToastState {
@@ -93,7 +95,7 @@ function SubjectAccordion({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-4 bg-[var(--surface)]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[var(--surface)]/90"
+        className="flex w-full items-center gap-4 bg-[var(--surface)]/60 px-5 py-4 text-left transition-colors duration-200 hover:bg-[var(--surface)]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
       >
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)]"
@@ -111,7 +113,9 @@ function SubjectAccordion({
         </div>
 
         <div className="min-w-0 flex-1">
-          <span className="text-sm font-semibold text-[var(--text-primary)]">{subject.name}</span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">
+            {subject.name}
+          </span>
           <div className="mt-1.5 flex items-center gap-2">
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/6">
               <div
@@ -185,27 +189,106 @@ function SubjectAccordion({
  * (is_teacher_of_student) sınırlıdır. Bileşen client-side olsa da RLS
  * sunucuda denetler; öğretmen yalnızca kendi öğrencisine yazabilir.
  * studentId client'tan gönderilir — RLS son sözü söyler.
+ *
+ * Subjects + topics: /api/program/subjects (modül cache).
+ * topic_progress: client Supabase sorgusu.
  */
-export default function TeacherTopicProgress({ studentId, subjects }: Props) {
-  const [openId, setOpenId] = useState<number | null>(subjects[0]?.id ?? null);
+export default function TeacherTopicProgress({ studentId }: Props) {
+  const [subjects, setSubjects] = useState<TeacherTopicProgressSubject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const [progressMap, setProgressMap] = useState<
     Map<number, { status: ProgressStatus; percentage: number }>
-  >(() => {
-    const map = new Map<number, { status: ProgressStatus; percentage: number }>();
-    subjects.forEach((s) =>
-      s.topics.forEach((t) => {
-        if (t.progress) {
-          map.set(t.id, {
-            status: t.progress.status,
-            percentage: t.progress.completion_percentage,
+  >(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+
+    void (async () => {
+      try {
+        const [programSubjects, progressResult] = await Promise.all([
+          loadProgramSubjects(),
+          createClient()
+            .from("topic_progress")
+            .select("topic_id, status, completion_percentage")
+            .eq("student_id", studentId),
+        ]);
+
+        if (cancelled) return;
+
+        if (progressResult.error) {
+          throw new Error(progressResult.error.message);
+        }
+
+        const progressByTopic = new Map<
+          number,
+          { status: ProgressStatus; completion_percentage: number }
+        >();
+        for (const p of progressResult.data ?? []) {
+          progressByTopic.set(p.topic_id as number, {
+            status: p.status as ProgressStatus,
+            completion_percentage: p.completion_percentage as number,
           });
         }
-      })
-    );
-    return map;
-  });
+
+        const mapped: TeacherTopicProgressSubject[] = programSubjects.map(
+          (s) => ({
+            id: s.id,
+            name: s.name,
+            color: s.color ?? null,
+            topics: s.topics.map((t) => {
+              const prog = progressByTopic.get(t.id);
+              return {
+                id: t.id,
+                name: t.name,
+                progress: prog
+                  ? {
+                      status: prog.status,
+                      completion_percentage: prog.completion_percentage,
+                    }
+                  : null,
+              };
+            }),
+          })
+        );
+
+        const map = new Map<
+          number,
+          { status: ProgressStatus; percentage: number }
+        >();
+        mapped.forEach((s) =>
+          s.topics.forEach((t) => {
+            if (t.progress) {
+              map.set(t.id, {
+                status: t.progress.status,
+                percentage: t.progress.completion_percentage,
+              });
+            }
+          })
+        );
+
+        setSubjects(mapped);
+        setProgressMap(map);
+        setOpenId((prev) => prev ?? mapped[0]?.id ?? null);
+        setLoading(false);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setLoading(false);
+        setLoadError(
+          err instanceof Error ? err.message : "Veri yüklenemedi"
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId]);
 
   const handleTopicUpdate = useCallback(
     (topicId: number, status: ProgressStatus, percentage: number) => {
@@ -229,6 +312,35 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
       (progressMap.get(t.id)?.status ?? t.progress?.status) === "completed"
   ).length;
 
+  if (loading) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-8 w-48 rounded-lg bg-[var(--surface-2)]" />
+          <div className="h-16 rounded-xl bg-[var(--surface-2)]" />
+          <div className="h-16 rounded-xl bg-[var(--surface-2)]" />
+          <div className="h-16 rounded-xl bg-[var(--surface-2)]" />
+        </div>
+        <p className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Konu ilerlemesi yükleniyor…
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-8 text-center">
+        <AlertCircle className="mx-auto mb-3 h-8 w-8 text-rose-400" />
+        <p className="text-sm font-semibold text-[var(--text-secondary)]">
+          Konu ilerlemesi yüklenemedi
+        </p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">{loadError}</p>
+      </div>
+    );
+  }
+
   if (subjects.length === 0) {
     return (
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50 p-8 text-center backdrop-blur-md">
@@ -249,7 +361,9 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
               <MapPin className="h-4 w-4 text-[var(--accent)]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">Konu İlerlemesi</h3>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                Konu İlerlemesi
+              </h3>
               <p className="text-[11px] text-[var(--text-muted)]">
                 Öğrencinin konu durumunu güncelleyebilirsiniz
               </p>
@@ -257,13 +371,17 @@ export default function TeacherTopicProgress({ studentId, subjects }: Props) {
           </div>
           <div className="flex gap-2">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-center">
-              <p className="text-lg font-black text-[var(--text-primary)]">{completedTopics}</p>
+              <p className="text-lg font-black text-[var(--text-primary)]">
+                {completedTopics}
+              </p>
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 Bitti
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-center">
-              <p className="text-lg font-black text-[var(--text-primary)]">{totalTopics}</p>
+              <p className="text-lg font-black text-[var(--text-primary)]">
+                {totalTopics}
+              </p>
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 Toplam
               </p>
