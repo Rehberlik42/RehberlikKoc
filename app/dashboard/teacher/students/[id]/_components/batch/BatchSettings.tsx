@@ -19,6 +19,7 @@ import type { TaskType } from "@/lib/program/task-payload";
 import {
   focusNextField,
   isModKey,
+  isOpenListboxContext,
   isTextareaTarget,
   isTypingTarget,
   modKeyLabel,
@@ -222,10 +223,10 @@ export default function BatchSettings({
         handleSaveRef.current();
         return;
       }
+      if (e.key !== "Enter" || isModKey(e)) return;
+      if (isTextareaTarget(e.target)) return;
+      if (isOpenListboxContext(e.target)) return;
       if (
-        e.key === "Enter" &&
-        !isModKey(e) &&
-        !isTextareaTarget(e.target) &&
         isTypingTarget(e.target) &&
         panelRef.current &&
         e.target instanceof HTMLElement
@@ -437,16 +438,15 @@ export default function BatchSettings({
           </button>
           {showPreview && (
             <ul className="max-h-48 space-y-1 overflow-y-auto">
-              {plannedAll.map((p) => {
-                const removed = excludedIds.has(p.id);
-                return (
+              {planned.length === 0 ? (
+                <li className="px-2 py-3 text-center text-xs text-[var(--text-muted)]">
+                  Önizlemede görev kalmadı
+                </li>
+              ) : (
+                planned.map((p) => (
                   <li
                     key={p.id}
-                    className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs ${
-                      removed
-                        ? "border-[var(--border)] opacity-40"
-                        : "border-[var(--border)] bg-[var(--bg)]"
-                    }`}
+                    className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-xs"
                   >
                     <span className="shrink-0 font-semibold text-[var(--accent)]">
                       {dayLabelByDate.get(p.planDate)}
@@ -459,19 +459,18 @@ export default function BatchSettings({
                       onClick={() => {
                         setExcludedIds((prev) => {
                           const next = new Set(prev);
-                          if (next.has(p.id)) next.delete(p.id);
-                          else next.add(p.id);
+                          next.add(p.id);
                           return next;
                         });
                       }}
                       className="shrink-0 rounded p-1 text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-                      aria-label={removed ? "Geri al" : "Çıkar"}
+                      aria-label="Listeden çıkar"
                     >
-                      {removed ? <Plus className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </li>
-                );
-              })}
+                ))
+              )}
             </ul>
           )}
         </section>
