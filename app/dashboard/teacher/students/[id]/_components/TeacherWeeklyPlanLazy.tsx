@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ComponentProps } from "react";
 
 const TeacherWeeklyPlan = dynamic(() => import("./TeacherWeeklyPlan"), {
   loading: () => (
@@ -18,8 +17,10 @@ const TeacherWeeklyPlan = dynamic(() => import("./TeacherWeeklyPlan"), {
   ),
 });
 
-export default function TeacherWeeklyPlanLazy(
-  props: ComponentProps<typeof TeacherWeeklyPlan>
-) {
-  return <TeacherWeeklyPlan {...props} />;
+export default function TeacherWeeklyPlanLazy({
+  studentId,
+}: {
+  studentId: string;
+}) {
+  return <TeacherWeeklyPlan studentId={studentId} />;
 }

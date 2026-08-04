@@ -285,29 +285,6 @@ export default async function StudentDetailPage({
     }
   );
 
-  const programSubjects = (rawSubjects ?? []).map((s) => {
-    const topicsArr = Array.isArray(s.topics) ? s.topics : [];
-    const examRaw = s.exam as { name: string } | { name: string }[] | null;
-    const examName = Array.isArray(examRaw)
-      ? (examRaw[0]?.name ?? null)
-      : examRaw?.name ?? null;
-    return {
-      id: s.id,
-      name: s.name,
-      exam: examName,
-      topics: topicsArr
-        .sort(
-          (a: { order_index: number }, b: { order_index: number }) =>
-            a.order_index - b.order_index
-        )
-        .map((t: { id: number; name: string; parent_id?: number | null }) => ({
-          id: t.id,
-          name: t.name,
-          parent_id: t.parent_id ?? null,
-        })),
-    };
-  });
-
   const analysisExams: NormalizedExam[] = normalizeAnalysisExams(
     (rawAnalysisExams ?? []) as Parameters<typeof normalizeAnalysisExams>[0]
   );
@@ -578,7 +555,7 @@ export default async function StudentDetailPage({
           </>
         }
         program={
-          <TeacherWeeklyPlanLazy studentId={id} subjects={programSubjects} />
+          <TeacherWeeklyPlanLazy studentId={id} />
         }
         analysis={
           <div className="space-y-6">
