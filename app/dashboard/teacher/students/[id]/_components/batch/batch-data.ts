@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { findWeakTopics, type WeakTopic } from "@/lib/program/weak-topics";
+import { normalizeStatus } from "@/lib/resource-status-ui";
 import {
   buildTopicErrorAnalysis,
   normalizeAnalysisExams,
@@ -156,13 +157,8 @@ async function fetchPoolData(studentId: string): Promise<BatchPoolData> {
       const topicId = topicIdsBySrt.get(srtId);
       if (topicId == null) continue;
       const status = statusBySrt.get(srtId);
-      // Şemada "başlanmadı" = calisilmadi; kayıt yoksa da başlanmamış sayılır.
-      // Eski/yanlış yazım "baslanmadi" da kabul edilir.
-      if (
-        status == null ||
-        status === "calisilmadi" ||
-        status === "baslanmadi"
-      ) {
+      // Kayıt yok VEYA kanonik durum calisilmadi → başlanmayan
+      if (status == null || normalizeStatus(status) === "calisilmadi") {
         notStarted.add(topicId);
       }
     }
