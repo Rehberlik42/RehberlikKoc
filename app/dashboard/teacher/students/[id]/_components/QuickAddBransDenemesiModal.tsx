@@ -179,7 +179,7 @@ export default function QuickAddBransDenemesiModal({
         type="button"
         aria-label="Paneli kapat"
         onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50"
       />
 
       <div

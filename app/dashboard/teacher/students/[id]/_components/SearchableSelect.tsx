@@ -20,6 +20,8 @@ export interface SearchableSelectProps {
   disabled?: boolean;
   searchable?: boolean;
   emptyText?: string;
+  /** Dropdown açıldığında (tembel yükleme vb.) */
+  onOpen?: () => void;
 }
 
 interface OptionGroup {
@@ -123,6 +125,7 @@ export default function SearchableSelect({
   disabled = false,
   searchable = true,
   emptyText = "Sonuç yok",
+  onOpen,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -234,7 +237,7 @@ export default function SearchableSelect({
 
   return (
     <div
-      className={`flex flex-col gap-1.5 transition-opacity duration-300 ${
+      className={`flex flex-col gap-1.5 transition-opacity duration-150 ${
         disabled ? "opacity-50" : "opacity-100"
       }`}
     >
@@ -247,8 +250,15 @@ export default function SearchableSelect({
         <button
           type="button"
           disabled={disabled}
-          onClick={() => !disabled && setOpen((o) => !o)}
-          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${
+          onClick={() => {
+            if (disabled) return;
+            setOpen((o) => {
+              const next = !o;
+              if (next) onOpen?.();
+              return next;
+            });
+          }}
+          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${
             value
               ? "border-[var(--border)] bg-white/[0.06] text-[var(--text-primary)]"
               : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]"

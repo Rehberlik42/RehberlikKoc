@@ -269,7 +269,7 @@ export default function ApplyTemplateModal({
         type="button"
         aria-label="Modalı kapat"
         onClick={() => !applying && onClose()}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50"
       />
 
       <div className="flex min-h-full items-start justify-center p-4 sm:items-center">

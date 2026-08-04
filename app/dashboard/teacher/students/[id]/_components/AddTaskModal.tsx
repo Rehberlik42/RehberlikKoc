@@ -1,18 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import {
+  buildSuggestedTitle,
+  buildTaskInsertPayload,
+  type TaskType,
+} from "@/lib/program/task-payload";
+import { matchesTr } from "@/lib/program/tr-search";
+import {
+  focusNextField,
+  isModKey,
+  isTextareaTarget,
+  isTypingTarget,
+  modKeyLabel,
+} from "@/lib/program/form-keyboard";
 import SearchableSelect from "./SearchableSelect";
+import TaskTypePicker from "./TaskTypePicker";
 import type { ProgramSubject } from "./program-types";
 import {
   BookOpen,
   Tag,
   X,
-  ChevronLeft,
-  ChevronRight,
-  Layers,
-  ListTree,
   BookMarked,
   FileText,
   Save,
@@ -22,19 +38,11 @@ import {
   Clock,
   Hash,
   CalendarDays,
+  Search,
+  Plus,
 } from "lucide-react";
 
-export type TaskType =
-  | "ders"
-  | "deneme"
-  | "bras_deneme"
-  | "soru_cozumu"
-  | "video_izleme"
-  | "tekrar"
-  | "yanlis_analizi"
-  | "odev"
-  | "manuel"
-  | "kitap_okuma";
+export type { TaskType };
 
 export type ExistingTask = {
   id: string;
@@ -45,35 +53,6 @@ export type ExistingTask = {
   study_resource_topic_id: number | null;
   title: string;
   details: Record<string, string | number> | null;
-};
-
-type WizardStep =
-  | "ders"
-  | "ana_unite"
-  | "alt_konu"
-  | "gorev_turu"
-  | "kaynak"
-  | "detay"
-  | "not";
-
-const WIZARD_STEPS: WizardStep[] = [
-  "ders",
-  "ana_unite",
-  "alt_konu",
-  "gorev_turu",
-  "kaynak",
-  "detay",
-  "not",
-];
-
-const STEP_LABELS: Record<WizardStep, string> = {
-  ders: "Ders",
-  ana_unite: "Ana Ünite",
-  alt_konu: "Alt Konu",
-  gorev_turu: "Görev Türü",
-  kaynak: "Kaynak",
-  detay: "Detay",
-  not: "Not",
 };
 
 interface StudyResourceTopicOption {
@@ -110,81 +89,35 @@ function taskTypeUsesTrackedResources(taskType: TaskType): boolean {
   return TOPIC_TRACKED_TASK_TYPES.has(taskType);
 }
 
-function mapStudyResource(row: {
-  id: number;
-  name: string;
-  content_kind?: string | null;
+function mapExamSubject(row: {
   exam: { name: string } | { name: string }[] | null;
   subject: { name: string } | { name: string }[] | null;
-  topics:
-    | (StudyResourceTopicOption & { topic_id?: number | null })[]
-    | null;
-}): StudyResourceOption {
+}): {
+  exam: { name: string } | null;
+  subject: { name: string } | null;
+} {
   const examRaw = row.exam;
   const exam = Array.isArray(examRaw) ? examRaw[0] ?? null : examRaw;
   const subjectRaw = row.subject;
-  const subject = Array.isArray(subjectRaw) ? subjectRaw[0] ?? null : subjectRaw;
-  const topics = [...(row.topics ?? [])]
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      target_count: t.target_count,
-      order_index: t.order_index,
-      topic_id: t.topic_id ?? null,
-    }))
-    .sort((a, b) => a.order_index - b.order_index);
+  const subject = Array.isArray(subjectRaw)
+    ? subjectRaw[0] ?? null
+    : subjectRaw;
   return {
-    id: row.id,
-    name: row.name,
-    content_kind: row.content_kind ?? "soru_bankasi",
     exam: exam as { name: string } | null,
     subject: subject as { name: string } | null,
-    topics,
   };
 }
 
-const TASK_TYPE_OPTIONS: { value: TaskType; label: string }[] = [
-  { value: "ders", label: "Ders" },
-  { value: "deneme", label: "Deneme" },
-  { value: "soru_cozumu", label: "Soru Çözümü" },
-  { value: "video_izleme", label: "Video İzleme" },
-  { value: "tekrar", label: "Tekrar" },
-  { value: "yanlis_analizi", label: "Yanlış Analizi" },
-  { value: "odev", label: "Ödev" },
-  { value: "manuel", label: "Manuel Görev" },
-];
-
-/** Düzenlemede listeden çıkarılmış türlerin etiketi (değer korunur). */
-const LEGACY_TASK_TYPE_LABELS: Partial<Record<TaskType, string>> = {
-  bras_deneme: "Branş Denemesi",
-  kitap_okuma: "Kitap Okuma",
-};
+/** subject_id → kaynak listesi (topics boş; konular ayrı cache'te) */
+const resourceListCache = new Map<string, StudyResourceOption[]>();
+/** study_resource.id → kaynak konuları */
+const resourceTopicsCache = new Map<number, StudyResourceTopicOption[]>();
 
 const inputCls =
-  "w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0";
+  "w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-white/20 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 focus-visible:ring-offset-0";
 
 const labelCls =
   "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
-
-function buildSuggestedTitle(
-  taskType: TaskType,
-  subject: ProgramSubject | undefined,
-  topicName: string | undefined
-) {
-  if (taskType === "deneme") return "Deneme";
-  if (taskType === "bras_deneme") {
-    return subject ? `${subject.name} Branş Denemesi` : "Branş Denemesi";
-  }
-  if (subject && topicName) {
-    const prefix = subject.exam ? `${subject.exam} ` : "";
-    return `${prefix}${subject.name} — ${topicName}`;
-  }
-  if (subject) {
-    const prefix = subject.exam ? `${subject.exam} ` : "";
-    return `${prefix}${subject.name}`;
-  }
-  return "Ders";
-}
 
 /** Dersin konularında parent_id dolu bir satır varsa hiyerarşi vardır. */
 function subjectHasHierarchy(
@@ -193,14 +126,68 @@ function subjectHasHierarchy(
   return topics.some((t) => t.parent_id !== null);
 }
 
-function pruneDetails(details: Record<string, string | number>) {
-  return Object.fromEntries(
-    Object.entries(details).filter(([, v]) => {
-      if (v === "" || v === null || v === undefined) return false;
-      if (typeof v === "number" && Number.isNaN(v)) return false;
-      return true;
-    })
-  ) as Record<string, string | number>;
+interface FlatTopicOption {
+  /** subjectId:topicId */
+  key: string;
+  subjectId: number;
+  topicId: number;
+  anaUniteId: string;
+  label: string;
+}
+
+function buildFlatTopicOptions(subjects: ProgramSubject[]): FlatTopicOption[] {
+  const rows: FlatTopicOption[] = [];
+
+  for (const subject of subjects) {
+    const examPrefix = subject.exam ? `${subject.exam} ` : "";
+    const dersLabel = `${examPrefix}${subject.name}`;
+    const topics = subject.topics;
+    const hasHierarchy = subjectHasHierarchy(topics);
+    const parentIdsWithChildren = new Set(
+      topics
+        .map((t) => t.parent_id)
+        .filter((id): id is number => id !== null)
+    );
+
+    if (hasHierarchy) {
+      const anaUniteler = topics.filter((t) => t.parent_id === null);
+      for (const ana of anaUniteler) {
+        const children = topics.filter((t) => t.parent_id === ana.id);
+        if (!parentIdsWithChildren.has(ana.id) || children.length === 0) {
+          // Yaprak ana ünite — doğrudan seçilebilir
+          rows.push({
+            key: `${subject.id}:${ana.id}`,
+            subjectId: subject.id,
+            topicId: ana.id,
+            anaUniteId: String(ana.id),
+            label: `${dersLabel} · ${ana.name}`,
+          });
+        } else {
+          for (const child of children) {
+            rows.push({
+              key: `${subject.id}:${child.id}`,
+              subjectId: subject.id,
+              topicId: child.id,
+              anaUniteId: String(ana.id),
+              label: `${dersLabel} · ${ana.name} · ${child.name}`,
+            });
+          }
+        }
+      }
+    } else {
+      for (const topic of topics) {
+        rows.push({
+          key: `${subject.id}:${topic.id}`,
+          subjectId: subject.id,
+          topicId: topic.id,
+          anaUniteId: String(topic.id),
+          label: `${dersLabel} · ${topic.name}`,
+        });
+      }
+    }
+  }
+
+  return rows;
 }
 
 interface Props {
@@ -268,7 +255,14 @@ export default function AddTaskModal({
   const supabase = createClient();
   const isEdit = Boolean(existingTask);
 
-  const [step, setStep] = useState<WizardStep>("ders");
+  const panelRef = useRef<HTMLDivElement>(null);
+  const firstFocusRef = useRef<HTMLButtonElement>(null);
+  const topicSearchRef = useRef<HTMLInputElement>(null);
+  const handleSubmitRef = useRef<(andNew?: boolean) => Promise<void>>(
+    async () => {}
+  );
+  const [modLabel] = useState(() => modKeyLabel());
+
   const [taskType, setTaskType] = useState<TaskType>(
     existingTask?.task_type ?? "ders"
   );
@@ -299,6 +293,11 @@ export default function AddTaskModal({
   );
   const [resources, setResources] = useState<StudyResourceOption[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourceTopicsLoading, setResourceTopicsLoading] = useState(false);
+  const [topicQuery, setTopicQuery] = useState("");
+  const [showCoachNote, setShowCoachNote] = useState(() =>
+    Boolean(existingTask?.details && "coach_note" in existingTask.details)
+  );
   const [details, setDetails] = useState<Record<string, string | number>>(
     () => existingTask?.details ?? {}
   );
@@ -307,36 +306,33 @@ export default function AddTaskModal({
   );
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [addedFlash, setAddedFlash] = useState(false);
 
   const selectedSubject = subjects.find((s) => String(s.id) === subjectId);
   const topics = selectedSubject?.topics ?? [];
-  const hasHierarchy = useMemo(() => subjectHasHierarchy(topics), [topics]);
 
-  const anaUniteler = useMemo(
-    () => topics.filter((t) => t.parent_id === null),
-    [topics]
+  const flatTopicOptions = useMemo(
+    () => buildFlatTopicOptions(subjects),
+    [subjects]
   );
 
-  // Bir konunun gerçekten ana ünite olması, ona parent_id ile bağlı çocuğu
-  // olmasına bağlıdır — sadece parent_id === null olması yetmez (yaprak konular).
-  const parentIdsWithChildren = useMemo(
-    () =>
-      new Set(
-        topics
-          .map((t) => t.parent_id)
-          .filter((id): id is number => id !== null)
-      ),
-    [topics]
-  );
+  const filteredTopicOptions = useMemo(() => {
+    const q = topicQuery.trim();
+    if (!q) return flatTopicOptions.slice(0, 40);
+    return flatTopicOptions
+      .filter((opt) => matchesTr(opt.label, q))
+      .slice(0, 40);
+  }, [flatTopicOptions, topicQuery]);
 
-  const selectedAnaUniteIsLeaf =
-    Boolean(anaUniteId) && !parentIdsWithChildren.has(Number(anaUniteId));
-
-  const altKonular = useMemo(() => {
-    if (!hasHierarchy) return topics;
-    if (!anaUniteId) return [];
-    return topics.filter((t) => t.parent_id === Number(anaUniteId));
-  }, [topics, hasHierarchy, anaUniteId]);
+  const selectedFlatTopic = useMemo(() => {
+    if (!subjectId || !topicId) return null;
+    return (
+      flatTopicOptions.find(
+        (o) =>
+          String(o.subjectId) === subjectId && String(o.topicId) === topicId
+      ) ?? null
+    );
+  }, [flatTopicOptions, subjectId, topicId]);
 
   const selectedResource = resources.find((r) => String(r.id) === resourceId);
 
@@ -355,24 +351,11 @@ export default function AddTaskModal({
 
   /** Merkezi topics'e bağlı kaynak konuları (topic_id dolu) */
   const linkedResourceTopics = useMemo(
-    () =>
-      (selectedResource?.topics ?? []).filter((t) => t.topic_id != null),
+    () => (selectedResource?.topics ?? []).filter((t) => t.topic_id != null),
     [selectedResource]
   );
 
   const resourceIsTopicBased = linkedResourceTopics.length > 0;
-
-  const visibleSteps = useMemo(
-    () =>
-      hasHierarchy
-        ? WIZARD_STEPS
-        : (WIZARD_STEPS.filter((s) => s !== "ana_unite") as WizardStep[]),
-    [hasHierarchy]
-  );
-
-  const stepIndex = visibleSteps.indexOf(step);
-  const stepNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
-  const totalSteps = visibleSteps.length;
 
   const setDetail = useCallback((key: string, value: string | number) => {
     setDetails((prev) => {
@@ -386,13 +369,147 @@ export default function AddTaskModal({
     });
   }, []);
 
+  const cacheKeyForSubject = (sid: string) => (sid ? sid : "__all__");
+
+  const attachCachedTopics = useCallback(
+    (list: StudyResourceOption[]) =>
+      list.map((r) => ({
+        ...r,
+        topics: resourceTopicsCache.get(r.id) ?? r.topics,
+      })),
+    []
+  );
+
+  const loadResourceList = useCallback(async () => {
+    const key = cacheKeyForSubject(subjectId);
+    const cached = resourceListCache.get(key);
+    if (cached) {
+      setResources(attachCachedTopics(cached));
+      return;
+    }
+
+    setResourcesLoading(true);
+    let query = supabase
+      .from("study_resources")
+      .select(
+        "id, name, content_kind, exam:exams(name), subject:subjects(name)"
+      )
+      .eq("is_active", true)
+      .order("order_index");
+
+    if (subjectId) {
+      query = query.eq("subject_id", parseInt(subjectId, 10));
+    }
+
+    const { data } = await query;
+
+    const mapped: StudyResourceOption[] = (data ?? []).map((row) => {
+      const { exam, subject } = mapExamSubject(
+        row as Parameters<typeof mapExamSubject>[0]
+      );
+      return {
+        id: (row as { id: number }).id,
+        name: (row as { name: string }).name,
+        content_kind:
+          (row as { content_kind?: string | null }).content_kind ??
+          "soru_bankasi",
+        exam,
+        subject,
+        topics: [],
+      };
+    });
+
+    resourceListCache.set(key, mapped);
+    setResources(attachCachedTopics(mapped));
+    setResourcesLoading(false);
+  }, [subjectId, supabase, attachCachedTopics]);
+
+  const loadResourceTopics = useCallback(
+    async (rid: number) => {
+      const cached = resourceTopicsCache.get(rid);
+      if (cached) {
+        setResources((prev) =>
+          prev.map((r) => (r.id === rid ? { ...r, topics: cached } : r))
+        );
+        return;
+      }
+
+      setResourceTopicsLoading(true);
+      const { data } = await supabase
+        .from("study_resource_topics")
+        .select("id, name, target_count, order_index, topic_id")
+        .eq("study_resource_id", rid)
+        .order("order_index");
+
+      const topicsMapped: StudyResourceTopicOption[] = [...(data ?? [])]
+        .map((t) => ({
+          id: t.id as number,
+          name: t.name as string,
+          target_count: (t.target_count as number) ?? 0,
+          order_index: (t.order_index as number) ?? 0,
+          topic_id: (t.topic_id as number | null) ?? null,
+        }))
+        .sort((a, b) => a.order_index - b.order_index);
+
+      resourceTopicsCache.set(rid, topicsMapped);
+      setResources((prev) =>
+        prev.map((r) => (r.id === rid ? { ...r, topics: topicsMapped } : r))
+      );
+      setResourceTopicsLoading(false);
+    },
+    [supabase]
+  );
+
+  /** Edit'te seçili kaynak subject filtresine düşmezse tek satır olarak getir */
+  const ensureResourceInList = useCallback(
+    async (rid: number) => {
+      let present = false;
+      setResources((prev) => {
+        present = prev.some((r) => r.id === rid);
+        return prev;
+      });
+      if (present) return;
+
+      const { data } = await supabase
+        .from("study_resources")
+        .select(
+          "id, name, content_kind, exam:exams(name), subject:subjects(name)"
+        )
+        .eq("id", rid)
+        .maybeSingle();
+
+      if (!data) return;
+      const { exam, subject } = mapExamSubject(
+        data as Parameters<typeof mapExamSubject>[0]
+      );
+      const row: StudyResourceOption = {
+        id: (data as { id: number }).id,
+        name: (data as { name: string }).name,
+        content_kind:
+          (data as { content_kind?: string | null }).content_kind ??
+          "soru_bankasi",
+        exam,
+        subject,
+        topics: resourceTopicsCache.get(rid) ?? [],
+      };
+      setResources((prev) =>
+        prev.some((r) => r.id === rid) ? prev : [...prev, row]
+      );
+    },
+    [supabase]
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+    requestAnimationFrame(() => firstFocusRef.current?.focus());
+  }, [mounted]);
+
+  useEffect(() => {
     if (existingTask) {
-      setStep("ders");
       setTaskType(existingTask.task_type);
       setSubjectId(
         existingTask.subject_id != null ? String(existingTask.subject_id) : ""
@@ -420,11 +537,14 @@ export default function AddTaskModal({
           : ""
       );
       setDetails(existingTask.details ?? {});
+      setShowCoachNote(
+        Boolean(existingTask.details && "coach_note" in existingTask.details)
+      );
       setAdditionalDays(new Set());
+      setTopicQuery("");
       return;
     }
 
-    setStep("ders");
     setTaskType("ders");
     setSubjectId("");
     setAnaUniteId("");
@@ -434,38 +554,44 @@ export default function AddTaskModal({
     setResourceId("");
     setResourceTopicId("");
     setDetails({});
+    setShowCoachNote(false);
     setAdditionalDays(new Set());
+    setTopicQuery("");
   }, [planDate, existingTask, subjects]);
 
+  // Edit modunda mevcut kaynak için liste + konuları yükle
   useEffect(() => {
-    if (!mounted) return;
-
-    let cancelled = false;
-
-    (async () => {
-      setResourcesLoading(true);
-      const { data } = await supabase
-        .from("study_resources")
-        .select(
-          "id, name, content_kind, exam:exams(name), subject:subjects(name), topics:study_resource_topics(id, name, target_count, order_index, topic_id)"
-        )
-        .eq("is_active", true)
-        .order("order_index");
-
-      if (!cancelled) {
-        setResources(
-          (data ?? []).map((row) =>
-            mapStudyResource(row as Parameters<typeof mapStudyResource>[0])
-          )
-        );
-        setResourcesLoading(false);
-      }
+    if (!mounted || !existingTask?.study_resource_id) return;
+    const rid = existingTask.study_resource_id;
+    void (async () => {
+      await loadResourceList();
+      await ensureResourceInList(rid);
+      await loadResourceTopics(rid);
     })();
+  }, [
+    mounted,
+    existingTask?.study_resource_id,
+    loadResourceList,
+    loadResourceTopics,
+    ensureResourceInList,
+  ]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [mounted, supabase]);
+  // Kaynak seçilince konuları tembel yükle
+  useEffect(() => {
+    if (!resourceId) return;
+    void loadResourceTopics(parseInt(resourceId, 10));
+  }, [resourceId, loadResourceTopics]);
+
+  // Subject değişince kaynak listesini cache'ten hazırla (konu cache'i birleştir)
+  useEffect(() => {
+    const key = cacheKeyForSubject(subjectId);
+    const cached = resourceListCache.get(key);
+    if (cached) {
+      setResources(attachCachedTopics(cached));
+    } else {
+      setResources([]);
+    }
+  }, [subjectId, attachCachedTopics]);
 
   useEffect(() => {
     if (titleEdited) return;
@@ -475,53 +601,75 @@ export default function AddTaskModal({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Enter" && isModKey(e)) {
+        e.preventDefault();
+        if (e.shiftKey || isEdit) {
+          void handleSubmitRef.current(false);
+        } else {
+          void handleSubmitRef.current(true);
+        }
+        return;
+      }
+
+      if (
+        e.key === "Enter" &&
+        !isModKey(e) &&
+        !isTextareaTarget(e.target) &&
+        isTypingTarget(e.target) &&
+        panelRef.current &&
+        e.target instanceof HTMLElement
+      ) {
+        e.preventDefault();
+        focusNextField(panelRef.current, e.target);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, isEdit]);
 
   useEffect(() => {
-    const orig = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = orig;
-    };
+    if (!addedFlash) return;
+    const t = window.setTimeout(() => setAddedFlash(false), 1600);
+    return () => window.clearTimeout(t);
+  }, [addedFlash]);
+
+  const handleTaskTypeChange = useCallback(
+    (v: string) => {
+      const next = v as TaskType;
+      setTaskType(next);
+      // Tür değişince eski detay alanlarını temizle (edit dahil).
+      setDetails({});
+      setShowCoachNote(false);
+      // Konu-takip türüne geçildiyse uyumsuz kaynağı temizle
+      setResourceId((prev) => {
+        if (!prev || !taskTypeUsesTrackedResources(next)) return prev;
+        const res = resources.find((r) => String(r.id) === prev);
+        if (res && TRACKED_CONTENT_KINDS.has(res.content_kind)) return prev;
+        setResourceTopicId("");
+        return "";
+      });
+    },
+    [resources]
+  );
+
+  const handleFlatTopicSelect = useCallback((opt: FlatTopicOption) => {
+    setSubjectId(String(opt.subjectId));
+    setAnaUniteId(opt.anaUniteId);
+    setTopicId(String(opt.topicId));
+    setTopicQuery("");
   }, []);
 
-  const handleTaskTypeChange = useCallback((v: string) => {
-    const next = v as TaskType;
-    setTaskType(next);
-    // Tür değişince eski detay alanlarını temizle (edit dahil).
-    setDetails({});
-    // Konu-takip türüne geçildiyse uyumsuz kaynağı temizle
-    setResourceId((prev) => {
-      if (!prev || !taskTypeUsesTrackedResources(next)) return prev;
-      const res = resources.find((r) => String(r.id) === prev);
-      if (res && TRACKED_CONTENT_KINDS.has(res.content_kind)) return prev;
-      setResourceTopicId("");
-      return "";
-    });
-  }, [resources]);
-
-  const handleSubjectChange = useCallback((id: string) => {
-    setSubjectId(id);
+  const clearTopicSelection = useCallback(() => {
+    setSubjectId("");
     setAnaUniteId("");
     setTopicId("");
+    setTopicQuery("");
   }, []);
-
-  const handleAnaUniteChange = useCallback(
-    (id: string) => {
-      setAnaUniteId(id);
-      // Yaprak konu (çocuğu yok) seçildiyse doğrudan final topic olur.
-      if (id && !parentIdsWithChildren.has(Number(id))) {
-        setTopicId(id);
-      } else {
-        setTopicId("");
-      }
-    },
-    [parentIdsWithChildren]
-  );
 
   const handleResourceChange = useCallback((id: string) => {
     setResourceId(id);
@@ -535,86 +683,24 @@ export default function AddTaskModal({
     }
   }, [resourceId, resourceIsTopicBased, resourceTopicId]);
 
-  const canGoNext = (() => {
-    switch (step) {
-      case "ders":
-        return Boolean(subjectId);
-      case "ana_unite":
-        return Boolean(anaUniteId);
-      case "alt_konu":
-        return Boolean(topicId);
-      case "gorev_turu":
-        return Boolean(taskType);
-      case "kaynak":
-      case "detay":
-        return true; // opsiyonel
-      case "not":
-        return true;
-      default:
-        return false;
-    }
-  })();
+  const dayCount = 1 + additionalDays.size;
 
-  const goNext = () => {
-    if (!canGoNext) return;
-    if (step === "ders") {
-      setStep(hasHierarchy ? "ana_unite" : "alt_konu");
-      return;
-    }
-    if (step === "ana_unite") {
-      // Yaprak konu seçildiyse alt konu adımını atla.
-      setStep(selectedAnaUniteIsLeaf ? "gorev_turu" : "alt_konu");
-      return;
-    }
-    if (step === "alt_konu") {
-      setStep("gorev_turu");
-      return;
-    }
-    if (step === "gorev_turu") {
-      setStep("kaynak");
-      return;
-    }
-    if (step === "kaynak") {
-      setStep("detay");
-      return;
-    }
-    if (step === "detay") {
-      setStep("not");
-    }
-  };
+  const resetForNew = useCallback(() => {
+    // taskType, subjectId ve anaUniteId korunur (anaUniteId state'e dokunulmaz)
+    setTopicId("");
+    setResourceTopicId("");
+    setDetails({});
+    setShowCoachNote(false);
+    setAdditionalDays(new Set());
+    setTitleEdited(false);
+    setTopicQuery("");
+    const subj = subjects.find((s) => String(s.id) === subjectId);
+    setTitle(buildSuggestedTitle(taskType, subj, undefined));
+    setAddedFlash(true);
+    requestAnimationFrame(() => topicSearchRef.current?.focus());
+  }, [subjects, subjectId, taskType, anaUniteId]);
 
-  const goBack = () => {
-    if (step === "not") {
-      setStep("detay");
-      return;
-    }
-    if (step === "detay") {
-      setStep("kaynak");
-      return;
-    }
-    if (step === "kaynak") {
-      setStep("gorev_turu");
-      return;
-    }
-    if (step === "gorev_turu") {
-      // Alt konu atlanmışsa (yaprak) doğrudan ana üniteye dön.
-      if (hasHierarchy && selectedAnaUniteIsLeaf) {
-        setStep("ana_unite");
-      } else {
-        setStep("alt_konu");
-      }
-      return;
-    }
-    if (step === "alt_konu") {
-      setStep(hasHierarchy ? "ana_unite" : "ders");
-      return;
-    }
-    if (step === "ana_unite") {
-      setStep("ders");
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (andNew = false) => {
     if (!planDate) {
       onError("Geçersiz gün.");
       return;
@@ -640,40 +726,42 @@ export default function AddTaskModal({
       return;
     }
 
-    // Genel Deneme derse bağlı değil — seçilmiş olsa bile null gönder.
-    const isGeneralMock = taskType === "deneme";
-    const cleanedDetails = pruneDetails(details);
-    const subject_id = isGeneralMock
-      ? null
-      : subjectId
-        ? parseInt(subjectId)
-        : null;
-    const topic_id = isGeneralMock
-      ? null
-      : topicId
-        ? parseInt(topicId)
-        : null;
     const study_resource_id = resourceId ? parseInt(resourceId, 10) : null;
     // Yalnızca merkezi topics'e bağlı (topic_id dolu) satır kaydedilir
     const selectedSrt = linkedResourceTopics.find(
       (t) => String(t.id) === resourceTopicId
     );
     const study_resource_topic_id =
-      selectedSrt && selectedSrt.topic_id != null
-        ? selectedSrt.id
-        : null;
+      selectedSrt && selectedSrt.topic_id != null ? selectedSrt.id : null;
+
+    const subjectIdNum = subjectId ? parseInt(subjectId) : null;
+    const topicIdNum = topicId ? parseInt(topicId) : null;
 
     if (existingTask) {
+      const insertShape = buildTaskInsertPayload({
+        studentId,
+        teacherId: user.id,
+        planDate,
+        taskType,
+        title: title.trim(),
+        subjectId: subjectIdNum,
+        topicId: topicIdNum,
+        studyResourceId: study_resource_id,
+        studyResourceTopicId: study_resource_topic_id,
+        details,
+        orderIndex: 0,
+        draftMode,
+      });
       const { error } = await supabase
         .from("study_plan_tasks")
         .update({
-          subject_id,
-          topic_id,
-          task_type: taskType,
-          title: title.trim(),
-          study_resource_id,
-          study_resource_topic_id,
-          details: cleanedDetails,
+          subject_id: insertShape.subject_id,
+          topic_id: insertShape.topic_id,
+          task_type: insertShape.task_type,
+          title: insertShape.title,
+          study_resource_id: insertShape.study_resource_id,
+          study_resource_topic_id: insertShape.study_resource_topic_id,
+          details: insertShape.details,
         })
         .eq("id", existingTask.id);
 
@@ -691,24 +779,22 @@ export default function AddTaskModal({
 
     const insertTaskForDate = async (targetDate: string) => {
       const orderIndex = taskCountForDate(targetDate);
-      const { error } = await supabase.from("study_plan_tasks").insert({
-        student_id: studentId,
-        teacher_id: user.id,
-        plan_date: targetDate,
-        subject_id,
-        topic_id,
-        task_type: taskType,
-        title: title.trim(),
-        start_time: null,
-        end_time: null,
-        break_minutes: null,
-        order_index: orderIndex,
-        is_completed: false,
-        study_resource_id,
-        study_resource_topic_id,
-        details: cleanedDetails,
-        is_published: !draftMode,
-      });
+      const { error } = await supabase.from("study_plan_tasks").insert(
+        buildTaskInsertPayload({
+          studentId,
+          teacherId: user.id,
+          planDate: targetDate,
+          taskType,
+          title: title.trim(),
+          subjectId: subjectIdNum,
+          topicId: topicIdNum,
+          studyResourceId: study_resource_id,
+          studyResourceTopicId: study_resource_topic_id,
+          details,
+          orderIndex,
+          draftMode,
+        })
+      );
       if (error) {
         throw { date: targetDate, message: error.message };
       }
@@ -741,6 +827,10 @@ export default function AddTaskModal({
     }
 
     if (failed.length === 0) {
+      if (andNew) {
+        resetForNew();
+        return;
+      }
       onClose();
       return;
     }
@@ -755,8 +845,14 @@ export default function AddTaskModal({
     onError(
       `${succeeded.length} güne eklendi, ${failed.length} günde hata oluştu (${failed.join(", ")}).`
     );
+    if (andNew) {
+      resetForNew();
+      return;
+    }
     onClose();
   };
+
+  handleSubmitRef.current = handleSubmit;
 
   if (!mounted) return null;
 
@@ -765,580 +861,471 @@ export default function AddTaskModal({
       ? String(details[key])
       : "";
 
+  const durationKey =
+    taskType === "video_izleme"
+      ? "video_duration_minutes"
+      : "estimated_duration_minutes";
+
+  const showSubjectTopic = taskType !== "deneme";
+
   return createPortal(
-    <div className="fixed inset-0 z-50">
-      <button
-        type="button"
-        aria-label="Paneli kapat"
-        onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-      />
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="add-task-modal-title"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--surface)] animate-in slide-in-from-right fill-mode-both duration-200 motion-reduce:animate-none lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[400px] lg:border-l lg:border-[var(--border)] lg:shadow-lg"
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
 
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-task-modal-title"
-        className="fixed inset-y-0 right-0 flex w-full max-w-md animate-in slide-in-from-right fill-mode-both flex-col border-l border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl shadow-[var(--primary)]/20 duration-300"
-      >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
-
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <div>
-            <h2
-              id="add-task-modal-title"
-              className="text-base font-bold text-[var(--text-primary)]"
-            >
-              {isEdit ? "Görevi Düzenle" : "Görev Ekle"} — {dayLabel}
-            </h2>
-            <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-              Adım {stepNumber}/{totalSteps} · {STEP_LABELS[step]}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
-            aria-label="Kapat"
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-4">
+        <div>
+          <h2
+            id="add-task-modal-title"
+            className="text-base font-bold text-[var(--text-primary)]"
           >
-            <X className="h-4 w-4" />
-          </button>
+            {isEdit ? "Görevi Düzenle" : "Görev Ekle"} — {dayLabel}
+          </h2>
+          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
+            {title.trim() || "Yeni görev"}
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text-primary)]"
+          aria-label="Kapat"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-        {/* Step indicator — edit modunda adımlara tıklanabilir */}
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-[var(--border)] px-5 py-3">
-          {visibleSteps.map((s, i) => {
-            const active = s === step;
-            const done = stepIndex > i;
-            const clickable = isEdit || done;
-            return (
-              <div key={s} className="flex flex-1 items-center gap-1.5">
+      {addedFlash && (
+        <div className="shrink-0 border-b border-emerald-500/30 bg-emerald-500/10 px-5 py-2 text-center text-xs font-semibold text-emerald-300">
+          Eklendi
+        </div>
+      )}
+
+      {/* Single scrollable form */}
+      <div className="flex-1 space-y-6 overflow-y-auto p-5">
+        {/* 3.1 Görev türü */}
+        <section className="space-y-2.5">
+          <p className={labelCls}>
+            <Tag className="h-3.5 w-3.5" />
+            Görev Türü
+          </p>
+          <TaskTypePicker
+            value={taskType}
+            onChange={handleTaskTypeChange}
+            firstFocusRef={firstFocusRef}
+            showLegacy={isEdit}
+          />
+        </section>
+
+        {/* 3.2 Ders + konu */}
+        {showSubjectTopic && (
+          <section className="space-y-2.5">
+            <p className={labelCls}>
+              <BookOpen className="h-3.5 w-3.5" />
+              Ders / Konu
+            </p>
+
+            {selectedFlatTopic ? (
+              <div className="flex items-start gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-3 py-2.5">
+                <span className="min-w-0 flex-1 text-sm font-medium text-[var(--text-primary)]">
+                  {selectedFlatTopic.label}
+                </span>
                 <button
                   type="button"
-                  disabled={!clickable && !active}
-                  onClick={() => {
-                    if (clickable || active) setStep(s);
-                  }}
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold transition-colors ${
-                    active
-                      ? "border-[var(--primary)] bg-[var(--primary)]/20 text-[var(--accent)]"
-                      : done || isEdit
-                        ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--accent)] hover:border-[var(--primary)]/60"
-                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]"
-                  } disabled:cursor-default`}
-                  title={STEP_LABELS[s]}
+                  onClick={clearTopicSelection}
+                  className="shrink-0 rounded-md p-1 text-[var(--text-muted)] transition-colors duration-150 hover:bg-white/10 hover:text-[var(--text-primary)]"
+                  aria-label="Seçimi temizle"
                 >
-                  {i + 1}
+                  <X className="h-3.5 w-3.5" />
                 </button>
-                {i < visibleSteps.length - 1 && (
-                  <div
-                    className={`h-px flex-1 ${
-                      done || isEdit
-                        ? "bg-[var(--primary)]/40"
-                        : "bg-[var(--border)]"
-                    }`}
-                  />
-                )}
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    ref={topicSearchRef}
+                    type="search"
+                    value={topicQuery}
+                    onChange={(e) => setTopicQuery(e.target.value)}
+                    placeholder="Ders veya konu ara…"
+                    className={`${inputCls} pl-9`}
+                  />
+                </div>
+                <ul className="max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-2)]">
+                  {filteredTopicOptions.length === 0 ? (
+                    <li className="px-3 py-4 text-center text-sm text-[var(--text-muted)]">
+                      Sonuç yok
+                    </li>
+                  ) : (
+                    filteredTopicOptions.map((opt) => (
+                      <li key={opt.key}>
+                        <button
+                          type="button"
+                          onClick={() => handleFlatTopicSelect(opt)}
+                          className="w-full px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--primary)]/10 hover:text-[var(--text-primary)]"
+                        >
+                          {opt.label}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
 
-        {/* Step content */}
-        <div className="flex-1 space-y-5 overflow-y-auto p-5">
-          {step === "ders" && (
-            <SearchableSelect
-              label="Ders"
-              icon={<BookOpen className="h-3.5 w-3.5" />}
-              value={subjectId}
-              onChange={handleSubjectChange}
-              options={[
-                { value: "", label: "— Ders seçin —" },
-                ...subjects.map((s) => ({
-                  value: String(s.id),
-                  label: s.name,
-                  group: s.exam ?? "Diğer",
-                })),
-              ]}
-              placeholder="— Ders seçin —"
-            />
-          )}
+        {/* 3.3 Kaynak */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className={labelCls}>
+              <BookMarked className="h-3.5 w-3.5" />
+              Kaynak (opsiyonel)
+            </p>
+            {(resourcesLoading || resourceTopicsLoading) && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-muted)]" />
+            )}
+          </div>
 
-          {step === "ana_unite" && (
-            <SearchableSelect
-              label="Ana Ünite"
-              icon={<Layers className="h-3.5 w-3.5" />}
-              value={anaUniteId}
-              onChange={handleAnaUniteChange}
-              options={[
-                { value: "", label: "— Ana ünite seçin —" },
-                ...anaUniteler.map((t) => ({
-                  value: String(t.id),
-                  label: t.name,
-                  hint: parentIdsWithChildren.has(t.id)
-                    ? "alt konular →"
-                    : undefined,
-                })),
-              ]}
-              placeholder="— Ana ünite seçin —"
-              emptyText="Bu derste ana ünite yok"
-            />
-          )}
+          {taskTypeUsesTrackedResources(taskType) ? (
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Bu görev türünde yalnızca soru bankası / konu anlatımı kaynakları
+              listelenir.
+            </p>
+          ) : null}
 
-          {step === "alt_konu" && (
+          <SearchableSelect
+            label="Kaynak"
+            icon={<BookMarked className="h-3.5 w-3.5" />}
+            value={resourceId}
+            onChange={handleResourceChange}
+            onOpen={() => {
+              void loadResourceList();
+            }}
+            options={[
+              { value: "", label: "— Kaynak seçin (opsiyonel) —" },
+              ...selectableResources.map((r) => {
+                const hintParts: string[] = [];
+                if (r.exam?.name) hintParts.push(r.exam.name);
+                if (r.subject?.name) hintParts.push(r.subject.name);
+                return {
+                  value: String(r.id),
+                  label: r.name,
+                  hint:
+                    hintParts.length > 0 ? hintParts.join(" · ") : undefined,
+                };
+              }),
+            ]}
+            placeholder="— Kaynak seçin (opsiyonel) —"
+            emptyText={
+              resourcesLoading
+                ? "Kaynaklar yükleniyor…"
+                : taskTypeUsesTrackedResources(taskType)
+                  ? "Bu tür için uygun kaynak yok"
+                  : "Henüz kaynak yok"
+            }
+          />
+
+          {resourceId && resourceTopicsLoading ? (
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Kaynak konuları yükleniyor…
+            </p>
+          ) : resourceId && !resourceIsTopicBased ? (
+            <p className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)]/50 px-3 py-3 text-xs text-[var(--text-muted)]">
+              Bu kaynak konu bazlı değil.
+            </p>
+          ) : resourceId ? (
             <SearchableSelect
-              label={hasHierarchy ? "Alt Konu" : "Konu"}
-              icon={<ListTree className="h-3.5 w-3.5" />}
-              value={topicId}
-              onChange={setTopicId}
+              label="Kaynak Konusu"
+              icon={<Tag className="h-3.5 w-3.5" />}
+              value={resourceTopicId}
+              onChange={setResourceTopicId}
+              disabled={linkedResourceTopics.length === 0}
               options={[
                 { value: "", label: "— Konu seçin —" },
-                ...altKonular.map((t) => ({
+                ...linkedResourceTopics.map((t) => ({
                   value: String(t.id),
-                  label: t.name,
+                  label:
+                    t.target_count > 0
+                      ? `${t.name} (${t.target_count} soru)`
+                      : t.name,
                 })),
               ]}
-              disabled={altKonular.length === 0}
               placeholder="— Konu seçin —"
-              emptyText={
-                hasHierarchy
-                  ? "Bu üniteye ait alt konu yok"
-                  : "Bu derse ait konu yok"
+              emptyText="Bu kaynakta konu yok"
+            />
+          ) : null}
+        </section>
+
+        {/* 3.4 Detaylar */}
+        <section className="space-y-4">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+            Detaylar (opsiyonel)
+          </p>
+
+          {/* Süre — her türde */}
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>
+              <Clock className="h-3.5 w-3.5" />
+              Süre (dakika)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={detailStr(durationKey)}
+              onChange={(e) =>
+                setDetail(
+                  durationKey,
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
               }
+              placeholder="örn. 40"
+              className={inputCls}
             />
-          )}
+          </div>
 
-          {step === "gorev_turu" && (
-            <SearchableSelect
-              label="Görev Türü"
-              icon={<Tag className="h-3.5 w-3.5" />}
-              value={taskType}
-              onChange={handleTaskTypeChange}
-              searchable={false}
-              options={[
-                ...TASK_TYPE_OPTIONS.map((opt) => ({
-                  value: opt.value,
-                  label: opt.label,
-                })),
-                ...(isEdit &&
-                LEGACY_TASK_TYPE_LABELS[taskType] &&
-                !TASK_TYPE_OPTIONS.some((o) => o.value === taskType)
-                  ? [
-                      {
-                        value: taskType,
-                        label: LEGACY_TASK_TYPE_LABELS[taskType] as string,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          )}
-
-          {step === "kaynak" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                  Kaynak (opsiyonel)
-                </p>
-                {resourcesLoading && (
-                  <span className="text-[10px] text-[var(--text-muted)]">
-                    Kaynaklar yükleniyor…
-                  </span>
-                )}
-              </div>
-
-              {taskTypeUsesTrackedResources(taskType) ? (
-                <p className="text-[11px] text-[var(--text-muted)]">
-                  Bu görev türünde yalnızca soru bankası / konu anlatımı
-                  kaynakları listelenir.
-                </p>
-              ) : null}
-
-              <SearchableSelect
-                label="Kaynak"
-                icon={<BookMarked className="h-3.5 w-3.5" />}
-                value={resourceId}
-                onChange={handleResourceChange}
-                disabled={resourcesLoading}
-                options={[
-                  { value: "", label: "— Kaynak seçin (opsiyonel) —" },
-                  ...selectableResources.map((r) => {
-                    const hintParts: string[] = [];
-                    if (r.exam?.name) hintParts.push(r.exam.name);
-                    if (r.subject?.name) hintParts.push(r.subject.name);
-                    return {
-                      value: String(r.id),
-                      label: r.name,
-                      hint:
-                        hintParts.length > 0
-                          ? hintParts.join(" · ")
-                          : undefined,
-                    };
-                  }),
-                ]}
-                placeholder="— Kaynak seçin (opsiyonel) —"
-                emptyText={
-                  taskTypeUsesTrackedResources(taskType)
-                    ? "Bu tür için uygun kaynak yok"
-                    : "Henüz kaynak yok"
-                }
+          {taskType === "video_izleme" && (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>
+                <Link2 className="h-3.5 w-3.5" />
+                Video Bağlantısı
+              </label>
+              <input
+                type="url"
+                value={detailStr("video_url")}
+                onChange={(e) => setDetail("video_url", e.target.value)}
+                placeholder="https://…"
+                className={inputCls}
               />
-
-              {resourceId && !resourceIsTopicBased ? (
-                <p className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)]/50 px-3 py-3 text-xs text-[var(--text-muted)]">
-                  Bu kaynak konu bazlı değil.
-                </p>
-              ) : (
-                <SearchableSelect
-                  label="Kaynak Konusu"
-                  icon={<Tag className="h-3.5 w-3.5" />}
-                  value={resourceTopicId}
-                  onChange={setResourceTopicId}
-                  disabled={!resourceId || linkedResourceTopics.length === 0}
-                  options={[
-                    { value: "", label: "— Konu seçin —" },
-                    ...linkedResourceTopics.map((t) => ({
-                      value: String(t.id),
-                      label:
-                        t.target_count > 0
-                          ? `${t.name} (${t.target_count} soru)`
-                          : t.name,
-                    })),
-                  ]}
-                  placeholder="— Konu seçin —"
-                  emptyText="Bu kaynakta konu yok"
-                />
-              )}
             </div>
           )}
 
-          {step === "detay" && (
-            <div className="space-y-4">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                Detaylar (opsiyonel)
-              </p>
-
-              {taskType === "video_izleme" && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Link2 className="h-3.5 w-3.5" />
-                      Video Bağlantısı
-                    </label>
-                    <input
-                      type="url"
-                      value={detailStr("video_url")}
-                      onChange={(e) => setDetail("video_url", e.target.value)}
-                      placeholder="https://…"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Clock className="h-3.5 w-3.5" />
-                      Video Süresi (dakika)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={detailStr("video_duration_minutes")}
-                      onChange={(e) =>
-                        setDetail(
-                          "video_duration_minutes",
-                          e.target.value === ""
-                            ? ""
-                            : Number(e.target.value)
-                        )
-                      }
-                      placeholder="örn. 25"
-                      className={inputCls}
-                    />
-                  </div>
-                </>
-              )}
-
-              {(taskType === "deneme" || taskType === "bras_deneme") && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <BookMarked className="h-3.5 w-3.5" />
-                      Yayın
-                    </label>
-                    <input
-                      type="text"
-                      value={detailStr("mock_publisher")}
-                      onChange={(e) =>
-                        setDetail("mock_publisher", e.target.value)
-                      }
-                      placeholder="örn. 3D Yayınları"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <FileText className="h-3.5 w-3.5" />
-                      Deneme Adı
-                    </label>
-                    <input
-                      type="text"
-                      value={detailStr("mock_name")}
-                      onChange={(e) => setDetail("mock_name", e.target.value)}
-                      placeholder="örn. TYT Genel Deneme 12"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Clock className="h-3.5 w-3.5" />
-                      Tahmini Süre (dakika)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={detailStr("estimated_duration_minutes")}
-                      onChange={(e) =>
-                        setDetail(
-                          "estimated_duration_minutes",
-                          e.target.value === ""
-                            ? ""
-                            : Number(e.target.value)
-                        )
-                      }
-                      placeholder="örn. 135"
-                      className={inputCls}
-                    />
-                  </div>
-                </>
-              )}
-
-              {(taskType === "soru_cozumu" ||
-                taskType === "tekrar" ||
-                taskType === "yanlis_analizi" ||
-                taskType === "odev") && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Hash className="h-3.5 w-3.5" />
-                      Sayfa / Test Aralığı
-                    </label>
-                    <input
-                      type="text"
-                      value={detailStr("page_range")}
-                      onChange={(e) => setDetail("page_range", e.target.value)}
-                      placeholder='örn. "165-204"'
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Hash className="h-3.5 w-3.5" />
-                      Soru Sayısı
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={detailStr("planned_question_count")}
-                      onChange={(e) =>
-                        setDetail(
-                          "planned_question_count",
-                          e.target.value === ""
-                            ? ""
-                            : Number(e.target.value)
-                        )
-                      }
-                      placeholder="örn. 40"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>
-                      <Clock className="h-3.5 w-3.5" />
-                      Tahmini Süre (dakika)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={detailStr("estimated_duration_minutes")}
-                      onChange={(e) =>
-                        setDetail(
-                          "estimated_duration_minutes",
-                          e.target.value === ""
-                            ? ""
-                            : Number(e.target.value)
-                        )
-                      }
-                      placeholder="örn. 45"
-                      className={inputCls}
-                    />
-                  </div>
-                </>
-              )}
-
-              {(taskType === "ders" ||
-                taskType === "manuel" ||
-                taskType === "kitap_okuma") && (
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>
-                    <Clock className="h-3.5 w-3.5" />
-                    Tahmini Süre (dakika)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={detailStr("estimated_duration_minutes")}
-                    onChange={(e) =>
-                      setDetail(
-                        "estimated_duration_minutes",
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
-                    placeholder="örn. 40"
-                    className={inputCls}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === "not" && (
-            <div className="space-y-4">
+          {(taskType === "deneme" || taskType === "bras_deneme") && (
+            <>
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Koç Notu
+                  <BookMarked className="h-3.5 w-3.5" />
+                  Yayın
                 </label>
-                <textarea
-                  value={detailStr("coach_note")}
-                  onChange={(e) => setDetail("coach_note", e.target.value)}
-                  rows={5}
-                  placeholder="Öğrenciye özel not (opsiyonel)…"
-                  className={`${inputCls} resize-none`}
+                <input
+                  type="text"
+                  value={detailStr("mock_publisher")}
+                  onChange={(e) => setDetail("mock_publisher", e.target.value)}
+                  placeholder="örn. 3D Yayınları"
+                  className={inputCls}
                 />
               </div>
-              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                Kaydettiğinizde görev öğrencinin programına eklenir.
-                {title.trim() ? (
-                  <>
-                    {" "}
-                    Başlık:{" "}
-                    <span className="text-[var(--text-secondary)] font-medium">
-                      {title.trim()}
-                    </span>
-                  </>
-                ) : null}
-              </p>
-
-              {!isEdit && weekDays && weekDays.length > 0 && (
-                <div className="space-y-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/50 p-3">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5 text-[var(--accent)]" />
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Başka günlere de ekle
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Birincil gün ({dayLabel}) zaten seçili. İstersen aynı görevi
-                    haftanın diğer günlerine de ekle.
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                    {weekDays.map((d, i) => {
-                      const dateStr = toISODateLocal(d);
-                      const isPrimary = dateStr === planDate;
-                      const checked =
-                        isPrimary || additionalDays.has(dateStr);
-                      return (
-                        <button
-                          key={dateStr}
-                          type="button"
-                          disabled={isPrimary || loading}
-                          onClick={() => {
-                            if (isPrimary) return;
-                            setAdditionalDays((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(dateStr)) next.delete(dateStr);
-                              else next.add(dateStr);
-                              return next;
-                            });
-                          }}
-                          className={`flex flex-col items-start rounded-lg border px-2.5 py-2 text-left transition-colors disabled:cursor-default ${
-                            checked
-                              ? isPrimary
-                                ? "border-[var(--primary)]/50 bg-[var(--primary)]/15 text-[var(--accent)]"
-                                : "border-[var(--primary)]/40 bg-[var(--primary)]/20 text-[var(--text-primary)]"
-                              : "border-[var(--border)] bg-[var(--bg)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--text-secondary)]"
-                          }`}
-                        >
-                          <span className="text-xs font-bold">
-                            {DAY_LABELS_SHORT[i]}
-                            {isPrimary ? " · bu gün" : ""}
-                          </span>
-                          <span className="text-[10px] opacity-80">
-                            {formatDaySub(d)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>
+                  <FileText className="h-3.5 w-3.5" />
+                  Deneme Adı
+                </label>
+                <input
+                  type="text"
+                  value={detailStr("mock_name")}
+                  onChange={(e) => setDetail("mock_name", e.target.value)}
+                  placeholder="örn. TYT Genel Deneme 12"
+                  className={inputCls}
+                />
+              </div>
+            </>
           )}
-        </div>
 
-        {/* Footer nav */}
-        <div className="flex shrink-0 gap-3 border-t border-[var(--border)] px-5 py-4">
-          {step !== "ders" ? (
-            <button
-              type="button"
-              onClick={goBack}
-              disabled={loading}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-white/[0.08] hover:text-[var(--text-primary)] disabled:opacity-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Geri
-            </button>
+          {(taskType === "soru_cozumu" ||
+            taskType === "tekrar" ||
+            taskType === "yanlis_analizi" ||
+            taskType === "odev") && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>
+                  <Hash className="h-3.5 w-3.5" />
+                  Sayfa / Test Aralığı
+                </label>
+                <input
+                  type="text"
+                  value={detailStr("page_range")}
+                  onChange={(e) => setDetail("page_range", e.target.value)}
+                  placeholder='örn. "165-204"'
+                  className={inputCls}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>
+                  <Hash className="h-3.5 w-3.5" />
+                  Soru Sayısı
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={detailStr("planned_question_count")}
+                  onChange={(e) =>
+                    setDetail(
+                      "planned_question_count",
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  placeholder="örn. 40"
+                  className={inputCls}
+                />
+              </div>
+            </>
+          )}
+
+          {showCoachNote ? (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>
+                <MessageSquare className="h-3.5 w-3.5" />
+                Koç Notu
+              </label>
+              <textarea
+                value={detailStr("coach_note")}
+                onChange={(e) => setDetail("coach_note", e.target.value)}
+                rows={4}
+                placeholder="Öğrenciye özel not (opsiyonel)…"
+                className={`${inputCls} resize-none`}
+              />
+            </div>
           ) : (
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
+              onClick={() => setShowCoachNote(true)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)] transition-colors duration-150 hover:text-[var(--text-primary)]"
             >
-              İptal
+              <Plus className="h-3 w-3" />
+              Koç notu
             </button>
           )}
+        </section>
 
-          {step === "not" ? (
+        {/* 3.5 Günler */}
+        {!isEdit && weekDays && weekDays.length > 0 && (
+          <section className="space-y-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/50 p-3">
+            <div className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-[var(--accent)]" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                Başka günlere de ekle
+              </p>
+            </div>
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Birincil gün ({dayLabel}) zaten seçili. İstersen aynı görevi
+              haftanın diğer günlerine de ekle.
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {weekDays.map((d, i) => {
+                const dateStr = toISODateLocal(d);
+                const isPrimary = dateStr === planDate;
+                const checked = isPrimary || additionalDays.has(dateStr);
+                return (
+                  <label
+                    key={dateStr}
+                    className={`flex cursor-pointer flex-col items-start rounded-lg border px-2.5 py-2 text-left transition-colors duration-150 focus-within:ring-2 focus-within:ring-[var(--primary)]/40 ${
+                      checked
+                        ? isPrimary
+                          ? "border-[var(--primary)]/50 bg-[var(--primary)]/15 text-[var(--accent)]"
+                          : "border-[var(--primary)]/40 bg-[var(--primary)]/20 text-[var(--text-primary)]"
+                        : "border-[var(--border)] bg-[var(--bg)] text-[var(--text-muted)] hover:border-[var(--primary)]/30 hover:text-[var(--text-secondary)]"
+                    } ${isPrimary || loading ? "cursor-default" : ""}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={isPrimary || loading}
+                        onChange={() => {
+                          if (isPrimary) return;
+                          setAdditionalDays((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(dateStr)) next.delete(dateStr);
+                            else next.add(dateStr);
+                            return next;
+                          });
+                        }}
+                        className="h-3 w-3 rounded border-[var(--border)] accent-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+                      />
+                      <span className="text-xs font-bold">
+                        {DAY_LABELS_SHORT[i]}
+                        {isPrimary ? " · bu gün" : ""}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 pl-4.5 text-[10px] opacity-80">
+                      {formatDaySub(d)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--border)] px-5 py-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] text-[var(--text-muted)]">
+            {!isEdit && dayCount > 1
+              ? `${dayCount} güne eklenecek`
+              : !isEdit
+                ? "1 güne eklenecek"
+                : null}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors duration-150 hover:bg-white/[0.08] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+          >
+            İptal
+          </button>
+
+          {!isEdit && (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit(true)}
               disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:shadow-[var(--primary)]/50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors duration-150 hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
               )}
-              {loading
-                ? isEdit
-                  ? "Güncelleniyor…"
-                  : "Kaydediliyor…"
-                : isEdit
-                  ? "Güncelle"
-                  : "Görevi Kaydet"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={!canGoNext}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 hover:shadow-[var(--primary)]/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              İleri
-              <ChevronRight className="h-4 w-4" />
+              Kaydet ve yeni
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => void handleSubmit(false)}
+            disabled={loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 text-sm font-bold text-[var(--text-primary)] shadow-lg transition-colors duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {loading
+              ? isEdit
+                ? "Güncelleniyor…"
+                : "Kaydediliyor…"
+              : isEdit
+                ? "Güncelle"
+                : "Kaydet"}
+          </button>
         </div>
+        <p className="text-center text-[10px] text-[var(--text-muted)]/70">
+          {isEdit
+            ? `${modLabel}+Enter kaydet · Esc kapat`
+            : `Enter sonraki · ${modLabel}+Enter yeni · ${modLabel}+Shift+Enter kaydet · Esc kapat`}
+        </p>
       </div>
     </div>,
     document.body
