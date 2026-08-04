@@ -24,7 +24,10 @@ import {
   getCachedProgramSubjects,
   loadProgramSubjects,
 } from "@/lib/program/fetch-program-subjects";
-import { isTypingTarget, modKeyLabel } from "@/lib/program/form-keyboard";
+import {
+  modKeyLabel,
+  shouldIgnoreGlobalShortcut,
+} from "@/lib/program/form-keyboard";
 import AddTaskModal, { type ExistingTask } from "./AddTaskModal";
 import BatchComposer from "./batch/BatchComposer";
 import DayQuickAdd, {
@@ -1384,7 +1387,9 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "n" && e.key !== "N") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (isTypingTarget(e.target)) return;
+      if (shouldIgnoreGlobalShortcut(e.target)) return;
+      // Açık panel/modal (AddTask vs.) — effect zaten erken çıkıyor; ek güvenlik
+      if (document.querySelector('[role="dialog"]')) return;
 
       const focusedDay = document.activeElement?.closest(
         "[data-plan-date]"

@@ -15,6 +15,7 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
   if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLSelectElement) return true;
   if (target instanceof HTMLInputElement) {
     const t = target.type;
     return (
@@ -29,6 +30,33 @@ export function isTypingTarget(target: EventTarget | null): boolean {
     );
   }
   return false;
+}
+
+/**
+ * Global kısayollar (N vb.) metin alanlarında / contenteditable içinde tetiklenmesin.
+ * input, textarea, select ve contenteditable kapsar.
+ */
+export function shouldIgnoreGlobalShortcut(
+  target: EventTarget | null
+): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  if (
+    target.closest(
+      "input, textarea, select, [contenteditable='true'], [contenteditable='']"
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Açık listbox / combobox varken Enter'ı o bileşene bırak */
+export function isOpenListboxContext(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.closest('[role="listbox"]')) return true;
+  const expanded = target.closest('[aria-expanded="true"]');
+  return expanded != null;
 }
 
 export function getFocusableElements(container: HTMLElement): HTMLElement[] {
