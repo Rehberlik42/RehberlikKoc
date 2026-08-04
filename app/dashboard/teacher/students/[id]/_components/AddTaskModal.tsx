@@ -18,6 +18,7 @@ import { matchesTr } from "@/lib/program/tr-search";
 import {
   focusNextField,
   isModKey,
+  isOpenListboxContext,
   isTextareaTarget,
   isTypingTarget,
   modKeyLabel,
@@ -295,6 +296,7 @@ export default function AddTaskModal({
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [resourceTopicsLoading, setResourceTopicsLoading] = useState(false);
   const [topicQuery, setTopicQuery] = useState("");
+  const [topicHighlight, setTopicHighlight] = useState(0);
   const [showCoachNote, setShowCoachNote] = useState(() =>
     Boolean(existingTask?.details && "coach_note" in existingTask.details)
   );
@@ -323,6 +325,10 @@ export default function AddTaskModal({
       .filter((opt) => matchesTr(opt.label, q))
       .slice(0, 40);
   }, [flatTopicOptions, topicQuery]);
+
+  useEffect(() => {
+    setTopicHighlight(0);
+  }, [topicQuery]);
 
   const selectedFlatTopic = useMemo(() => {
     if (!subjectId || !topicId) return null;
@@ -616,10 +622,15 @@ export default function AddTaskModal({
         return;
       }
 
+      if (e.key !== "Enter" || isModKey(e)) return;
+      // textarea: satır atlama — alan değiştirme
+      if (isTextareaTarget(e.target)) return;
+      // Konu arama kendi onKeyDown'unda seçim yapar
+      if (e.target === topicSearchRef.current) return;
+      // SearchableSelect açık listbox
+      if (isOpenListboxContext(e.target)) return;
+
       if (
-        e.key === "Enter" &&
-        !isModKey(e) &&
-        !isTextareaTarget(e.target) &&
         isTypingTarget(e.target) &&
         panelRef.current &&
         e.target instanceof HTMLElement
@@ -954,22 +965,68 @@ export default function AddTaskModal({
                     type="search"
                     value={topicQuery}
                     onChange={(e) => setTopicQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        if (filteredTopicOptions.length === 0) return;
+                        setTopicHighlight((i) =>
+                          Math.min(i + 1, filteredTopicOptions.length - 1)
+                        );
+                        return;
+                      }
+                      if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        setTopicHighlight((i) => Math.max(i - 1, 0));
+                        return;
+                      }
+                      if (e.key === "Enter" && !isModKey(e)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (filteredTopicOptions.length > 0) {
+                          const pick =
+                            filteredTopicOptions[topicHighlight] ??
+                            filteredTopicOptions[0];
+                          handleFlatTopicSelect(pick);
+                        }
+                        requestAnimationFrame(() => {
+                          if (
+                            panelRef.current &&
+                            topicSearchRef.current
+                          ) {
+                            focusNextField(
+                              panelRef.current,
+                              topicSearchRef.current
+                            );
+                          }
+                        });
+                      }
+                    }}
                     placeholder="Ders veya konu ara…"
                     className={`${inputCls} pl-9`}
+                    aria-autocomplete="list"
+                    aria-expanded={filteredTopicOptions.length > 0}
                   />
                 </div>
-                <ul className="max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-2)]">
+                <ul
+                  role="listbox"
+                  className="max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-2)]"
+                >
                   {filteredTopicOptions.length === 0 ? (
                     <li className="px-3 py-4 text-center text-sm text-[var(--text-muted)]">
                       Sonuç yok
                     </li>
                   ) : (
-                    filteredTopicOptions.map((opt) => (
-                      <li key={opt.key}>
+                    filteredTopicOptions.map((opt, i) => (
+                      <li key={opt.key} role="option" aria-selected={i === topicHighlight}>
                         <button
                           type="button"
                           onClick={() => handleFlatTopicSelect(opt)}
-                          className="w-full px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--primary)]/10 hover:text-[var(--text-primary)]"
+                          onMouseEnter={() => setTopicHighlight(i)}
+                          className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 ${
+                            i === topicHighlight
+                              ? "bg-[var(--primary)]/15 text-[var(--accent)]"
+                              : "text-[var(--text-secondary)] hover:bg-[var(--primary)]/10 hover:text-[var(--text-primary)]"
+                          }`}
                         >
                           {opt.label}
                         </button>
