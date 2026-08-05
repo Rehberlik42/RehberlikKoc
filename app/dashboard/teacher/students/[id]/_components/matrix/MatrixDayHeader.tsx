@@ -22,14 +22,16 @@ export default function MatrixDayHeader({
   dailyTargetMinutes: number | null;
   isToday: boolean;
 }) {
+  const taskCount = dayTasks.length;
   const totalMinutes = dayTasks.reduce(
     (sum, t) => sum + getTaskDurationMinutes(t),
     0
   );
   const hasTarget = dailyTargetMinutes != null && dailyTargetMinutes > 0;
-  const tone = hasTarget
-    ? densityTone(totalMinutes, dailyTargetMinutes)
-    : null;
+  const tone =
+    hasTarget && totalMinutes > 0
+      ? densityTone(totalMinutes, dailyTargetMinutes)
+      : null;
 
   let minutesCls = "text-[var(--text-muted)]";
   if (tone === "amber") minutesCls = "text-[var(--warning)]";
@@ -37,10 +39,8 @@ export default function MatrixDayHeader({
 
   return (
     <div
-      className={`sticky top-0 z-20 border-b border-[var(--border)] px-2 py-2 text-center ${
-        isToday
-          ? "bg-[var(--primary)]/10"
-          : "bg-[var(--surface)]"
+      className={`sticky top-0 z-20 border-b border-[var(--border)] px-2 py-1 text-center ${
+        isToday ? "bg-[var(--primary)]/10" : "bg-[var(--surface)]"
       }`}
     >
       <p
@@ -50,25 +50,29 @@ export default function MatrixDayHeader({
       >
         {DAY_SHORT[colIndex] ?? "—"}
       </p>
-      <p className="text-[10px] text-[var(--text-muted)]">
+      <p className="text-[10px] leading-tight text-[var(--text-muted)]">
         {formatColumnDate(day)}
         {isToday ? (
           <span className="ml-1 text-[var(--primary)]">· Bugün</span>
         ) : null}
       </p>
-      {totalMinutes > 0 ? (
-        <p className={`mt-0.5 text-[10px] font-semibold ${minutesCls}`}>
-          {totalMinutes} dk
-          {hasTarget ? (
-            <span className="font-normal text-[var(--text-muted)]">
-              {" "}
-              / {dailyTargetMinutes}
-            </span>
+      {taskCount > 0 ? (
+        <p className={`mt-0.5 text-[10px] font-semibold leading-tight ${minutesCls}`}>
+          {taskCount} görev
+          {totalMinutes > 0 ? (
+            <>
+              {" · "}
+              {totalMinutes} dk
+              {hasTarget ? (
+                <span className="font-normal text-[var(--text-muted)]">
+                  {" "}
+                  / {dailyTargetMinutes}
+                </span>
+              ) : null}
+            </>
           ) : null}
         </p>
-      ) : (
-        <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">—</p>
-      )}
+      ) : null}
     </div>
   );
 }

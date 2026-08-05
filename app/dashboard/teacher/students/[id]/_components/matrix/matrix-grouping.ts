@@ -97,20 +97,49 @@ export function getTopicLabel(task: MatrixTask): string {
   return title || "Konu yok";
 }
 
-export function getActivityShortLabel(task: MatrixTask): string {
-  const q = task.details?.planned_question_count;
-  if (typeof q === "number" && Number.isFinite(q) && q > 0) {
-    return `${Math.floor(q)} soru`;
+function detailPositiveNumber(
+  value: string | number | undefined
+): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
   }
-  if (typeof q === "string" && q.trim() !== "") {
-    const n = Number(q);
-    if (Number.isFinite(n) && n > 0) return `${Math.floor(n)} soru`;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
+/** details'tan gerçek içerik; tür adı fallback yok. Yoksa null. */
+export function getActivityShortLabel(task: MatrixTask): string | null {
+  const parts: string[] = [];
+  const d = task.details;
+
+  const questions = detailPositiveNumber(d?.planned_question_count);
+  if (questions != null) parts.push(`${Math.floor(questions)} soru`);
+
+  const est = detailPositiveNumber(d?.estimated_duration_minutes);
+  const mins =
+    est != null ? Math.floor(est) : getTaskDurationMinutes(task);
+  if (mins > 0) parts.push(`${mins} dk`);
+
+  const pageRaw = d?.page_range;
+  if (typeof pageRaw === "string" && pageRaw.trim()) {
+    const page = pageRaw.trim();
+    parts.push(/^s\.?\s?/i.test(page) ? page : `s. ${page}`);
+  } else if (typeof pageRaw === "number" && Number.isFinite(pageRaw)) {
+    parts.push(`s. ${pageRaw}`);
   }
 
-  const mins = getTaskDurationMinutes(task);
-  if (mins > 0) return `${mins} dk`;
+  const mockName =
+    typeof d?.mock_name === "string" ? d.mock_name.trim() : "";
+  const mockPublisher =
+    typeof d?.mock_publisher === "string" ? d.mock_publisher.trim() : "";
+  if (mockName || mockPublisher) {
+    parts.push([mockPublisher, mockName].filter(Boolean).join(" "));
+  }
 
-  return getTaskTypeShortLabel(task.task_type);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 export function groupCellTasks(tasks: MatrixTask[]): TopicBlock[] {

@@ -36,6 +36,7 @@ import {
   Send,
   X,
   Pencil,
+  MoreHorizontal,
 } from "lucide-react";
 import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import { WEEKLY_PLAN_GUIDE } from "./weekly-plan-guide";
@@ -286,6 +287,8 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
   const [batchMode, setBatchMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [menuBusy, setMenuBusy] = useState(false);
+  const [toolbarMoreOpen, setToolbarMoreOpen] = useState(false);
+  const toolbarMoreRef = useRef<HTMLDivElement>(null);
   const dayQuickAddRefs = useRef(new Map<string, DayQuickAddHandle>());
   const pendingSplitRef = useRef<{
     taskId: string;
@@ -1130,6 +1133,17 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     });
   };
 
+  useEffect(() => {
+    if (!toolbarMoreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!toolbarMoreRef.current?.contains(e.target as Node)) {
+        setToolbarMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [toolbarMoreOpen]);
+
   return (
     <>
       {toast && (
@@ -1346,22 +1360,29 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
         />
       ) : (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
-        <div className="border-b border-[var(--border)] px-4 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--primary-2)]/20 bg-gradient-to-br from-[var(--primary-2)]/30 to-[var(--primary-3)]/20">
+        <div className="border-b border-[var(--border)] px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-2)]/20 bg-[var(--primary-2)]/15">
                 <Calendar className="h-4 w-4 text-[var(--accent)]" />
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                  Haftalık Program
-                </h3>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                    Haftalık Program
+                  </h3>
+                  <HelpGuideButton
+                    title={WEEKLY_PLAN_GUIDE.title}
+                    sections={WEEKLY_PLAN_GUIDE.sections}
+                    className="h-6 w-6 rounded-md border-transparent bg-transparent text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-secondary)]"
+                  />
+                </div>
                 <p className="text-[11px] text-[var(--text-muted)]">
                   {tasks.length > 0
-                    ? `${tasks.length} görev bu hafta · tutamacı sürükleyerek taşı`
+                    ? `${tasks.length} görev bu hafta`
                     : "Bu hafta görev yok"}
                 </p>
-                <div className="mt-1.5">
+                <div className="mt-1">
                   {editingTarget ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-[11px] text-[var(--text-muted)]">
@@ -1386,7 +1407,9 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                         placeholder="dk"
                         disabled={targetSaving}
                       />
-                      <span className="text-[11px] text-[var(--text-muted)]">dk</span>
+                      <span className="text-[11px] text-[var(--text-muted)]">
+                        dk
+                      </span>
                       <button
                         type="button"
                         onClick={() => void saveDailyTarget()}
@@ -1415,7 +1438,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                         );
                         setEditingTarget(true);
                       }}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)]"
                     >
                       Günlük Hedef:{" "}
                       {dailyTargetMinutes != null
@@ -1428,139 +1451,159 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <HelpGuideButton
-                title={WEEKLY_PLAN_GUIDE.title}
-                sections={WEEKLY_PLAN_GUIDE.sections}
-                className="h-9 w-9 rounded-lg border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--accent)] hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/20 hover:text-[var(--accent)]"
-              />
-              <button
-                type="button"
-                onClick={goToPrevWeek}
-                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
-                aria-label="Önceki hafta"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="min-w-[10rem] text-center text-sm font-semibold text-[var(--text-primary)] sm:min-w-[12rem]">
-                {formatWeekRange(weekStart)}
-              </span>
-              <button
-                type="button"
-                onClick={goToNextWeek}
-                className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
-                aria-label="Sonraki hafta"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={goToThisWeek}
-                className="rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
-              >
-                Bu Hafta
-              </button>
-              <div className="mx-0.5 hidden h-6 w-px bg-[var(--border)] sm:block" />
-              <button
-                type="button"
-                onClick={() => setBatchMode(true)}
-                disabled={subjectsLoading || subjects.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Layers className="h-3.5 w-3.5" />
-                Toplu Ekle
-              </button>
-              <label
-                className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                  draftMode
-                    ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
-                    : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={draftMode}
-                  onChange={(e) => setDraftMode(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-[var(--border)] accent-amber-400"
-                />
-                Taslak Modu
-              </label>
-              <button
-                type="button"
-                onClick={() => void handlePublishWeek()}
-                disabled={publishing || draftTaskCount === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  draftTaskCount === 0
-                    ? "Yayınlanacak taslak yok"
-                    : `${draftTaskCount} taslağı yayınla`
-                }
-              >
-                {publishing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="h-3.5 w-3.5" />
-                )}
-                Yayınla
-                {draftTaskCount > 0 ? ` (${draftTaskCount})` : ""}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSummaryOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--primary)]/20"
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                Özet
-              </button>
-              <button
-                type="button"
-                onClick={() => setSaveTemplateOpen(true)}
-                disabled={tasks.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  tasks.length === 0
-                    ? "Kaydedilecek görev yok"
-                    : undefined
-                }
-              >
-                <BookmarkPlus className="h-3.5 w-3.5" />
-                Şablon Olarak Kaydet
-              </button>
-              <button
-                type="button"
-                onClick={() => setApplyTemplateOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
-              >
-                <LayoutTemplate className="h-3.5 w-3.5" />
-                Şablondan Oluştur
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyWeekClick}
-                disabled={weekActionLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {weekActionLoading && !weekConfirm ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                Haftayı Kopyala
-              </button>
-              <button
-                type="button"
-                onClick={handleClearWeekClick}
-                disabled={weekActionLoading || tasks.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  tasks.length === 0
-                    ? "Bu haftada silinecek görev yok"
-                    : undefined
-                }
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Programı Temizle
-              </button>
+            <div className="flex shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto">
+              {/* Grup 1 — gezinme */}
+              <div className="flex flex-nowrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={goToPrevWeek}
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--text-secondary)] hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
+                  aria-label="Önceki hafta"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="whitespace-nowrap px-1 text-center text-xs font-semibold text-[var(--text-primary)] sm:min-w-[10.5rem] sm:text-sm">
+                  {formatWeekRange(weekStart)}
+                </span>
+                <button
+                  type="button"
+                  onClick={goToNextWeek}
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--text-secondary)] hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
+                  aria-label="Sonraki hafta"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={goToThisWeek}
+                  className="whitespace-nowrap rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--primary)]/20"
+                >
+                  Bu Hafta
+                </button>
+              </div>
+
+              <div className="mx-0.5 h-6 w-px shrink-0 bg-[var(--border)]" />
+
+              {/* Grup 2 — birincil */}
+              <div className="flex flex-nowrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setBatchMode(true)}
+                  disabled={subjectsLoading || subjects.length === 0}
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--primary)]/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Toplu Ekle
+                </button>
+                <label
+                  className={`inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                    draftMode
+                      ? "border-[var(--warning)]/40 bg-[var(--warning)]/15 text-[var(--warning)]"
+                      : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={draftMode}
+                    onChange={(e) => setDraftMode(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-[var(--border)] accent-[var(--warning)]"
+                  />
+                  Taslak
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void handlePublishWeek()}
+                  disabled={publishing || draftTaskCount === 0}
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--success)]/30 bg-[var(--success)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--success)] hover:bg-[var(--success)]/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  title={
+                    draftTaskCount === 0
+                      ? "Yayınlanacak taslak yok"
+                      : `${draftTaskCount} taslağı yayınla`
+                  }
+                >
+                  {publishing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
+                  Yayınla
+                  {draftTaskCount > 0 ? ` (${draftTaskCount})` : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryOpen(true)}
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--primary)]/20"
+                >
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  Özet
+                </button>
+              </div>
+
+              <div className="mx-0.5 h-6 w-px shrink-0 bg-[var(--border)]" />
+
+              {/* Grup 3 — diğer */}
+              <div ref={toolbarMoreRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setToolbarMoreOpen((v) => !v)}
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--text-secondary)] hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
+                  aria-label="Diğer işlemler"
+                  aria-expanded={toolbarMoreOpen}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+                {toolbarMoreOpen ? (
+                  <div className="absolute right-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] py-1 shadow-lg">
+                    <button
+                      type="button"
+                      disabled={tasks.length === 0}
+                      onClick={() => {
+                        setToolbarMoreOpen(false);
+                        setSaveTemplateOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] disabled:opacity-40"
+                    >
+                      <BookmarkPlus className="h-3.5 w-3.5" />
+                      Şablon Olarak Kaydet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setToolbarMoreOpen(false);
+                        setApplyTemplateOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                    >
+                      <LayoutTemplate className="h-3.5 w-3.5" />
+                      Şablondan Oluştur
+                    </button>
+                    <button
+                      type="button"
+                      disabled={weekActionLoading}
+                      onClick={() => {
+                        setToolbarMoreOpen(false);
+                        void handleCopyWeekClick();
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] disabled:opacity-40"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Haftayı Kopyala
+                    </button>
+                    <button
+                      type="button"
+                      disabled={weekActionLoading || tasks.length === 0}
+                      onClick={() => {
+                        setToolbarMoreOpen(false);
+                        handleClearWeekClick();
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--danger)] hover:bg-[var(--surface-2)] disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Programı Temizle
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

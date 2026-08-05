@@ -55,16 +55,19 @@ function isTodayDate(d: Date): boolean {
 
 function DragPreview({ task }: { task: MatrixTask }) {
   const Icon = getTaskTypeIcon(task.task_type);
+  const label = getActivityShortLabel(task);
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/40 bg-[var(--surface)] px-2 py-1.5 shadow-lg">
+    <div className="flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/40 bg-[var(--surface)] px-2 py-1 shadow-lg">
       <Icon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
       <div className="min-w-0">
-        <p className="truncate text-[12px] text-[var(--text-primary)]">
+        <p className="truncate text-[12px] leading-tight text-[var(--text-primary)]">
           {getTopicLabel(task)}
         </p>
-        <p className="truncate text-[11px] text-[var(--text-secondary)]">
-          {getActivityShortLabel(task)}
-        </p>
+        {label ? (
+          <p className="truncate text-[11px] leading-tight text-[var(--text-secondary)]">
+            {label}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -332,10 +335,8 @@ export default function WeekMatrix({
           gridTemplateColumns: `9.5rem repeat(7, minmax(7rem, 1fr))`,
         }}
       >
-        <div className="sticky left-0 top-0 z-30 border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Ders
-          </p>
+        <div className="sticky left-0 top-0 z-30 border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1">
+          <p className="text-xs font-bold text-[var(--text-secondary)]">Ders</p>
         </div>
         {weekDays.map((day, colIndex) => {
           const dateStr = toISODate(day);
@@ -362,8 +363,8 @@ export default function WeekMatrix({
             <div key={row.rowKey} className="contents">
               {showOtherHeading ? (
                 <>
-                  <div className="sticky left-0 z-10 col-span-1 border-b border-r border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  <div className="sticky left-0 z-10 col-span-1 border-b border-r border-[var(--border)] bg-[var(--surface-2)] px-2 py-1">
+                    <p className="text-xs font-bold text-[var(--text-secondary)]">
                       Diğer
                     </p>
                   </div>
@@ -377,11 +378,11 @@ export default function WeekMatrix({
               ) : null}
 
               <div
-                className={`sticky left-0 z-10 flex items-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-2 ${
+                className={`sticky left-0 z-10 flex items-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1 ${
                   dimmed ? "opacity-35" : ""
                 } ${highlight ? "bg-[var(--primary)]/10" : ""}`}
               >
-                <p className="text-[12px] font-semibold leading-snug text-[var(--text-primary)]">
+                <p className="text-[12px] font-semibold leading-tight text-[var(--text-primary)]">
                   {row.label}
                 </p>
               </div>
@@ -411,7 +412,7 @@ export default function WeekMatrix({
         })}
 
         {/* Hızlı ekle satırı */}
-        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-2 py-2">
+        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1">
           <p className="text-[10px] font-semibold text-[var(--text-muted)]">
             Hızlı ekle
           </p>
@@ -421,7 +422,7 @@ export default function WeekMatrix({
             key={`qa-${dateStr}`}
             data-plan-date={dateStr}
             tabIndex={0}
-            className="border-r border-[var(--border)] px-1.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+            className="border-r border-[var(--border)] px-1 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
           >
             <DayQuickAdd
               ref={(handle) => quickAddRef(dateStr, handle)}
@@ -492,9 +493,6 @@ export default function WeekMatrix({
                   </div>
                 );
               })}
-              {dayTasks.length === 0 ? (
-                <p className="text-[11px] text-[var(--text-muted)]">—</p>
-              ) : null}
             </div>
             <div className="mt-2">
               <DayQuickAdd

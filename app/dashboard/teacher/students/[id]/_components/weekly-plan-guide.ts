@@ -21,10 +21,10 @@ export const WEEKLY_PLAN_GUIDE: {
       heading: "Matris nasıl okunur",
       content: [
         "Satırlar dersler (TYT / AYT ayrı satır), sütunlar günlerdir. Bu hafta görevi olmayan ders satırı görünmez.",
-        "Hücrede konu adı bir kez yazılır; altında tür ikonu + kısa açıklama (örn. 40 soru, 30 dk, Konu tekrarı) listelenir. Ders adı hücrede tekrarlanmaz.",
+        "Hücrede konu adı bir kez yazılır; altında tür ikonu + details içeriği (örn. 40 soru · 30 dk, s. 45-60, deneme adı) listelenir. Gösterilecek içerik yoksa yalnızca konu adı kalır.",
         "subject_id’siz görevler (genel deneme, kitap okuma, manuel vb.) en alttaki Diğer grubunda, görev türüne göre alt satırlarda toplanır.",
-        "Boş hücrede yalnızca — işareti vardır. Hücreye gelince sağ üstteki + ile o gün ve derse Görev Ekle açılır.",
-        "Etkinlik satırına tıklayınca menü açılır: Düzenle, Kopyala, Başka Güne Taşı, Tekrarla, Böl, Sil.",
+        "Boş hücre tamamen boştur; hover’da + ile o gün ve derse Görev Ekle açılır.",
+        "Etkinlik veya konu satırına tıklayınca menü açılır: Düzenle, Kopyala, Başka Güne Taşı, Tekrarla, Böl, Sil.",
       ],
     },
     {
@@ -43,12 +43,11 @@ export const WEEKLY_PLAN_GUIDE: {
       ],
     },
     {
-      heading: "Yoğunluk ve süre rengi",
+      heading: "Gün başlığı ve süre rengi",
       content: [
-        "Günlük Hedef tanımlıysa gün başlığında dk / hedef görünür. RAHAT / DENGELİ rozetleri yoktur; bilgi renkli sürededir.",
-        "Hedefin %100–130’ü — süre uyarı renginde (yoğun).",
-        "Hedefin %130’unun üstü — süre tehlike renginde (aşırı). Görevi başka güne taşı, Böl ile böl veya süreyi düşür.",
-        "Hedef tanımsızsa yalnızca toplam dakika nötr renkte gösterilir.",
+        "Gün başlığında görev sayısı görünür. Süre girilmişse yanında toplam dakika da yazılır (örn. 4 görev · 160 dk).",
+        "Günlük Hedef tanımlıysa ve süre varsa aşım uyarı / tehlike renginde görünür. RAHAT / DENGELİ rozetleri yoktur.",
+        "Hiç görev yoksa başlıkta ek satır yoktur.",
       ],
     },
     {
@@ -70,13 +69,22 @@ export const WEEKLY_PLAN_GUIDE: {
       ],
     },
     {
+      heading: "Üst çubuk (toolbar)",
+      content: [
+        "Gezinme — ‹ tarih › okları ve Bu Hafta. Haftalar arasında gezinirsin.",
+        "Birincil eylemler — Toplu Ekle, Taslak Modu, Yayınla, Özet. Haftayı kurarken sık kullandığın kontroller.",
+        "⋯ menüsü — Şablon Olarak Kaydet, Şablondan Oluştur, Haftayı Kopyala, Programı Temizle. Daha seyrek kullanılan işlemler buradadır.",
+        "? — Başlığın yanındaki küçük yardım butonu kullanım kılavuzunu açar; birincil eylem değildir.",
+      ],
+    },
+    {
       heading: "Haftayı kopyala, temizle, şablonlar",
       content: [
+        "Bu işlemler üst çubuktaki ⋯ menüsündedir.",
         "Haftayı Kopyala — görünen haftanın görevlerini sonraki haftaya ekler. Sonraki haftada zaten görev varsa onay ister (Evet, Kopyala).",
         "Programı Temizle — bu haftadaki tüm görevleri siler. Onayda Evet, Temizle ile onaylarsın. Haftada görev yoksa buton pasiftir.",
         "Şablon Olarak Kaydet — bu haftanın görevlerini şablon olarak saklar (görev yoksa pasif).",
         "Şablondan Oluştur — kayıtlı bir şablonu seçip mevcut haftaya uygular / ekler.",
-        "Bu Hafta ile bugünün haftasına dönersin; oklarla hafta gezersin. Özet, Program Özeti penceresini açar.",
       ],
     },
     {
