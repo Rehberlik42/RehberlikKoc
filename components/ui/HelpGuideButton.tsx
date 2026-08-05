@@ -4,9 +4,17 @@ import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, HelpCircle, X } from "lucide-react";
 
+export type HelpGuideItem =
+  | string
+  | {
+      text: string;
+      /** Alt maddeler — üst maddenin seçenekleri gibi girintili listelenir */
+      children?: string[];
+    };
+
 export type HelpGuideSection = {
   heading: string;
-  content: string | string[];
+  content: string | HelpGuideItem[];
   /** true ise madde listesi numaralı (<ol>) render edilir */
   ordered?: boolean;
 };
@@ -18,11 +26,23 @@ export type HelpGuideButtonProps = {
   className?: string;
 };
 
+function itemKey(item: HelpGuideItem): string {
+  return typeof item === "string" ? item : item.text;
+}
+
+function itemText(item: HelpGuideItem): string {
+  return typeof item === "string" ? item : item.text;
+}
+
+function itemChildren(item: HelpGuideItem): string[] | undefined {
+  return typeof item === "string" ? undefined : item.children;
+}
+
 function SectionBody({
   content,
   ordered,
 }: {
-  content: string | string[];
+  content: string | HelpGuideItem[];
   ordered?: boolean;
 }) {
   if (Array.isArray(content)) {
@@ -33,9 +53,21 @@ function SectionBody({
 
     return (
       <ListTag className={listCls}>
-        {content.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
+        {content.map((item) => {
+          const children = itemChildren(item);
+          return (
+            <li key={itemKey(item)}>
+              {itemText(item)}
+              {children && children.length > 0 ? (
+                <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-[var(--text-muted)]">
+                  {children.map((child) => (
+                    <li key={child}>{child}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
       </ListTag>
     );
   }

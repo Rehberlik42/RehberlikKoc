@@ -21,10 +21,14 @@ export const WEEKLY_PLAN_GUIDE: {
       heading: "Hangi yolu kullanmalı",
       content: [
         "Görev Ekle paneli — Tam form: görev türü, ders/konu, kaynak, detaylar ve başka günlere ekleme. Kaydet ve yeni ile tür/ders korunur, ardışık giriş yapılır. Branş Denemesi veya Kitap Okuma gibi özel türler ve kaynaklı işler için bunu tercih et.",
-        "Toplu Ekle — Grid’in yerine geçer. Soldaki konu havuzundan seç; sağda tür, süre, kaynak ve gün dağıtımını bir kez ayarla (Sırayla, Hepsi her güne, Tek güne). Önizle ile satırları kontrol et, istemediğini ✕ ile çıkar; sonra N görev ekle. Bir haftayı birçok konuyla, öğrencinin verisine göre kurmak için.",
-        "Zayıf — Öğrencinin son denemelerinde başarısız görünen konular. Programı zayıf noktalara göre kurmak için başla buradan.",
-        "Başlanmayan — Kaynak takibinde henüz çalışılmamış konular. Açılmamış müfredatı haftaya yerleştirmek için.",
-        "Tümü — Tüm konu listesi. Havuz filtrelerine takılmadan elle seçim yapmak için.",
+        {
+          text: "Toplu Ekle — Grid’in yerine geçer. Soldaki konu havuzundan seç; sağda tür, süre, kaynak ve gün dağıtımını bir kez ayarla (Sırayla, Hepsi her güne, Tek güne). Önizle ile satırları kontrol et, istemediğini ✕ ile çıkar; sonra N görev ekle. Bir haftayı birçok konuyla, öğrencinin verisine göre kurmak için. Havuz sekmeleri:",
+          children: [
+            "Zayıf — Öğrencinin son denemelerinde başarısız görünen konular. Programı zayıf noktalara göre kurmak için başla buradan.",
+            "Başlanmayan — Kaynak takibinde henüz çalışılmamış konular. Açılmamış müfredatı haftaya yerleştirmek için.",
+            "Tümü — Tüm konu listesi. Havuz filtrelerine takılmadan elle seçim yapmak için.",
+          ],
+        },
         "Hızlı ekle — Gün kartının altındaki satır. Yalnızca Ders görevi oluşturur; kaynak seçemezsin. Konu yaz, eşleşenden seç; sonda sayı varsa süre olur (örn. türev 40 → 40 dk). Aynı güne peş peşe Ders atamak için.",
       ],
     },
