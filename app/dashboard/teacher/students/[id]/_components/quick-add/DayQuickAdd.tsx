@@ -185,10 +185,11 @@ const DayQuickAdd = forwardRef<DayQuickAddHandle, Props>(function DayQuickAdd(
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border)] py-1.5 text-[10px] font-semibold text-[var(--text-muted)] transition-colors duration-150 hover:border-[var(--primary)]/40 hover:bg-[var(--primary)]/[0.06] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 motion-reduce:transition-none"
+        className="flex h-6 w-full items-center justify-center rounded text-[var(--text-muted)] opacity-25 hover:bg-[var(--surface-2)] hover:text-[var(--accent)] hover:opacity-100 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 group-hover/qa:opacity-70"
+        aria-label="Hızlı ekle"
+        title="Hızlı ekle (N)"
       >
-        <Plus className="h-3 w-3" />
-        Hızlı ekle
+        <Plus className="h-3.5 w-3.5" />
       </button>
     );
   }

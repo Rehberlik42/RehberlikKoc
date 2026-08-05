@@ -12,7 +12,11 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { getTaskTypeIcon } from "@/lib/program/task-type-icons";
+import {
+  getTaskTypeColorVar,
+  getTaskTypeIcon,
+} from "@/lib/program/task-type-icons";
+import type { DailyTargetUnit } from "@/lib/weekly-program-summary";
 import type { ProgramSubject } from "../program-types";
 import DayQuickAdd, {
   type DayQuickAddHandle,
@@ -55,16 +59,17 @@ function isTodayDate(d: Date): boolean {
 
 function DragPreview({ task }: { task: MatrixTask }) {
   const Icon = getTaskTypeIcon(task.task_type);
+  const iconColor = getTaskTypeColorVar(task.task_type);
   const label = getActivityShortLabel(task);
   return (
     <div className="flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/40 bg-[var(--surface)] px-2 py-1 shadow-lg">
-      <Icon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-      <div className="min-w-0">
-        <p className="truncate text-[12px] leading-tight text-[var(--text-primary)]">
+      <Icon className="h-3.5 w-3.5 opacity-80" style={{ color: iconColor }} />
+      <div className="min-w-0 text-left">
+        <p className="truncate text-left text-[12px] leading-tight text-[var(--text-primary)]">
           {getTopicLabel(task)}
         </p>
         {label ? (
-          <p className="truncate text-[11px] leading-tight text-[var(--text-secondary)]">
+          <p className="truncate text-left text-[11px] leading-tight text-[var(--text-secondary)]">
             {label}
           </p>
         ) : null}
@@ -78,6 +83,8 @@ export default function WeekMatrix({
   tasks,
   subjects,
   dailyTargetMinutes,
+  dailyTargetTasks = 5,
+  dailyTargetUnit = "task",
   studentId,
   draftMode,
   deletingId,
@@ -103,6 +110,8 @@ export default function WeekMatrix({
   tasks: MatrixTask[];
   subjects: ProgramSubject[];
   dailyTargetMinutes: number | null;
+  dailyTargetTasks: number | null;
+  dailyTargetUnit: DailyTargetUnit;
   studentId: string;
   draftMode: boolean;
   deletingId: string | null;
@@ -347,6 +356,8 @@ export default function WeekMatrix({
               colIndex={colIndex}
               dayTasks={tasksByDate.get(dateStr) ?? []}
               dailyTargetMinutes={dailyTargetMinutes}
+              dailyTargetTasks={dailyTargetTasks}
+              dailyTargetUnit={dailyTargetUnit}
               isToday={isTodayDate(day)}
             />
           );
@@ -412,9 +423,9 @@ export default function WeekMatrix({
         })}
 
         {/* Hızlı ekle satırı */}
-        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1">
-          <p className="text-[10px] font-semibold text-[var(--text-muted)]">
-            Hızlı ekle
+        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
+          <p className="text-[9px] font-medium text-[var(--text-muted)] opacity-50">
+            +
           </p>
         </div>
         {weekDateStrs.map((dateStr) => (
@@ -422,7 +433,7 @@ export default function WeekMatrix({
             key={`qa-${dateStr}`}
             data-plan-date={dateStr}
             tabIndex={0}
-            className="border-r border-[var(--border)] px-1 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
+            className="group/qa border-r border-[var(--border)] px-1 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
           >
             <DayQuickAdd
               ref={(handle) => quickAddRef(dateStr, handle)}
@@ -461,6 +472,8 @@ export default function WeekMatrix({
               colIndex={colIndex}
               dayTasks={dayTasks}
               dailyTargetMinutes={dailyTargetMinutes}
+              dailyTargetTasks={dailyTargetTasks}
+              dailyTargetUnit={dailyTargetUnit}
               isToday={isTodayDate(day)}
             />
             <div className="mt-2 space-y-2">

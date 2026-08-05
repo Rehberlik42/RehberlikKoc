@@ -142,6 +142,20 @@ export function getActivityShortLabel(task: MatrixTask): string | null {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+/**
+ * Etkinlik satırı metni.
+ * fallbackType: aynı hücrede birden fazla görevde detay yoksa tür adı göster.
+ */
+export function getActivityDisplayLabel(
+  task: MatrixTask,
+  opts?: { fallbackType?: boolean }
+): string | null {
+  const detail = getActivityShortLabel(task);
+  if (detail) return detail;
+  if (opts?.fallbackType) return getTaskTypeShortLabel(task.task_type);
+  return null;
+}
+
 export function groupCellTasks(tasks: MatrixTask[]): TopicBlock[] {
   const sorted = [...tasks].sort((a, b) => a.order_index - b.order_index);
   const blocks: TopicBlock[] = [];

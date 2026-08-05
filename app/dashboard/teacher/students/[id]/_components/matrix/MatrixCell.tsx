@@ -22,10 +22,13 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { getTaskTypeIcon } from "@/lib/program/task-type-icons";
+import {
+  getTaskTypeColorVar,
+  getTaskTypeIcon,
+} from "@/lib/program/task-type-icons";
 import {
   cellDroppableId,
-  getActivityShortLabel,
+  getActivityDisplayLabel,
   groupCellTasks,
   type MatrixRowKey,
   type MatrixTask,
@@ -366,7 +369,8 @@ function SortableActivityRow({
   onPrepareSplit,
   onSplit,
   onDelete,
-}: { task: MatrixTask } & RowActions) {
+  fallbackType,
+}: { task: MatrixTask; fallbackType?: boolean } & RowActions) {
   const {
     attributes,
     listeners,
@@ -379,7 +383,8 @@ function SortableActivityRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const Icon = getTaskTypeIcon(task.task_type);
-  const label = getActivityShortLabel(task);
+  const iconColor = getTaskTypeColorVar(task.task_type);
+  const label = getActivityDisplayLabel(task, { fallbackType });
   const isDraft = task.is_published === false;
   const busy = menuBusy || deletingId === task.id;
 
@@ -388,17 +393,13 @@ function SortableActivityRow({
     transition,
   };
 
-  // Tek görev + içerik yok durumu TopicTaskAnchor'da; burada çoklu görev için
-  // içerik yoksa yalnızca ikon satırı (tür kelimesi yok).
-  const showText = label != null;
-
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={`group/row relative ${isDragging ? "opacity-40" : ""}`}
     >
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center justify-start gap-0.5">
         <button
           type="button"
           className="shrink-0 cursor-grab touch-none rounded p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--text-primary)] group-hover/row:opacity-100 active:cursor-grabbing"
@@ -414,14 +415,17 @@ function SortableActivityRow({
           type="button"
           disabled={busy}
           onClick={() => setMenuOpen((v) => !v)}
-          className={`flex min-w-0 flex-1 items-center gap-1 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
-            task.is_completed ? "opacity-70" : ""
+          className={`flex min-w-0 flex-1 items-center justify-start gap-1.5 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
+            task.is_completed ? "opacity-60" : ""
           }`}
         >
-          <Icon className="h-3 w-3 shrink-0 text-[var(--text-muted)]" />
-          {showText ? (
+          <Icon
+            className="h-3.5 w-3.5 shrink-0 opacity-80"
+            style={{ color: iconColor }}
+          />
+          {label ? (
             <span
-              className={`min-w-0 flex-1 text-[11px] leading-tight text-[var(--text-secondary)] ${
+              className={`min-w-0 flex-1 text-left text-[11px] leading-tight text-[var(--text-secondary)] ${
                 task.is_completed
                   ? "line-through decoration-[var(--text-muted)]"
                   : ""
@@ -465,7 +469,7 @@ function SortableActivityRow({
   );
 }
 
-/** Tek görev + içerik yok → konu adı tıklanabilir / sürüklenebilir satır */
+/** Tek görev → ikon + konu adı (sola dayalı) */
 function TopicTaskAnchor({
   task,
   topicLabel,
@@ -491,6 +495,8 @@ function TopicTaskAnchor({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
+  const Icon = getTaskTypeIcon(task.task_type);
+  const iconColor = getTaskTypeColorVar(task.task_type);
   const busy = menuBusy || deletingId === task.id;
   const isDraft = task.is_published === false;
 
@@ -505,7 +511,7 @@ function TopicTaskAnchor({
       style={style}
       className={`group/row ${isDragging ? "opacity-40" : ""}`}
     >
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center justify-start gap-0.5">
         <button
           type="button"
           className="shrink-0 cursor-grab touch-none rounded p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--text-primary)] group-hover/row:opacity-100 active:cursor-grabbing"
@@ -520,12 +526,16 @@ function TopicTaskAnchor({
           type="button"
           disabled={busy}
           onClick={() => setMenuOpen((v) => !v)}
-          className={`flex min-w-0 flex-1 items-center gap-1 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
-            task.is_completed ? "opacity-70" : ""
+          className={`flex min-w-0 flex-1 items-center justify-start gap-1.5 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
+            task.is_completed ? "opacity-60" : ""
           }`}
         >
+          <Icon
+            className="h-3.5 w-3.5 shrink-0 opacity-80"
+            style={{ color: iconColor }}
+          />
           <p
-            className={`min-w-0 flex-1 text-[12px] font-normal leading-tight text-[var(--text-primary)] ${
+            className={`min-w-0 flex-1 text-left text-[12px] font-normal leading-tight text-[var(--text-primary)] ${
               task.is_completed
                 ? "line-through decoration-[var(--text-muted)]"
                 : ""
@@ -639,14 +649,13 @@ export default function MatrixCell({
           items={sortableIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-1 pr-4">
+          <div className="space-y-1 pr-4 text-left">
             {blocks.map((block) => {
-              const sole = block.tasks.length === 1 ? block.tasks[0] : null;
-              if (sole && getActivityShortLabel(sole) == null) {
+              if (block.tasks.length === 1) {
                 return (
                   <TopicTaskAnchor
                     key={block.topicKey}
-                    task={sole}
+                    task={block.tasks[0]}
                     topicLabel={block.topicLabel}
                     {...actions}
                   />
@@ -654,8 +663,8 @@ export default function MatrixCell({
               }
 
               return (
-                <div key={block.topicKey}>
-                  <p className="text-[12px] font-normal leading-tight text-[var(--text-primary)]">
+                <div key={block.topicKey} className="text-left">
+                  <p className="text-left text-[12px] font-normal leading-tight text-[var(--text-primary)]">
                     {block.topicLabel}
                   </p>
                   <div className="mt-px space-y-px">
@@ -663,6 +672,7 @@ export default function MatrixCell({
                       <SortableActivityRow
                         key={task.id}
                         task={task}
+                        fallbackType
                         {...actions}
                       />
                     ))}
