@@ -73,79 +73,9 @@ import {
   X,
 } from "lucide-react";
 import HelpGuideButton from "@/components/ui/HelpGuideButton";
+import { WEEKLY_PLAN_GUIDE } from "./weekly-plan-guide";
 
 export type { ProgramSubject } from "./program-types";
-
-const WEEKLY_PLAN_GUIDE = {
-  title: "Haftalık Program",
-  sections: [
-    {
-      heading: "Taslak Modu ve Yayınla",
-      content: [
-        "Taslak Modu açıkken eklediğiniz yeni görevler öğrenciye görünmez; kartlarda Taslak rozeti çıkar.",
-        "Hazır olduğunuzda Yayınla (veya Yayınla (N)) ile o haftadaki tüm taslakları yayınlarsınız. Taslak yoksa buton pasiftir (Yayınlanacak taslak yok).",
-      ],
-    },
-    {
-      heading: "Haftayı Kopyala ve Programı Temizle",
-      content: [
-        "Haftayı Kopyala: görünen haftanın görevlerini sonraki haftaya ekler. Sonraki haftada zaten görev varsa onay ister (Evet, Kopyala).",
-        "Programı Temizle: bu haftadaki tüm görevleri siler. Onay penceresinde Evet, Temizle ile onaylarsınız. Haftada görev yoksa buton pasiftir.",
-      ],
-    },
-    {
-      heading: "Şablonlar",
-      content: [
-        "Şablon Olarak Kaydet: bu haftanın görevlerini şablon olarak saklar (görev yoksa pasif).",
-        "Şablondan Oluştur: kayıtlı bir şablonu seçip mevcut haftaya uygular / ekler.",
-      ],
-    },
-    {
-      heading: "Yoğunluk rozeti",
-      content: [
-        "Günlük Hedef tanımlıysa her gün sütununda dk / hedef yanında bir rozet görünür:",
-        "rahat — hedefin %70’inin altında",
-        "dengeli — hedefin %70–100’ü arası",
-        "yoğun — hedefin %100–130’ü arası",
-        "aşırı — hedefin %130’unun üstü",
-        "Günlük Hedef tanımsızsa rozet çıkmaz. Hedefi başlıktaki Günlük Hedef satırından düzenleyebilirsiniz.",
-      ],
-    },
-    {
-      heading: "Görev Ekle paneli",
-      content: [
-        "Görev Ekle sağda sabit bir panel açar; hafta gridi görünür ve tıklanabilir kalır.",
-        "Tek ekranda sırayla: görev türü → ders/konu araması → kaynak (opsiyonel) → detaylar → günler.",
-        "Kaydet ve yeni: görevi ekler, paneli kapatmaz; tür ve ders korunur, konu/detay sıfırlanır — hızlı ardışık giriş için.",
-        "Kaydet paneli kapatır. Escape ile de kapanır.",
-      ],
-    },
-    {
-      heading: "Toplu Ekle",
-      content: [
-        "Toplu Ekle, hafta gridinin yerine toplu besteleme modunu açar.",
-        "Solda zayıf / başlanmayan / tüm konular; sağda tür, süre, kaynak ve gün dağıtımı.",
-        "Önizle ile satır satır kontrol edebilir, yük uyarısına rağmen ekleyebilirsiniz.",
-      ],
-    },
-    {
-      heading: "Hızlı ekle",
-      content: [
-        "Gün kartının altındaki Hızlı ekle satırına konu yazın; eşleşenlerden seçince Ders görevi anında oluşur.",
-        "Sonda sayı varsa süre olur: örn. türev 40 → 40 dk. Karttaki Düzenle ile paneli açabilirsiniz.",
-        "Klavye: gridde N ile odaklı/bugünün gününde hızlı eklemeyi açar. Panelde Enter sonraki alan, Ctrl/⌘+Enter kaydet ve yeni, Ctrl/⌘+Shift+Enter kaydet, Esc kapat.",
-      ],
-    },
-    {
-      heading: "İpuçları",
-      content: [
-        "Bu Hafta ile bugünün haftasına döner; oklarla hafta gezersiniz.",
-        "Özet, Program Özeti penceresini açar.",
-        "Görevleri tutamaktan sürükleyerek günler arasında taşıyabilirsiniz. Güne Görev Ekle, Branş Denemesi veya Kitap Okuma ile hızlı ekleme yapabilirsiniz.",
-      ],
-    },
-  ],
-};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

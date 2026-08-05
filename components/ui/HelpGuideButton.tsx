@@ -2,11 +2,13 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, X } from "lucide-react";
+import { ChevronDown, HelpCircle, X } from "lucide-react";
 
 export type HelpGuideSection = {
   heading: string;
   content: string | string[];
+  /** true ise madde listesi numaralı (<ol>) render edilir */
+  ordered?: boolean;
 };
 
 export type HelpGuideButtonProps = {
@@ -16,14 +18,25 @@ export type HelpGuideButtonProps = {
   className?: string;
 };
 
-function SectionBody({ content }: { content: string | string[] }) {
+function SectionBody({
+  content,
+  ordered,
+}: {
+  content: string | string[];
+  ordered?: boolean;
+}) {
   if (Array.isArray(content)) {
+    const ListTag = ordered ? "ol" : "ul";
+    const listCls = ordered
+      ? "mt-1.5 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-[var(--text-secondary)]"
+      : "mt-1.5 list-disc space-y-1.5 pl-4 text-sm leading-relaxed text-[var(--text-secondary)]";
+
     return (
-      <ul className="mt-1.5 list-disc space-y-1.5 pl-4 text-sm leading-relaxed text-[var(--text-secondary)]">
+      <ListTag className={listCls}>
         {content.map((item) => (
           <li key={item}>{item}</li>
         ))}
-      </ul>
+      </ListTag>
     );
   }
 
@@ -34,14 +47,31 @@ function SectionBody({ content }: { content: string | string[] }) {
   );
 }
 
+function buildInitialOpenMap(sections: HelpGuideSection[]) {
+  const map: Record<string, boolean> = {};
+  sections.forEach((section, index) => {
+    map[section.heading] = index === 0;
+  });
+  return map;
+}
+
 export default function HelpGuideButton({
   title,
   sections,
   className = "",
 }: HelpGuideButtonProps) {
   const [open, setOpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+    () => buildInitialOpenMap(sections)
+  );
   const titleId = useId();
+  const panelId = useId();
   const canPortal = typeof document !== "undefined";
+
+  useEffect(() => {
+    if (!open) return;
+    setOpenSections(buildInitialOpenMap(sections));
+  }, [open, sections]);
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +90,13 @@ export default function HelpGuideButton({
       document.body.style.overflow = orig;
     };
   }, [open]);
+
+  const toggleSection = (heading: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [heading]: !prev[heading],
+    }));
+  };
 
   return (
     <>
@@ -81,14 +118,14 @@ export default function HelpGuideButton({
               type="button"
               aria-label="Modalı kapat"
               onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/50"
             />
 
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] shadow-2xl sm:rounded-2xl"
+              className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg sm:rounded-2xl"
             >
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
                 <div className="flex min-w-0 items-center gap-2.5">
@@ -117,15 +154,47 @@ export default function HelpGuideButton({
                 </button>
               </div>
 
-              <div className="space-y-5 overflow-y-auto px-5 py-4">
-                {sections.map((section) => (
-                  <section key={section.heading}>
-                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                      {section.heading}
-                    </h3>
-                    <SectionBody content={section.content} />
-                  </section>
-                ))}
+              <div className="space-y-2 overflow-y-auto px-5 py-4">
+                {sections.map((section, index) => {
+                  const sectionOpen = Boolean(openSections[section.heading]);
+                  const sectionPanelId = `${panelId}-section-${index}`;
+                  return (
+                    <section
+                      key={section.heading}
+                      className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/40"
+                    >
+                      <h3 className="m-0">
+                        <button
+                          type="button"
+                          aria-expanded={sectionOpen}
+                          aria-controls={sectionPanelId}
+                          onClick={() => toggleSection(section.heading)}
+                          className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)]/40"
+                        >
+                          <span className="text-sm font-bold text-[var(--text-primary)]">
+                            {section.heading}
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform duration-200 motion-reduce:transition-none ${
+                              sectionOpen ? "rotate-180" : ""
+                            }`}
+                            aria-hidden
+                          />
+                        </button>
+                      </h3>
+                      {sectionOpen ? (
+                        <div id={sectionPanelId} className="px-3.5 pb-3.5">
+                          <SectionBody
+                            content={section.content}
+                            ordered={section.ordered}
+                          />
+                        </div>
+                      ) : (
+                        <div id={sectionPanelId} hidden />
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             </div>
           </div>,
