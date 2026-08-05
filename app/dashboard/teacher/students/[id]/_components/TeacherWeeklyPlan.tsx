@@ -1,24 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import {
   getCachedProgramSubjects,
@@ -30,22 +12,14 @@ import {
 } from "@/lib/program/form-keyboard";
 import AddTaskModal, { type ExistingTask } from "./AddTaskModal";
 import BatchComposer from "./batch/BatchComposer";
-import DayQuickAdd, {
-  type DayQuickAddHandle,
-} from "./quick-add/DayQuickAdd";
-import QuickAddBransDenemesiModal from "./QuickAddBransDenemesiModal";
-import QuickAddKitapOkumaModal from "./QuickAddKitapOkumaModal";
-import WeeklyProgramSummaryModal, {
-  DENSITY_BADGE_CLS,
-  DENSITY_LABEL,
-  densityTone,
-  getTaskDurationMinutes,
-} from "./WeeklyProgramSummaryModal";
+import type { DayQuickAddHandle } from "./quick-add/DayQuickAdd";
+import WeeklyProgramSummaryModal from "./WeeklyProgramSummaryModal";
 import SaveAsTemplateModal from "./SaveAsTemplateModal";
 import ApplyTemplateModal from "./ApplyTemplateModal";
 import type { ProgramSubject } from "./program-types";
+import WeekMatrix from "./matrix/WeekMatrix";
+import type { MatrixTask } from "./matrix/matrix-grouping";
 import {
-  Clock,
   Calendar,
   Loader2,
   CheckCheck,
@@ -53,17 +27,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  Plus,
-  GripVertical,
-  MoreVertical,
   Copy,
-  CalendarClock,
-  Repeat,
-  Pencil,
-  SplitSquareHorizontal,
-  BookMarked,
-  BookOpen,
   AlertTriangle,
   ClipboardList,
   BookmarkPlus,
@@ -71,6 +35,7 @@ import {
   Layers,
   Send,
   X,
+  Pencil,
 } from "lucide-react";
 import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import { WEEKLY_PLAN_GUIDE } from "./weekly-plan-guide";
@@ -93,21 +58,7 @@ type TaskType =
 
 type ToastType = "success" | "error";
 
-interface PlanTask {
-  id: string;
-  plan_date: string;
-  task_type: TaskType;
-  title: string;
-  start_time: string | null;
-  end_time: string | null;
-  break_minutes: number | null;
-  order_index: number;
-  is_completed: boolean;
-  is_published: boolean;
-  subject: { name: string } | null;
-  topic: { name: string } | null;
-  details: Record<string, string | number> | null;
-}
+type PlanTask = MatrixTask;
 
 const DAY_LABELS_FULL = [
   "Pazartesi",
@@ -122,21 +73,6 @@ const DAY_LABELS_FULL = [
 interface Props {
   studentId: string;
 }
-
-const TASK_TYPE_BADGE: Record<TaskType, { label: string; color: string }> = {
-  ders: { label: "Ders", color: "#4F7CFF" },
-  deneme: { label: "Deneme", color: "#A78BFF" },
-  bras_deneme: { label: "Branş Denemesi", color: "#00D4FF" },
-  soru_cozumu: { label: "Soru Çözümü", color: "#4F7CFF" },
-  video_izleme: { label: "Video İzleme", color: "#FF6B9D" },
-  tekrar: { label: "Tekrar", color: "#FFB84F" },
-  yanlis_analizi: { label: "Yanlış Analizi", color: "#FF5757" },
-  odev: { label: "Ödev", color: "#7BE0AD" },
-  manuel: { label: "Manuel", color: "#94A3B8" },
-  kitap_okuma: { label: "Kitap Okuma", color: "#C17F45" },
-};
-
-const FALLBACK_BADGE = { label: "Görev", color: "#94A3B8" };
 
 function startOfWeek(d: Date): Date {
   const copy = new Date(d);
@@ -160,15 +96,6 @@ function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function isToday(d: Date): boolean {
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
-
 function formatWeekRange(weekStart: Date): string {
   const weekEnd = addDays(weekStart, 6);
   const startDay = weekStart.getDate();
@@ -185,14 +112,6 @@ function formatWeekRange(weekStart: Date): string {
 
 function formatColumnDate(d: Date): string {
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
-}
-
-function formatTimeTR(time: string) {
-  return time.slice(0, 5);
-}
-
-function getBadge(taskType: TaskType) {
-  return TASK_TYPE_BADGE[taskType] ?? FALLBACK_BADGE;
 }
 
 function addDaysISO(iso: string, n: number): string {
@@ -328,715 +247,6 @@ function Toast({
   );
 }
 
-// ─── Kart menüsü ─────────────────────────────────────────────────────────────
-
-type MenuView = "main" | "move" | "repeat" | "split";
-
-function DayPickerList({
-  weekDays,
-  currentDate,
-  acting,
-  onPick,
-  onBack,
-  allowCurrent = false,
-}: {
-  weekDays: WeekDayOption[];
-  currentDate: string;
-  acting: boolean;
-  onPick: (dateStr: string) => void;
-  onBack: () => void;
-  allowCurrent?: boolean;
-}) {
-  return (
-    <div className="max-h-56 overflow-y-auto">
-      <button
-        type="button"
-        onClick={onBack}
-        className="w-full border-b border-[var(--border)] px-3 py-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-      >
-        ← Menü
-      </button>
-      {weekDays.map((d) => {
-        const isCurrent = d.dateStr === currentDate;
-        const disabled = acting || (!allowCurrent && isCurrent);
-        return (
-          <button
-            key={d.dateStr}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(d.dateStr)}
-            className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <span className="text-xs font-semibold text-[var(--text-primary)]">
-              {d.label}
-              {isCurrent ? " · şu an" : ""}
-            </span>
-            <span className="text-[10px] text-[var(--text-muted)]">{d.sub}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function TaskCardMenu({
-  taskId,
-  currentDate,
-  weekDays,
-  busy,
-  onEdit,
-  onCopy,
-  onMove,
-  onRepeat,
-  onPrepareSplit,
-  onSplit,
-}: {
-  taskId: string;
-  currentDate: string;
-  weekDays: WeekDayOption[];
-  busy: boolean;
-  onEdit: (taskId: string) => Promise<void>;
-  onCopy: (taskId: string) => Promise<void>;
-  onMove: (taskId: string, dateStr: string) => Promise<void>;
-  onRepeat: (taskId: string, weeks: number) => Promise<void>;
-  onPrepareSplit: (taskId: string) => Promise<boolean>;
-  onSplit: (taskId: string, dateStr: string) => Promise<void>;
-}) {
-  const [open, setOpen] = useState(false);
-  const [view, setView] = useState<MenuView>("main");
-  const [weeks, setWeeks] = useState(4);
-  const [acting, setActing] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setView("main");
-      }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
-  const close = () => {
-    setOpen(false);
-    setView("main");
-    setWeeks(4);
-  };
-
-  const run = async (fn: () => Promise<void>) => {
-    setActing(true);
-    try {
-      await fn();
-      close();
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const menuItemCls =
-    "flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:bg-white/[0.06] hover:text-[var(--text-primary)]";
-
-  return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-          setView("main");
-        }}
-        disabled={busy || acting}
-        className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-1 text-[var(--text-muted)] opacity-0 transition-all hover:text-[var(--text-primary)] group-hover:opacity-100 disabled:opacity-50 data-[open=true]:opacity-100"
-        data-open={open}
-        aria-label="Görev menüsü"
-        aria-expanded={open}
-      >
-        {acting ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <MoreVertical className="h-3 w-3" />
-        )}
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full z-30 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] py-1 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {view === "main" && (
-            <>
-              <button
-                type="button"
-                disabled={acting}
-                onClick={() => run(() => onEdit(taskId))}
-                className={menuItemCls}
-              >
-                <Pencil className="h-3.5 w-3.5 text-[var(--accent)]" />
-                Düzenle
-              </button>
-              <button
-                type="button"
-                disabled={acting}
-                onClick={() => run(() => onCopy(taskId))}
-                className={menuItemCls}
-              >
-                <Copy className="h-3.5 w-3.5 text-[var(--accent)]" />
-                Kopyala
-              </button>
-              <button
-                type="button"
-                disabled={acting}
-                onClick={() => setView("move")}
-                className={menuItemCls}
-              >
-                <CalendarClock className="h-3.5 w-3.5 text-[var(--accent)]" />
-                Başka Güne Taşı
-              </button>
-              <button
-                type="button"
-                disabled={acting}
-                onClick={() => setView("repeat")}
-                className={menuItemCls}
-              >
-                <Repeat className="h-3.5 w-3.5 text-[var(--accent)]" />
-                Tekrarla
-              </button>
-              <button
-                type="button"
-                disabled={acting}
-                onClick={async () => {
-                  setActing(true);
-                  try {
-                    const ok = await onPrepareSplit(taskId);
-                    if (ok) setView("split");
-                  } finally {
-                    setActing(false);
-                  }
-                }}
-                className={menuItemCls}
-              >
-                <SplitSquareHorizontal className="h-3.5 w-3.5 text-[var(--accent)]" />
-                Böl
-              </button>
-            </>
-          )}
-
-          {view === "move" && (
-            <DayPickerList
-              weekDays={weekDays}
-              currentDate={currentDate}
-              acting={acting}
-              onBack={() => setView("main")}
-              onPick={(dateStr) => run(() => onMove(taskId, dateStr))}
-            />
-          )}
-
-          {view === "split" && (
-            <DayPickerList
-              weekDays={weekDays}
-              currentDate={currentDate}
-              acting={acting}
-              onBack={() => setView("main")}
-              onPick={(dateStr) => run(() => onSplit(taskId, dateStr))}
-            />
-          )}
-
-          {view === "repeat" && (
-            <div className="space-y-2 px-3 py-2">
-              <button
-                type="button"
-                onClick={() => setView("main")}
-                className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-              >
-                ← Menü
-              </button>
-              <p className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                Kaç hafta boyunca tekrarlansın?
-              </p>
-              <input
-                type="number"
-                min={1}
-                max={12}
-                value={weeks}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (Number.isNaN(n)) return;
-                  setWeeks(Math.min(12, Math.max(1, n)));
-                }}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
-              />
-              <button
-                type="button"
-                disabled={acting}
-                onClick={() => run(() => onRepeat(taskId, weeks))}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] py-2 text-xs font-bold text-[var(--text-primary)] disabled:opacity-50"
-              >
-                {acting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Repeat className="h-3.5 w-3.5" />
-                )}
-                {weeks} hafta tekrarla
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Board kartı ─────────────────────────────────────────────────────────────
-
-function TaskCard({
-  task,
-  animate,
-  onDelete,
-  deletingId,
-  weekDays,
-  onEdit,
-  onCopy,
-  onMove,
-  onRepeat,
-  onPrepareSplit,
-  onSplit,
-  menuBusy,
-  dragHandleProps,
-  setNodeRef,
-  style,
-  isDragging,
-  isOverlay = false,
-}: {
-  task: PlanTask;
-  animate?: boolean;
-  onDelete?: (id: string) => void;
-  deletingId?: string | null;
-  weekDays?: WeekDayOption[];
-  onEdit?: (taskId: string) => Promise<void>;
-  onCopy?: (taskId: string) => Promise<void>;
-  onMove?: (taskId: string, dateStr: string) => Promise<void>;
-  onRepeat?: (taskId: string, weeks: number) => Promise<void>;
-  onPrepareSplit?: (taskId: string) => Promise<boolean>;
-  onSplit?: (taskId: string, dateStr: string) => Promise<void>;
-  menuBusy?: boolean;
-  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
-  setNodeRef?: (node: HTMLElement | null) => void;
-  style?: React.CSSProperties;
-  isDragging?: boolean;
-  isOverlay?: boolean;
-}) {
-  const badge = getBadge(task.task_type);
-  const hasTime = Boolean(task.start_time && task.end_time);
-  const duration = getTaskDurationMinutes(task);
-  const showDuration = duration > 0;
-  const isDraft = task.is_published === false;
-
-  const metaParts: string[] = [];
-  if (task.subject?.name) metaParts.push(task.subject.name);
-  if (task.topic?.name) metaParts.push(task.topic.name);
-
-  const showActions = Boolean(
-    onDelete &&
-      onEdit &&
-      onCopy &&
-      onMove &&
-      onRepeat &&
-      onPrepareSplit &&
-      onSplit &&
-      weekDays
-  );
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group relative rounded-xl border bg-[var(--surface)]/80 p-3 transition-all duration-200 hover:border-[var(--border)] ${
-        isDraft
-          ? "border-dashed border-amber-500/40 opacity-70"
-          : "border-[var(--border)]"
-      } ${task.is_completed ? "opacity-60" : ""} ${
-        animate ? "animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300" : ""
-      } ${isDragging ? "opacity-40" : ""} ${
-        isOverlay
-          ? "scale-[1.02] overflow-hidden opacity-95 shadow-2xl shadow-[var(--primary)]/25 ring-1 ring-[var(--primary)]/30"
-          : ""
-      }`}
-    >
-      <div
-        aria-hidden
-        className="absolute bottom-0 left-0 top-0 w-1 rounded-l-xl"
-        style={{ background: badge.color }}
-      />
-
-      {isDraft && (
-        <span className="absolute left-3 top-1.5 z-10 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-200">
-          Taslak
-        </span>
-      )}
-
-      {dragHandleProps && (
-        <button
-          type="button"
-          className="absolute left-2 top-1/2 z-10 -translate-y-1/2 cursor-grab touch-none rounded-md p-0.5 text-[var(--text-muted)] opacity-60 transition-opacity hover:opacity-100 active:cursor-grabbing group-hover:opacity-100"
-          aria-label="Sürükle"
-          {...dragHandleProps}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-      )}
-
-      {showActions && (
-        <div className="absolute right-1.5 top-1.5 z-20 flex items-center gap-1">
-          <TaskCardMenu
-            taskId={task.id}
-            currentDate={task.plan_date}
-            weekDays={weekDays!}
-            busy={Boolean(menuBusy) || deletingId === task.id}
-            onEdit={onEdit!}
-            onCopy={onCopy!}
-            onMove={onMove!}
-            onRepeat={onRepeat!}
-            onPrepareSplit={onPrepareSplit!}
-            onSplit={onSplit!}
-          />
-          <button
-            type="button"
-            onClick={() => onDelete!(task.id)}
-            disabled={deletingId === task.id || menuBusy}
-            className="rounded-md border border-red-500/20 bg-red-500/10 p-1 text-red-400 opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100 disabled:opacity-50"
-            aria-label="Görevi sil"
-          >
-            {deletingId === task.id ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Trash2 className="h-3 w-3" />
-            )}
-          </button>
-        </div>
-      )}
-
-      <div
-        className={`${showActions ? "pr-14" : "pr-6"} ${dragHandleProps ? "pl-5" : "pl-1"} ${
-          isDraft ? "pt-4" : ""
-        }`}
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span
-            className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-            style={{
-              color: badge.color,
-              backgroundColor: `${badge.color}18`,
-              border: `1px solid ${badge.color}33`,
-            }}
-          >
-            {badge.label}
-          </span>
-          {task.is_completed && (
-            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-green-400">
-              <CheckCircle2 className="h-3 w-3" />
-              Tamamlandı
-            </span>
-          )}
-        </div>
-
-        <p
-          className={`mt-1.5 text-sm font-semibold leading-snug text-[var(--text-primary)] ${
-            task.is_completed ? "line-through decoration-white/30" : ""
-          }`}
-        >
-          {task.title}
-        </p>
-
-        {metaParts.length > 0 && (
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">{metaParts.join(" · ")}</p>
-        )}
-
-        {hasTime && task.start_time && task.end_time ? (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3 w-3 shrink-0 text-[var(--accent)]" />
-              {formatTimeTR(task.start_time)} – {formatTimeTR(task.end_time)}
-              {showDuration && (
-                <span className="text-[var(--text-muted)]">· {duration} dk</span>
-              )}
-            </span>
-            {task.break_minutes != null && task.break_minutes > 0 && (
-              <span className="rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
-                {task.break_minutes} dk mola
-              </span>
-            )}
-          </div>
-        ) : showDuration ? (
-          <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
-            <Clock className="h-3 w-3 shrink-0 text-[var(--accent)]" />
-            {duration} dk
-          </div>
-        ) : null}
-
-        {onEdit && !isOverlay ? (
-          <button
-            type="button"
-            onClick={() => void onEdit(task.id)}
-            disabled={menuBusy}
-            className="mt-2 text-[10px] font-semibold text-[var(--accent)] transition-colors duration-150 hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 disabled:opacity-50"
-          >
-            Düzenle
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function SortableTaskCard({
-  task,
-  animate,
-  onDelete,
-  deletingId,
-  weekDays,
-  onEdit,
-  onCopy,
-  onMove,
-  onRepeat,
-  onPrepareSplit,
-  onSplit,
-  menuBusy,
-}: {
-  task: PlanTask;
-  animate: boolean;
-  onDelete: (id: string) => void;
-  deletingId: string | null;
-  weekDays: WeekDayOption[];
-  onEdit: (taskId: string) => Promise<void>;
-  onCopy: (taskId: string) => Promise<void>;
-  onMove: (taskId: string, dateStr: string) => Promise<void>;
-  onRepeat: (taskId: string, weeks: number) => Promise<void>;
-  onPrepareSplit: (taskId: string) => Promise<boolean>;
-  onSplit: (taskId: string, dateStr: string) => Promise<void>;
-  menuBusy: boolean;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: String(task.id) });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <TaskCard
-      task={task}
-      animate={animate}
-      onDelete={onDelete}
-      deletingId={deletingId}
-      weekDays={weekDays}
-      onEdit={onEdit}
-      onCopy={onCopy}
-      onMove={onMove}
-      onRepeat={onRepeat}
-      onPrepareSplit={onPrepareSplit}
-      onSplit={onSplit}
-      menuBusy={menuBusy}
-      setNodeRef={setNodeRef}
-      style={style}
-      isDragging={isDragging}
-      dragHandleProps={{ ...attributes, ...listeners }}
-    />
-  );
-}
-
-function DayColumn({
-  dateStr,
-  day,
-  colIndex,
-  dayTasks,
-  todayCol,
-  onDelete,
-  deletingId,
-  shouldAnimate,
-  onAdd,
-  onAddBrans,
-  onAddKitap,
-  weekDays,
-  onEdit,
-  onCopy,
-  onMove,
-  onRepeat,
-  onPrepareSplit,
-  onSplit,
-  menuBusy,
-  dailyTargetMinutes,
-  studentId,
-  subjects,
-  taskCountForDate,
-  draftMode,
-  onQuickAddSuccess,
-  onQuickAddError,
-  quickAddRef,
-}: {
-  dateStr: string;
-  day: Date;
-  colIndex: number;
-  dayTasks: PlanTask[];
-  todayCol: boolean;
-  onDelete: (id: string) => void;
-  deletingId: string | null;
-  shouldAnimate: (id: string) => boolean;
-  onAdd: () => void;
-  onAddBrans: () => void;
-  onAddKitap: () => void;
-  weekDays: WeekDayOption[];
-  onEdit: (taskId: string) => Promise<void>;
-  onCopy: (taskId: string) => Promise<void>;
-  onMove: (taskId: string, dateStr: string) => Promise<void>;
-  onRepeat: (taskId: string, weeks: number) => Promise<void>;
-  onPrepareSplit: (taskId: string) => Promise<boolean>;
-  onSplit: (taskId: string, dateStr: string) => Promise<void>;
-  menuBusy: boolean;
-  dailyTargetMinutes: number | null;
-  studentId: string;
-  subjects: ProgramSubject[];
-  taskCountForDate: (date: string) => number;
-  draftMode: boolean;
-  onQuickAddSuccess: (planDate: string) => void;
-  onQuickAddError: (message: string) => void;
-  quickAddRef?: (handle: DayQuickAddHandle | null) => void;
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id: dateStr });
-
-  const totalMinutes = dayTasks.reduce(
-    (sum, t) => sum + getTaskDurationMinutes(t),
-    0
-  );
-  const tone =
-    dailyTargetMinutes != null && dailyTargetMinutes > 0
-      ? densityTone(totalMinutes, dailyTargetMinutes)
-      : null;
-
-  const quickBtnCls =
-    "flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border)] py-1.5 text-[10px] font-semibold text-[var(--text-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)]/40 hover:bg-[var(--primary)]/[0.06] hover:text-[var(--accent)]";
-
-  return (
-    <div
-      ref={setNodeRef}
-      data-plan-date={dateStr}
-      tabIndex={0}
-      className={`flex min-h-[8rem] min-w-[240px] flex-col rounded-xl border p-2.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 lg:min-w-0 ${
-        isOver
-          ? "border-[var(--primary)]/50 bg-[var(--primary)]/[0.08] shadow-[0_0_24px_rgba(123,47,255,0.15)]"
-          : todayCol
-            ? "border-[var(--primary)]/30 bg-[var(--primary)]/[0.04] shadow-[0_0_20px_rgba(123,47,255,0.08)]"
-            : "border-[var(--border)] bg-white/[0.02]"
-      }`}
-    >
-      <div className="mb-2 border-b border-[var(--border)] pb-2">
-        <p
-          className={`text-xs font-bold ${
-            todayCol || isOver ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"
-          }`}
-        >
-          {DAY_LABELS_FULL[colIndex]}
-        </p>
-        <p className="text-[10px] text-[var(--text-muted)]">
-          {formatColumnDate(day)}
-          {todayCol && (
-            <span className="ml-1.5 text-[var(--primary)]">· Bugün</span>
-          )}
-        </p>
-        {(totalMinutes > 0 || tone) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {totalMinutes > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-secondary)]">
-                <Clock className="h-3 w-3 text-[var(--accent)]" />
-                {totalMinutes} dk
-                {dailyTargetMinutes != null && dailyTargetMinutes > 0 && (
-                  <span className="font-normal text-[var(--text-muted)]">
-                    / {dailyTargetMinutes}
-                  </span>
-                )}
-              </span>
-            )}
-            {tone && (
-              <span
-                className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${DENSITY_BADGE_CLS[tone]}`}
-              >
-                {DENSITY_LABEL[tone]}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <SortableContext
-        items={dayTasks.map((t) => String(t.id))}
-        strategy={verticalListSortingStrategy}
-      >
-        <div className="flex flex-1 flex-col gap-2">
-          {dayTasks.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--border)] px-2 py-6">
-              <p className="text-center text-[10px] text-[var(--text-muted)]">
-                {isOver ? "Buraya bırak" : "görev yok"}
-              </p>
-            </div>
-          ) : (
-            dayTasks.map((task) => (
-              <SortableTaskCard
-                key={task.id}
-                task={task}
-                animate={shouldAnimate(task.id)}
-                onDelete={onDelete}
-                deletingId={deletingId}
-                weekDays={weekDays}
-                onEdit={onEdit}
-                onCopy={onCopy}
-                onMove={onMove}
-                onRepeat={onRepeat}
-                onPrepareSplit={onPrepareSplit}
-                onSplit={onSplit}
-                menuBusy={menuBusy}
-              />
-            ))
-          )}
-        </div>
-      </SortableContext>
-
-      <div className="mt-2 flex flex-col gap-1.5">
-        <button type="button" onClick={onAdd} className={quickBtnCls}>
-          <Plus className="h-3.5 w-3.5" />
-          Görev Ekle
-        </button>
-        <button type="button" onClick={onAddBrans} className={quickBtnCls}>
-          <BookMarked className="h-3 w-3" />
-          Branş Denemesi
-        </button>
-        <button type="button" onClick={onAddKitap} className={quickBtnCls}>
-          <BookOpen className="h-3 w-3" />
-          Kitap Okuma
-        </button>
-        <DayQuickAdd
-          ref={(handle) => quickAddRef?.(handle)}
-          studentId={studentId}
-          subjects={subjects}
-          planDate={dateStr}
-          taskCountForDate={taskCountForDate}
-          draftMode={draftMode}
-          onSuccess={onQuickAddSuccess}
-          onError={onQuickAddError}
-        />
-      </div>
-    </div>
-  );
-}
-
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export default function TeacherWeeklyPlan({ studentId }: Props) {
@@ -1057,14 +267,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     planDate: string;
     dayLabel: string;
     existingTask?: ExistingTask | null;
-  } | null>(null);
-  const [bransModal, setBransModal] = useState<{
-    planDate: string;
-    dayLabel: string;
-  } | null>(null);
-  const [kitapModal, setKitapModal] = useState<{
-    planDate: string;
-    dayLabel: string;
+    initialSubjectId?: number | null;
   } | null>(null);
   const [weekConfirm, setWeekConfirm] = useState<WeekConfirmDialog | null>(
     null
@@ -1082,9 +285,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
   const [draftMode, setDraftMode] = useState(false);
   const [batchMode, setBatchMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
   const [menuBusy, setMenuBusy] = useState(false);
-  const seenTaskIds = useRef(new Set<string>());
   const dayQuickAddRefs = useRef(new Map<string, DayQuickAddHandle>());
   const pendingSplitRef = useRef<{
     taskId: string;
@@ -1093,10 +294,6 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     keep: number;
     move: number;
   } | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
   const weekStartStr = useMemo(() => toISODate(weekStart), [weekStart]);
@@ -1144,7 +341,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     const { data, error } = await client
       .from("study_plan_tasks")
       .select(
-        "id, plan_date, task_type, title, start_time, end_time, break_minutes, order_index, is_completed, is_published, details, subject:subjects(name), topic:topics(name)"
+        "id, plan_date, task_type, title, start_time, end_time, break_minutes, order_index, is_completed, is_published, details, subject_id, topic_id, subject:subjects(name), topic:topics(name)"
       )
       .eq("student_id", studentId)
       .gte("plan_date", weekStartStr)
@@ -1175,6 +372,9 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
             order_index: row.order_index,
             is_completed: row.is_completed,
             is_published: row.is_published !== false,
+            subject_id:
+              typeof row.subject_id === "number" ? row.subject_id : null,
+            topic_id: typeof row.topic_id === "number" ? row.topic_id : null,
             subject: subject as { name: string } | null,
             topic: topic as { name: string } | null,
             details: coerceDetails(
@@ -1311,7 +511,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
 
   // Grid: N → odaklı gün / bugün / ilk gün hızlı ekleme
   useEffect(() => {
-    if (batchMode || addModal || bransModal || kitapModal || weekConfirm) {
+    if (batchMode || addModal || weekConfirm) {
       return;
     }
     const handler = (e: KeyboardEvent) => {
@@ -1342,8 +542,6 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
   }, [
     batchMode,
     addModal,
-    bransModal,
-    kitapModal,
     weekConfirm,
     weekDateStrs,
   ]);
@@ -1364,7 +562,6 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
 
     setToast({ type: "success", message: "Görev silindi." });
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    seenTaskIds.current.delete(taskId);
   };
 
   const fetchRawTask = useCallback(
@@ -1689,7 +886,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     [fetchRawTask, countTasksOnDate, supabase, fetchTasks]
   );
 
-  const updateTaskPosition = useCallback(
+  const persistPositions = useCallback(
     async (
       updates: { id: string; plan_date?: string; order_index: number }[]
     ) => {
@@ -1709,141 +906,6 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     },
     [supabase]
   );
-
-  const findContainerDate = useCallback(
-    (id: string): string | null => {
-      if (weekDateStrs.includes(id)) return id;
-      return tasks.find((t) => t.id === id)?.plan_date ?? null;
-    },
-    [weekDateStrs, tasks]
-  );
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const id = String(event.active.id);
-    setActiveTask(tasks.find((t) => t.id === id) ?? null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveTask(null);
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    if (activeId === overId) return;
-
-    const activeItem = tasks.find((t) => t.id === activeId);
-    if (!activeItem) return;
-
-    const fromDate = activeItem.plan_date;
-    const toDate = findContainerDate(overId);
-    if (!toDate) return;
-
-    const prevTasks = tasks;
-
-    if (fromDate === toDate) {
-      const dayTasks = [...(tasksByDate.get(fromDate) ?? [])];
-      const oldIndex = dayTasks.findIndex((t) => t.id === activeId);
-      if (oldIndex < 0) return;
-
-      let newIndex: number;
-      if (weekDateStrs.includes(overId)) {
-        newIndex = dayTasks.length - 1;
-      } else {
-        newIndex = dayTasks.findIndex((t) => t.id === overId);
-      }
-      if (newIndex < 0 || oldIndex === newIndex) return;
-
-      const reordered = arrayMove(dayTasks, oldIndex, newIndex).map(
-        (t, i) => ({ ...t, order_index: i })
-      );
-
-      setTasks((prev) => {
-        const others = prev.filter((t) => t.plan_date !== fromDate);
-        return [...others, ...reordered];
-      });
-
-      const error = await updateTaskPosition(
-        reordered.map((t) => ({ id: t.id, order_index: t.order_index }))
-      );
-      if (error) {
-        setTasks(prevTasks);
-        setToast({
-          type: "error",
-          message: "Sıralama kaydedilemedi: " + error.message,
-        });
-      }
-      return;
-    }
-
-    // Başka güne taşı
-    const sourceTasks = (tasksByDate.get(fromDate) ?? []).filter(
-      (t) => t.id !== activeId
-    );
-    const targetTasks = [...(tasksByDate.get(toDate) ?? [])];
-
-    let insertIndex: number;
-    if (weekDateStrs.includes(overId)) {
-      insertIndex = targetTasks.length;
-    } else {
-      const overIndex = targetTasks.findIndex((t) => t.id === overId);
-      insertIndex = overIndex >= 0 ? overIndex : targetTasks.length;
-    }
-
-    const moved: PlanTask = {
-      ...activeItem,
-      plan_date: toDate,
-      order_index: insertIndex,
-    };
-    targetTasks.splice(insertIndex, 0, moved);
-
-    const reindexedSource = sourceTasks.map((t, i) => ({
-      ...t,
-      order_index: i,
-    }));
-    const reindexedTarget = targetTasks.map((t, i) => ({
-      ...t,
-      order_index: i,
-    }));
-
-    setTasks((prev) => {
-      const others = prev.filter(
-        (t) => t.plan_date !== fromDate && t.plan_date !== toDate
-      );
-      return [...others, ...reindexedSource, ...reindexedTarget];
-    });
-
-    const error = await updateTaskPosition([
-      ...reindexedSource.map((t) => ({
-        id: t.id,
-        plan_date: fromDate,
-        order_index: t.order_index,
-      })),
-      ...reindexedTarget.map((t) => ({
-        id: t.id,
-        plan_date: toDate,
-        order_index: t.order_index,
-      })),
-    ]);
-
-    if (error) {
-      setTasks(prevTasks);
-      setToast({
-        type: "error",
-        message: "Taşıma kaydedilemedi: " + error.message,
-      });
-    }
-  };
-
-  const handleDragCancel = () => {
-    setActiveTask(null);
-  };
-
-  const shouldAnimate = (id: string) => {
-    if (seenTaskIds.current.has(id)) return false;
-    seenTaskIds.current.add(id);
-    return true;
-  };
 
   const goToThisWeek = () => setWeekStart(startOfWeek(new Date()));
   const goToPrevWeek = () => setWeekStart((prev) => addDays(prev, -7));
@@ -2054,25 +1116,17 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     await executeClearWeek();
   }, [weekConfirm, executeCopyWeek, executeClearWeek]);
 
-  const openAddModal = (day: Date, colIndex: number) => {
+  const openAddModal = (dateStr: string, subjectId: number | null) => {
+    const idx = weekDateStrs.indexOf(dateStr);
+    const dayLabel =
+      idx >= 0
+        ? `${DAY_LABELS_FULL[idx]}, ${formatColumnDate(weekDays[idx])}`
+        : dateStr;
     setAddModal({
-      planDate: toISODate(day),
-      dayLabel: `${DAY_LABELS_FULL[colIndex]}, ${formatColumnDate(day)}`,
+      planDate: dateStr,
+      dayLabel,
       existingTask: null,
-    });
-  };
-
-  const openBransModal = (day: Date, colIndex: number) => {
-    setBransModal({
-      planDate: toISODate(day),
-      dayLabel: `${DAY_LABELS_FULL[colIndex]}, ${formatColumnDate(day)}`,
-    });
-  };
-
-  const openKitapModal = (day: Date, colIndex: number) => {
-    setKitapModal({
-      planDate: toISODate(day),
-      dayLabel: `${DAY_LABELS_FULL[colIndex]}, ${formatColumnDate(day)}`,
+      initialSubjectId: subjectId,
     });
   };
 
@@ -2099,35 +1153,9 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
           existingTask={addModal.existingTask}
           weekDays={addModal.existingTask ? undefined : weekDays}
           draftMode={draftMode}
-        />
-      )}
-
-      {bransModal && (
-        <QuickAddBransDenemesiModal
-          onClose={() => setBransModal(null)}
-          studentId={studentId}
-          subjects={subjects}
-          planDate={bransModal.planDate}
-          dayLabel={bransModal.dayLabel}
-          taskCountForDate={taskCountForDate}
-          onSuccess={handleTaskAdded}
-          onError={handleTaskError}
-          weekDays={weekDays}
-          draftMode={draftMode}
-        />
-      )}
-
-      {kitapModal && (
-        <QuickAddKitapOkumaModal
-          onClose={() => setKitapModal(null)}
-          studentId={studentId}
-          planDate={kitapModal.planDate}
-          dayLabel={kitapModal.dayLabel}
-          taskCountForDate={taskCountForDate}
-          onSuccess={handleTaskAdded}
-          onError={handleTaskError}
-          weekDays={weekDays}
-          draftMode={draftMode}
+          initialSubjectId={
+            addModal.existingTask ? null : (addModal.initialSubjectId ?? null)
+          }
         />
       )}
 
@@ -2537,103 +1565,62 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
           </div>
         </div>
 
-        <div className="p-4">
+        <div className={`p-4 ${addModal ? "lg:mr-[400px]" : ""}`}>
           {subjectsLoading || tasksLoading ? (
-            <div className="overflow-x-auto animate-pulse">
-              <div className="grid w-max min-w-full grid-cols-7 gap-3">
-                {Array.from({ length: 7 }).map((_, i) => (
+            <div className="overflow-auto rounded-xl border border-[var(--border)] animate-pulse">
+              <div
+                className="min-w-[56rem]"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "9.5rem repeat(7, minmax(7rem, 1fr))",
+                }}
+              >
+                {Array.from({ length: 32 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-64 min-w-[240px] rounded-xl bg-[var(--surface-2)]"
+                    className="h-12 border-b border-r border-[var(--border)] bg-[var(--surface-2)]"
                   />
                 ))}
               </div>
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <div
-                className={`overflow-x-auto lg:overflow-visible ${
-                  addModal ? "lg:mr-[400px]" : ""
-                }`}
-              >
-                <div className="grid w-max min-w-full grid-cols-7 gap-3 lg:w-auto lg:grid-cols-4 xl:grid-cols-7">
-                  {weekDays.map((day, colIndex) => {
-                    const dateStr = toISODate(day);
-                    const dayTasks = tasksByDate.get(dateStr) ?? [];
-                    return (
-                      <DayColumn
-                        key={dateStr}
-                        dateStr={dateStr}
-                        day={day}
-                        colIndex={colIndex}
-                        dayTasks={dayTasks}
-                        todayCol={isToday(day)}
-                        onDelete={handleDelete}
-                        deletingId={deletingId}
-                        shouldAnimate={shouldAnimate}
-                        onAdd={() => openAddModal(day, colIndex)}
-                        onAddBrans={() => openBransModal(day, colIndex)}
-                        onAddKitap={() => openKitapModal(day, colIndex)}
-                        weekDays={weekDayOptions}
-                        onEdit={handleEditTask}
-                        onCopy={handleCopyTask}
-                        onMove={handleMoveTask}
-                        onRepeat={handleRepeatTask}
-                        onPrepareSplit={handlePrepareSplit}
-                        onSplit={handleSplitTask}
-                        menuBusy={menuBusy}
-                        dailyTargetMinutes={dailyTargetMinutes}
-                        studentId={studentId}
-                        subjects={subjects}
-                        taskCountForDate={taskCountForDate}
-                        draftMode={draftMode}
-                        onQuickAddSuccess={handleQuickAddSuccess}
-                        onQuickAddError={handleTaskError}
-                        quickAddRef={(handle) => {
-                          if (handle) dayQuickAddRefs.current.set(dateStr, handle);
-                          else dayQuickAddRefs.current.delete(dateStr);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <DragOverlay dropAnimation={null}>
-                {activeTask ? (
-                  <div className="w-[11rem]">
-                    <TaskCard task={activeTask} isOverlay />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+            <WeekMatrix
+              weekDays={weekDays}
+              tasks={tasks}
+              subjects={subjects}
+              dailyTargetMinutes={dailyTargetMinutes}
+              studentId={studentId}
+              draftMode={draftMode}
+              deletingId={deletingId}
+              menuBusy={menuBusy}
+              weekDayOptions={weekDayOptions}
+              taskCountForDate={taskCountForDate}
+              onTasksChange={setTasks}
+              persistPositions={persistPositions}
+              onPersistError={(message) =>
+                setToast({ type: "error", message })
+              }
+              onAddTask={openAddModal}
+              onQuickAddSuccess={handleQuickAddSuccess}
+              onQuickAddError={handleTaskError}
+              quickAddRef={(dateStr, handle) => {
+                if (handle) dayQuickAddRefs.current.set(dateStr, handle);
+                else dayQuickAddRefs.current.delete(dateStr);
+              }}
+              onEdit={handleEditTask}
+              onCopy={handleCopyTask}
+              onMove={handleMoveTask}
+              onRepeat={handleRepeatTask}
+              onPrepareSplit={handlePrepareSplit}
+              onSplit={handleSplitTask}
+              onDelete={(id) => void handleDelete(id)}
+            />
           )}
 
-          <div className="mt-4 flex flex-col items-center gap-2 border-t border-[var(--border)] pt-4">
-            <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] text-[var(--text-muted)]">
-              {(
-                Object.entries(TASK_TYPE_BADGE) as [
-                  TaskType,
-                  { label: string; color: string },
-                ][]
-              ).map(([type, { label, color }]) => (
-                <span key={type} className="inline-flex items-center gap-1.5">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  {label}
-                </span>
-              ))}
-            </div>
+          <div className="mt-4 border-t border-[var(--border)] pt-4 text-center">
             <p className="text-[10px] text-[var(--text-muted)]/70">
-              N hızlı ekle · {modKeyLabel()}+Enter panelde kaydet ve yeni
+              N hızlı ekle · {modKeyLabel()}+Enter panelde kaydet ve yeni · sürükle
+              yalnızca aynı ders satırında
             </p>
           </div>
         </div>

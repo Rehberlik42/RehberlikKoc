@@ -204,6 +204,8 @@ interface Props {
   /** Haftanın günleri — yalnızca yeni görev eklerken çoklu gün seçimi için */
   weekDays?: Date[];
   draftMode?: boolean;
+  /** Matris hücresinden açılışta ders ön seçimi */
+  initialSubjectId?: number | null;
 }
 
 const DAY_LABELS_SHORT = [
@@ -252,6 +254,7 @@ export default function AddTaskModal({
   existingTask = null,
   weekDays,
   draftMode = false,
+  initialSubjectId = null,
 }: Props) {
   const supabase = createClient();
   const isEdit = Boolean(existingTask);
@@ -267,9 +270,11 @@ export default function AddTaskModal({
   const [taskType, setTaskType] = useState<TaskType>(
     existingTask?.task_type ?? "ders"
   );
-  const [subjectId, setSubjectId] = useState(
-    existingTask?.subject_id != null ? String(existingTask.subject_id) : ""
-  );
+  const [subjectId, setSubjectId] = useState(() => {
+    if (existingTask?.subject_id != null) return String(existingTask.subject_id);
+    if (initialSubjectId != null) return String(initialSubjectId);
+    return "";
+  });
   const [anaUniteId, setAnaUniteId] = useState(() =>
     resolveAnaUniteId(
       subjects,
@@ -552,7 +557,7 @@ export default function AddTaskModal({
     }
 
     setTaskType("ders");
-    setSubjectId("");
+    setSubjectId(initialSubjectId != null ? String(initialSubjectId) : "");
     setAnaUniteId("");
     setTopicId("");
     setTitle("Ders");
@@ -563,7 +568,7 @@ export default function AddTaskModal({
     setShowCoachNote(false);
     setAdditionalDays(new Set());
     setTopicQuery("");
-  }, [planDate, existingTask, subjects]);
+  }, [planDate, existingTask, subjects, initialSubjectId]);
 
   // Edit modunda mevcut kaynak için liste + konuları yükle
   useEffect(() => {
