@@ -58,7 +58,7 @@ function buildInitialOpenMap(sections: HelpGuideSection[]) {
 export default function HelpGuideButton({
   title,
   sections,
-  className = "",
+  className = "h-7 w-7 rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] transition-colors hover:border-[var(--primary)]/35 hover:bg-[var(--primary)]/10 hover:text-[var(--accent)]",
 }: HelpGuideButtonProps) {
   const [open, setOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(
@@ -103,7 +103,7 @@ export default function HelpGuideButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] transition-colors hover:border-[var(--primary)]/35 hover:bg-[var(--primary)]/10 hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 ${className}`}
+        className={`inline-flex shrink-0 items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40 ${className}`}
         aria-label={`${title} kullanım kılavuzu`}
         title="Kullanım Kılavuzu"
       >

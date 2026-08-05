@@ -2325,15 +2325,9 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                 <Calendar className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                    Haftalık Program
-                  </h3>
-                  <HelpGuideButton
-                    title={WEEKLY_PLAN_GUIDE.title}
-                    sections={WEEKLY_PLAN_GUIDE.sections}
-                  />
-                </div>
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                  Haftalık Program
+                </h3>
                 <p className="text-[11px] text-[var(--text-muted)]">
                   {tasks.length > 0
                     ? `${tasks.length} görev bu hafta · tutamacı sürükleyerek taşı`
@@ -2407,6 +2401,11 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <HelpGuideButton
+                title={WEEKLY_PLAN_GUIDE.title}
+                sections={WEEKLY_PLAN_GUIDE.sections}
+                className="h-9 w-9 rounded-lg border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--accent)] hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/20 hover:text-[var(--accent)]"
+              />
               <button
                 type="button"
                 onClick={goToPrevWeek}
