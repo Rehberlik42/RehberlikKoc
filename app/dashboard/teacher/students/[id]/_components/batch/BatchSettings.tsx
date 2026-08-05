@@ -56,7 +56,10 @@ interface Props {
   selectedTopics: BatchTopicRow[];
   weekDays: WeekDayChip[];
   existingMinutesByDate: Map<string, number>;
+  existingTaskCountByDate: Map<string, number>;
   dailyTargetMinutes: number | null;
+  dailyTargetTasks: number | null;
+  dailyTargetUnit: "task" | "minute";
   saving: boolean;
   onSave: (planned: PlannedBatchTask[], settings: BatchSaveSettings) => void;
 }
@@ -72,7 +75,10 @@ export default function BatchSettings({
   selectedTopics,
   weekDays,
   existingMinutesByDate,
+  existingTaskCountByDate,
   dailyTargetMinutes,
+  dailyTargetTasks,
+  dailyTargetUnit,
   saving,
   onSave,
 }: Props) {
@@ -137,14 +143,20 @@ export default function BatchSettings({
         planned,
         durationMinutes,
         existingMinutesByDate,
+        existingTaskCountByDate,
         dailyTargetMinutes,
+        dailyTargetTasks,
+        dailyTargetUnit,
         dayLabelByDate: dayFullLabelByDate,
       }),
     [
       planned,
       durationMinutes,
       existingMinutesByDate,
+      existingTaskCountByDate,
       dailyTargetMinutes,
+      dailyTargetTasks,
+      dailyTargetUnit,
       dayFullLabelByDate,
     ]
   );
@@ -424,8 +436,15 @@ export default function BatchSettings({
               key={w.dateStr}
               className="text-xs font-semibold text-rose-300"
             >
-              {w.dayLabel} günlük hedefi {w.targetMinutes} dk aşıyor (
-              {w.totalMinutes} dk)
+              {w.dayLabel} günlük hedefi{" "}
+              {w.unit === "task"
+                ? `${w.target} görev`
+                : `${w.target} dk`}{" "}
+              aşıyor (
+              {w.unit === "task"
+                ? `${w.totalLoad} görev`
+                : `${w.totalLoad} dk`}
+              )
             </p>
           ))}
           <button

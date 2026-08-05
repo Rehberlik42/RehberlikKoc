@@ -1,6 +1,12 @@
 "use client";
 
-import { densityTone, getTaskDurationMinutes } from "@/lib/weekly-program-summary";
+import {
+  dayLoadValue,
+  densityTone,
+  getTaskDurationMinutes,
+  resolveDailyTarget,
+  type DailyTargetUnit,
+} from "@/lib/weekly-program-summary";
 import type { MatrixTask } from "./matrix-grouping";
 
 const DAY_SHORT = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] as const;
@@ -14,12 +20,16 @@ export default function MatrixDayHeader({
   colIndex,
   dayTasks,
   dailyTargetMinutes,
+  dailyTargetTasks,
+  dailyTargetUnit,
   isToday,
 }: {
   day: Date;
   colIndex: number;
   dayTasks: MatrixTask[];
   dailyTargetMinutes: number | null;
+  dailyTargetTasks: number | null;
+  dailyTargetUnit: DailyTargetUnit;
   isToday: boolean;
 }) {
   const taskCount = dayTasks.length;
@@ -27,11 +37,15 @@ export default function MatrixDayHeader({
     (sum, t) => sum + getTaskDurationMinutes(t),
     0
   );
-  const hasTarget = dailyTargetMinutes != null && dailyTargetMinutes > 0;
+  const target = resolveDailyTarget({
+    unit: dailyTargetUnit,
+    minutes: dailyTargetMinutes,
+    tasks: dailyTargetTasks,
+  });
+  const loadValue = dayLoadValue(dayTasks, dailyTargetUnit);
+  const hasTarget = target != null && target > 0;
   const tone =
-    hasTarget && totalMinutes > 0
-      ? densityTone(totalMinutes, dailyTargetMinutes)
-      : null;
+    hasTarget && loadValue > 0 ? densityTone(loadValue, target) : null;
 
   let minutesCls = "text-[var(--text-muted)]";
   if (tone === "amber") minutesCls = "text-[var(--warning)]";
@@ -59,18 +73,7 @@ export default function MatrixDayHeader({
       {taskCount > 0 ? (
         <p className={`mt-0.5 text-[10px] font-semibold leading-tight ${minutesCls}`}>
           {taskCount} görev
-          {totalMinutes > 0 ? (
-            <>
-              {" · "}
-              {totalMinutes} dk
-              {hasTarget ? (
-                <span className="font-normal text-[var(--text-muted)]">
-                  {" "}
-                  / {dailyTargetMinutes}
-                </span>
-              ) : null}
-            </>
-          ) : null}
+          {totalMinutes > 0 ? <> · {totalMinutes} dk</> : null}
         </p>
       ) : null}
     </div>

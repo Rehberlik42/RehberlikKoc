@@ -16,6 +16,14 @@ export type SummaryPlanTask = {
 
 export type DensityTone = "neutral" | "green" | "amber" | "rose";
 
+export type DailyTargetUnit = "task" | "minute";
+
+export type DailyTargetConfig = {
+  unit: DailyTargetUnit;
+  minutes: number | null;
+  tasks: number | null;
+};
+
 const DAY_LABELS_FULL = [
   "Pazartesi",
   "Salı",
@@ -48,15 +56,36 @@ export function getTaskDurationMinutes(task: SummaryPlanTask): number {
   return 0;
 }
 
-export function densityTone(
-  totalMinutes: number,
-  targetMinutes: number
-): DensityTone {
-  const ratio = totalMinutes / targetMinutes;
+/** value / target — birim bağımsız eşikler (%70 / %100 / %130). */
+export function densityTone(value: number, target: number): DensityTone {
+  const ratio = value / target;
   if (ratio < 0.7) return "neutral";
   if (ratio <= 1) return "green";
   if (ratio <= 1.3) return "amber";
   return "rose";
+}
+
+/** Aktif birime göre hedef sayı; yoksa null. */
+export function resolveDailyTarget(config: DailyTargetConfig): number | null {
+  if (config.unit === "task") {
+    return config.tasks != null && config.tasks > 0 ? config.tasks : null;
+  }
+  return config.minutes != null && config.minutes > 0 ? config.minutes : null;
+}
+
+/** Günün yük değeri — birime göre görev sayısı veya dakika toplamı. */
+export function dayLoadValue(
+  dayTasks: SummaryPlanTask[],
+  unit: DailyTargetUnit
+): number {
+  if (unit === "task") return dayTasks.length;
+  return dayTasks.reduce((sum, t) => sum + getTaskDurationMinutes(t), 0);
+}
+
+export function formatDailyTargetLabel(config: DailyTargetConfig): string {
+  const target = resolveDailyTarget(config);
+  if (target == null) return "tanımsız";
+  return config.unit === "task" ? `${target} görev` : `${target} dk`;
 }
 
 export const DENSITY_BADGE_CLS: Record<DensityTone, string> = {
@@ -116,6 +145,7 @@ export type GunlukDagilimItem = {
   dayLabel: string;
   taskCount: number;
   totalMinutes: number;
+  loadValue: number;
   tone: DensityTone | null;
   ratio: number | null;
 };
@@ -129,13 +159,27 @@ export type WeeklySummary = {
   tekrarSayisi: number;
   gunlukDagilim: GunlukDagilimItem[];
   asiriGunler: string[];
+  targetUnit: DailyTargetUnit;
+  targetValue: number | null;
 };
 
 export function computeWeeklySummary(
   tasks: SummaryPlanTask[],
   weekStart: Date,
-  dailyTargetMinutes: number | null
+  dailyTargetMinutes: number | null,
+  options?: {
+    unit?: DailyTargetUnit;
+    dailyTargetTasks?: number | null;
+  }
 ): WeeklySummary {
+  const unit = options?.unit ?? "minute";
+  const config: DailyTargetConfig = {
+    unit,
+    minutes: dailyTargetMinutes,
+    tasks: options?.dailyTargetTasks ?? null,
+  };
+  const targetValue = resolveDailyTarget(config);
+
   const toplamGorev = tasks.length;
   const toplamSureDk = tasks.reduce(
     (sum, t) => sum + getTaskDurationMinutes(t),
@@ -179,11 +223,10 @@ export function computeWeeklySummary(
       (sum, t) => sum + getTaskDurationMinutes(t),
       0
     );
-    const hasTarget = dailyTargetMinutes != null && dailyTargetMinutes > 0;
-    const tone = hasTarget
-      ? densityTone(totalMinutes, dailyTargetMinutes)
-      : null;
-    const ratio = hasTarget ? totalMinutes / dailyTargetMinutes! : null;
+    const loadValue = dayLoadValue(dayTasks, unit);
+    const hasTarget = targetValue != null && targetValue > 0;
+    const tone = hasTarget ? densityTone(loadValue, targetValue) : null;
+    const ratio = hasTarget ? loadValue / targetValue! : null;
     const dayLabel = DAY_LABELS_FULL[i];
 
     gunlukDagilim.push({
@@ -191,6 +234,7 @@ export function computeWeeklySummary(
       dayLabel,
       taskCount: dayTasks.length,
       totalMinutes,
+      loadValue,
       tone,
       ratio,
     });
@@ -207,5 +251,7 @@ export function computeWeeklySummary(
     tekrarSayisi,
     gunlukDagilim,
     asiriGunler,
+    targetUnit: unit,
+    targetValue,
   };
 }

@@ -7,7 +7,10 @@ import {
   buildSuggestedTitle,
   buildTaskInsertPayload,
 } from "@/lib/program/task-payload";
-import { getTaskDurationMinutes } from "@/lib/weekly-program-summary";
+import {
+  getTaskDurationMinutes,
+  type DailyTargetUnit,
+} from "@/lib/weekly-program-summary";
 import type { ProgramSubject } from "../program-types";
 import TopicPool from "./TopicPool";
 import BatchSettings, { type BatchSaveSettings } from "./BatchSettings";
@@ -40,6 +43,8 @@ interface Props {
   tasks: PlanTaskLike[];
   taskCountForDate: (date: string) => number;
   dailyTargetMinutes: number | null;
+  dailyTargetTasks: number | null;
+  dailyTargetUnit: DailyTargetUnit;
   draftMode: boolean;
   onClose: () => void;
   onSuccess: (count: number) => void;
@@ -60,6 +65,8 @@ export default function BatchComposer({
   tasks,
   taskCountForDate,
   dailyTargetMinutes,
+  dailyTargetTasks,
+  dailyTargetUnit,
   draftMode,
   onClose,
   onSuccess,
@@ -135,6 +142,14 @@ export default function BatchComposer({
         t.plan_date,
         (map.get(t.plan_date) ?? 0) + getTaskDurationMinutes(t)
       );
+    }
+    return map;
+  }, [tasks]);
+
+  const existingTaskCountByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const t of tasks) {
+      map.set(t.plan_date, (map.get(t.plan_date) ?? 0) + 1);
     }
     return map;
   }, [tasks]);
@@ -280,7 +295,10 @@ export default function BatchComposer({
           selectedTopics={selectedTopics}
           weekDays={weekDayChips}
           existingMinutesByDate={existingMinutesByDate}
+          existingTaskCountByDate={existingTaskCountByDate}
           dailyTargetMinutes={dailyTargetMinutes}
+          dailyTargetTasks={dailyTargetTasks}
+          dailyTargetUnit={dailyTargetUnit}
           saving={saving}
           onSave={(planned, settings) => {
             void handleSave(planned, settings);

@@ -155,8 +155,10 @@ export function distributeTopics(
 export type DayLoadWarning = {
   dateStr: string;
   dayLabel: string;
-  totalMinutes: number;
-  targetMinutes: number;
+  /** Birime göre toplam yük (görev veya dk) */
+  totalLoad: number;
+  target: number;
+  unit: "task" | "minute";
   tone: DensityTone;
 };
 
@@ -164,38 +166,55 @@ export function computeLoadWarnings(args: {
   planned: PlannedBatchTask[];
   durationMinutes: number;
   existingMinutesByDate: Map<string, number>;
+  existingTaskCountByDate?: Map<string, number>;
   dailyTargetMinutes: number | null;
+  dailyTargetTasks?: number | null;
+  dailyTargetUnit?: "task" | "minute";
   dayLabelByDate: Map<string, string>;
 }): DayLoadWarning[] {
   const {
     planned,
     durationMinutes,
     existingMinutesByDate,
+    existingTaskCountByDate,
     dailyTargetMinutes,
+    dailyTargetTasks = null,
+    dailyTargetUnit = "minute",
     dayLabelByDate,
   } = args;
 
-  if (dailyTargetMinutes == null || dailyTargetMinutes <= 0) return [];
+  const target =
+    dailyTargetUnit === "task"
+      ? dailyTargetTasks != null && dailyTargetTasks > 0
+        ? dailyTargetTasks
+        : null
+      : dailyTargetMinutes != null && dailyTargetMinutes > 0
+        ? dailyTargetMinutes
+        : null;
+  if (target == null) return [];
 
   const addedByDate = new Map<string, number>();
   for (const p of planned) {
-    addedByDate.set(
-      p.planDate,
-      (addedByDate.get(p.planDate) ?? 0) + Math.max(0, durationMinutes)
-    );
+    const add =
+      dailyTargetUnit === "task" ? 1 : Math.max(0, durationMinutes);
+    addedByDate.set(p.planDate, (addedByDate.get(p.planDate) ?? 0) + add);
   }
 
   const warnings: DayLoadWarning[] = [];
   for (const [dateStr, added] of addedByDate) {
-    const existing = existingMinutesByDate.get(dateStr) ?? 0;
+    const existing =
+      dailyTargetUnit === "task"
+        ? (existingTaskCountByDate?.get(dateStr) ?? 0)
+        : (existingMinutesByDate.get(dateStr) ?? 0);
     const total = existing + added;
-    const tone = densityTone(total, dailyTargetMinutes);
+    const tone = densityTone(total, target);
     if (tone !== "rose") continue;
     warnings.push({
       dateStr,
       dayLabel: dayLabelByDate.get(dateStr) ?? dateStr,
-      totalMinutes: total,
-      targetMinutes: dailyTargetMinutes,
+      totalLoad: total,
+      target,
+      unit: dailyTargetUnit,
       tone,
     });
   }

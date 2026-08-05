@@ -64,6 +64,8 @@ interface Props {
   weekStart: Date;
   weekRangeLabel: string;
   dailyTargetMinutes: number | null;
+  dailyTargetTasks?: number | null;
+  dailyTargetUnit?: "task" | "minute";
 }
 
 export default function WeeklyProgramSummaryModal({
@@ -73,6 +75,8 @@ export default function WeeklyProgramSummaryModal({
   weekStart,
   weekRangeLabel,
   dailyTargetMinutes,
+  dailyTargetTasks = null,
+  dailyTargetUnit = "minute",
 }: Props) {
   const canPortal = typeof document !== "undefined";
 
@@ -95,18 +99,22 @@ export default function WeeklyProgramSummaryModal({
   }, [open]);
 
   const summary = useMemo(
-    () => computeWeeklySummary(tasks, weekStart, dailyTargetMinutes),
-    [tasks, weekStart, dailyTargetMinutes]
+    () =>
+      computeWeeklySummary(tasks, weekStart, dailyTargetMinutes, {
+        unit: dailyTargetUnit,
+        dailyTargetTasks,
+      }),
+    [tasks, weekStart, dailyTargetMinutes, dailyTargetUnit, dailyTargetTasks]
   );
 
-  const maxDayMinutes = useMemo(() => {
+  const maxDayLoad = useMemo(() => {
     const peak = Math.max(
-      ...summary.gunlukDagilim.map((d) => d.totalMinutes),
-      dailyTargetMinutes ?? 0,
+      ...summary.gunlukDagilim.map((d) => d.loadValue),
+      summary.targetValue ?? 0,
       1
     );
     return peak;
-  }, [summary.gunlukDagilim, dailyTargetMinutes]);
+  }, [summary.gunlukDagilim, summary.targetValue]);
 
   if (!canPortal || !open) return null;
 
@@ -145,8 +153,12 @@ export default function WeeklyProgramSummaryModal({
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
                   {weekRangeLabel}
-                  {dailyTargetMinutes != null && dailyTargetMinutes > 0
-                    ? ` · Günlük hedef ${dailyTargetMinutes} dk`
+                  {summary.targetValue != null
+                    ? ` · Günlük hedef ${
+                        summary.targetUnit === "task"
+                          ? `${summary.targetValue} görev`
+                          : `${summary.targetValue} dk`
+                      }`
                     : ""}
                 </p>
               </div>
@@ -240,8 +252,8 @@ export default function WeeklyProgramSummaryModal({
               <div className="grid grid-cols-7 gap-1.5">
                 {summary.gunlukDagilim.map((day) => {
                   const barPct =
-                    maxDayMinutes > 0
-                      ? Math.round((day.totalMinutes / maxDayMinutes) * 100)
+                    maxDayLoad > 0
+                      ? Math.round((day.loadValue / maxDayLoad) * 100)
                       : 0;
                   const tone = day.tone;
                   return (
@@ -260,13 +272,15 @@ export default function WeeklyProgramSummaryModal({
                               : "bg-[var(--primary)]/50"
                           }`}
                           style={{
-                            height: `${Math.max(day.totalMinutes > 0 ? 8 : 2, barPct)}%`,
+                            height: `${Math.max(day.loadValue > 0 ? 8 : 2, barPct)}%`,
                           }}
-                          title={`${day.totalMinutes} dk · ${day.taskCount} görev`}
+                          title={`${day.taskCount} görev · ${day.totalMinutes} dk`}
                         />
                       </div>
                       <span className="text-[10px] font-semibold tabular-nums text-[var(--text-secondary)]">
-                        {day.totalMinutes}
+                        {summary.targetUnit === "task"
+                          ? day.taskCount
+                          : day.totalMinutes}
                       </span>
                       {tone ? (
                         <span

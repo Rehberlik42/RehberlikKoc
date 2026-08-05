@@ -20,6 +20,10 @@ import type { ProgramSubject } from "./program-types";
 import WeekMatrix from "./matrix/WeekMatrix";
 import type { MatrixTask } from "./matrix/matrix-grouping";
 import {
+  formatDailyTargetLabel,
+  type DailyTargetUnit,
+} from "@/lib/weekly-program-summary";
+import {
   Calendar,
   Loader2,
   CheckCheck,
@@ -36,7 +40,7 @@ import {
   Send,
   X,
   Pencil,
-  MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import HelpGuideButton from "@/components/ui/HelpGuideButton";
 import { WEEKLY_PLAN_GUIDE } from "./weekly-plan-guide";
@@ -277,8 +281,13 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
   const [dailyTargetMinutes, setDailyTargetMinutes] = useState<number | null>(
     null
   );
+  const [dailyTargetTasks, setDailyTargetTasks] = useState<number | null>(5);
+  const [dailyTargetUnit, setDailyTargetUnit] =
+    useState<DailyTargetUnit>("task");
   const [editingTarget, setEditingTarget] = useState(false);
   const [targetDraft, setTargetDraft] = useState("");
+  const [targetUnitDraft, setTargetUnitDraft] =
+    useState<DailyTargetUnit>("task");
   const [targetSaving, setTargetSaving] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
@@ -395,14 +404,25 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("daily_target_minutes")
+        .select("daily_target_minutes, daily_target_tasks, daily_target_unit")
         .eq("id", studentId)
         .maybeSingle();
       if (cancelled) return;
-      const raw = data?.daily_target_minutes;
+      const rawMin = data?.daily_target_minutes;
+      const rawTasks = data?.daily_target_tasks;
+      const rawUnit = data?.daily_target_unit;
       setDailyTargetMinutes(
-        typeof raw === "number" && Number.isFinite(raw) ? raw : null
+        typeof rawMin === "number" && Number.isFinite(rawMin) ? rawMin : null
       );
+      setDailyTargetTasks(
+        typeof rawTasks === "number" && Number.isFinite(rawTasks)
+          ? rawTasks
+          : 5
+      );
+      const unit: DailyTargetUnit =
+        rawUnit === "minute" || rawUnit === "task" ? rawUnit : "task";
+      setDailyTargetUnit(unit);
+      setTargetUnitDraft(unit);
     })();
     return () => {
       cancelled = true;
@@ -412,35 +432,65 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
   const saveDailyTarget = useCallback(async () => {
     const parsed = targetDraft.trim() === "" ? null : Number(targetDraft);
     if (parsed != null && (!Number.isFinite(parsed) || parsed < 0)) {
-      setToast({ type: "error", message: "Geçerli bir dakika değeri gir." });
+      setToast({ type: "error", message: "Geçerli bir hedef değeri gir." });
       return;
     }
     const next = parsed == null ? null : Math.round(parsed);
-    const prev = dailyTargetMinutes;
-    setDailyTargetMinutes(next);
+    const prevMinutes = dailyTargetMinutes;
+    const prevTasks = dailyTargetTasks;
+    const prevUnit = dailyTargetUnit;
+
+    const nextMinutes =
+      targetUnitDraft === "minute" ? next : dailyTargetMinutes;
+    const nextTasks =
+      targetUnitDraft === "task" ? (next ?? 5) : dailyTargetTasks;
+
+    setDailyTargetUnit(targetUnitDraft);
+    if (targetUnitDraft === "minute") setDailyTargetMinutes(nextMinutes);
+    else setDailyTargetTasks(nextTasks);
     setEditingTarget(false);
     setTargetSaving(true);
+
     const { error } = await supabase
       .from("profiles")
-      .update({ daily_target_minutes: next })
+      .update({
+        daily_target_unit: targetUnitDraft,
+        daily_target_minutes: nextMinutes,
+        daily_target_tasks: nextTasks ?? 5,
+      })
       .eq("id", studentId);
     setTargetSaving(false);
     if (error) {
-      setDailyTargetMinutes(prev);
+      setDailyTargetMinutes(prevMinutes);
+      setDailyTargetTasks(prevTasks);
+      setDailyTargetUnit(prevUnit);
       setToast({
         type: "error",
         message: "Günlük hedef kaydedilemedi: " + error.message,
       });
       return;
     }
+    const label = formatDailyTargetLabel({
+      unit: targetUnitDraft,
+      minutes: nextMinutes,
+      tasks: nextTasks,
+    });
     setToast({
       type: "success",
       message:
-        next == null
+        label === "tanımsız"
           ? "Günlük hedef kaldırıldı"
-          : `Günlük hedef ${next} dk olarak kaydedildi`,
+          : `Günlük hedef ${label} olarak kaydedildi`,
     });
-  }, [targetDraft, dailyTargetMinutes, supabase, studentId]);
+  }, [
+    targetDraft,
+    targetUnitDraft,
+    dailyTargetMinutes,
+    dailyTargetTasks,
+    dailyTargetUnit,
+    supabase,
+    studentId,
+  ]);
 
   useEffect(() => {
     fetchTasks();
@@ -1180,6 +1230,8 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
         weekStart={weekStart}
         weekRangeLabel={formatWeekRange(weekStart)}
         dailyTargetMinutes={dailyTargetMinutes}
+        dailyTargetTasks={dailyTargetTasks}
+        dailyTargetUnit={dailyTargetUnit}
       />
 
       <SaveAsTemplateModal
@@ -1346,6 +1398,8 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
           tasks={tasks}
           taskCountForDate={taskCountForDate}
           dailyTargetMinutes={dailyTargetMinutes}
+          dailyTargetTasks={dailyTargetTasks}
+          dailyTargetUnit={dailyTargetUnit}
           draftMode={draftMode}
           onClose={() => setBatchMode(false)}
           onSuccess={(count) => {
@@ -1384,10 +1438,50 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                 </p>
                 <div className="mt-1">
                   {editingTarget ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[11px] text-[var(--text-muted)]">
                         Günlük Hedef:
                       </span>
+                      <div className="inline-flex rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
+                        <button
+                          type="button"
+                          disabled={targetSaving}
+                          onClick={() => {
+                            setTargetUnitDraft("task");
+                            setTargetDraft(
+                              dailyTargetTasks != null
+                                ? String(dailyTargetTasks)
+                                : "5"
+                            );
+                          }}
+                          className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                            targetUnitDraft === "task"
+                              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+                              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          Görev
+                        </button>
+                        <button
+                          type="button"
+                          disabled={targetSaving}
+                          onClick={() => {
+                            setTargetUnitDraft("minute");
+                            setTargetDraft(
+                              dailyTargetMinutes != null
+                                ? String(dailyTargetMinutes)
+                                : ""
+                            );
+                          }}
+                          className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                            targetUnitDraft === "minute"
+                              ? "bg-[var(--primary)]/20 text-[var(--accent)]"
+                              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          Dakika
+                        </button>
+                      </div>
                       <input
                         type="number"
                         min={0}
@@ -1403,12 +1497,14 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                             setEditingTarget(false);
                           }
                         }}
-                        className="w-16 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]/40"
-                        placeholder="dk"
+                        className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]/40"
+                        placeholder={
+                          targetUnitDraft === "task" ? "5" : "dk"
+                        }
                         disabled={targetSaving}
                       />
                       <span className="text-[11px] text-[var(--text-muted)]">
-                        dk
+                        {targetUnitDraft === "task" ? "görev" : "dk"}
                       </span>
                       <button
                         type="button"
@@ -1431,19 +1527,26 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                     <button
                       type="button"
                       onClick={() => {
+                        setTargetUnitDraft(dailyTargetUnit);
                         setTargetDraft(
-                          dailyTargetMinutes != null
-                            ? String(dailyTargetMinutes)
-                            : ""
+                          dailyTargetUnit === "task"
+                            ? dailyTargetTasks != null
+                              ? String(dailyTargetTasks)
+                              : "5"
+                            : dailyTargetMinutes != null
+                              ? String(dailyTargetMinutes)
+                              : ""
                         );
                         setEditingTarget(true);
                       }}
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)]"
                     >
                       Günlük Hedef:{" "}
-                      {dailyTargetMinutes != null
-                        ? `${dailyTargetMinutes} dk`
-                        : "tanımsız"}
+                      {formatDailyTargetLabel({
+                        unit: dailyTargetUnit,
+                        minutes: dailyTargetMinutes,
+                        tasks: dailyTargetTasks,
+                      })}
                       <Pencil className="h-3 w-3" />
                     </button>
                   )}
@@ -1541,16 +1644,16 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
 
               <div className="mx-0.5 h-6 w-px shrink-0 bg-[var(--border)]" />
 
-              {/* Grup 3 — diğer */}
+              {/* Grup 3 — hafta işlemleri */}
               <div ref={toolbarMoreRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setToolbarMoreOpen((v) => !v)}
-                  className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--text-secondary)] hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
-                  aria-label="Diğer işlemler"
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--primary)]/30 hover:text-[var(--text-primary)]"
                   aria-expanded={toolbarMoreOpen}
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  Hafta işlemleri
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                 </button>
                 {toolbarMoreOpen ? (
                   <div className="absolute right-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] py-1 shadow-lg">
@@ -1589,6 +1692,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                       <Copy className="h-3.5 w-3.5" />
                       Haftayı Kopyala
                     </button>
+                    <div className="my-1 border-t border-[var(--border)]" />
                     <button
                       type="button"
                       disabled={weekActionLoading || tasks.length === 0}
@@ -1632,6 +1736,8 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
               tasks={tasks}
               subjects={subjects}
               dailyTargetMinutes={dailyTargetMinutes}
+              dailyTargetTasks={dailyTargetTasks}
+              dailyTargetUnit={dailyTargetUnit}
               studentId={studentId}
               draftMode={draftMode}
               deletingId={deletingId}
