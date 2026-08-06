@@ -1,5 +1,6 @@
 import type { ProgramSubject } from "../program-types";
 import { densityTone, type DensityTone } from "@/lib/weekly-program-summary";
+import { flattenSelectableTopics } from "@/lib/program/flatten-selectable-topics";
 
 export type BatchTopicRow = {
   /** subjectId:topicId */
@@ -26,70 +27,18 @@ export type PlannedBatchTask = {
   label: string;
 };
 
-function subjectHasHierarchy(
-  topics: { id: number; name: string; parent_id: number | null }[]
-) {
-  return topics.some((t) => t.parent_id !== null);
-}
-
-/** AddTaskModal düzleştirme ile aynı hiyerarşi kuralları */
+/** Havuz / hızlı ekle — ortak yaprak konu düzleştirmesi */
 export function flattenProgramTopics(
   subjects: ProgramSubject[]
 ): BatchTopicRow[] {
-  const rows: BatchTopicRow[] = [];
-
-  for (const subject of subjects) {
-    const examPrefix = subject.exam ? `${subject.exam} ` : "";
-    const dersLabel = `${examPrefix}${subject.name}`;
-    const topics = subject.topics;
-    const hasHierarchy = subjectHasHierarchy(topics);
-    const parentIdsWithChildren = new Set(
-      topics
-        .map((t) => t.parent_id)
-        .filter((id): id is number => id !== null)
-    );
-
-    if (hasHierarchy) {
-      const anaUniteler = topics.filter((t) => t.parent_id === null);
-      for (const ana of anaUniteler) {
-        const children = topics.filter((t) => t.parent_id === ana.id);
-        if (!parentIdsWithChildren.has(ana.id) || children.length === 0) {
-          rows.push({
-            key: `${subject.id}:${ana.id}`,
-            subjectId: subject.id,
-            topicId: ana.id,
-            topicName: ana.name,
-            subjectName: subject.name,
-            label: `${dersLabel} · ${ana.name}`,
-          });
-        } else {
-          for (const child of children) {
-            rows.push({
-              key: `${subject.id}:${child.id}`,
-              subjectId: subject.id,
-              topicId: child.id,
-              topicName: child.name,
-              subjectName: subject.name,
-              label: `${dersLabel} · ${ana.name} · ${child.name}`,
-            });
-          }
-        }
-      }
-    } else {
-      for (const topic of topics) {
-        rows.push({
-          key: `${subject.id}:${topic.id}`,
-          subjectId: subject.id,
-          topicId: topic.id,
-          topicName: topic.name,
-          subjectName: subject.name,
-          label: `${dersLabel} · ${topic.name}`,
-        });
-      }
-    }
-  }
-
-  return rows;
+  return flattenSelectableTopics(subjects).map((row) => ({
+    key: row.key,
+    subjectId: row.subjectId,
+    topicId: row.topicId,
+    topicName: row.topicName,
+    subjectName: row.subjectName,
+    label: row.label,
+  }));
 }
 
 export function distributeTopics(

@@ -15,6 +15,7 @@ import {
   type TaskType,
 } from "@/lib/program/task-payload";
 import { matchesTr } from "@/lib/program/tr-search";
+import { flattenSelectableTopics } from "@/lib/program/flatten-selectable-topics";
 import {
   focusNextField,
   isModKey,
@@ -120,13 +121,6 @@ const inputCls =
 const labelCls =
   "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
 
-/** Dersin konularında parent_id dolu bir satır varsa hiyerarşi vardır. */
-function subjectHasHierarchy(
-  topics: { id: number; name: string; parent_id: number | null }[]
-) {
-  return topics.some((t) => t.parent_id !== null);
-}
-
 interface FlatTopicOption {
   /** subjectId:topicId */
   key: string;
@@ -134,61 +128,6 @@ interface FlatTopicOption {
   topicId: number;
   anaUniteId: string;
   label: string;
-}
-
-function buildFlatTopicOptions(subjects: ProgramSubject[]): FlatTopicOption[] {
-  const rows: FlatTopicOption[] = [];
-
-  for (const subject of subjects) {
-    const examPrefix = subject.exam ? `${subject.exam} ` : "";
-    const dersLabel = `${examPrefix}${subject.name}`;
-    const topics = subject.topics;
-    const hasHierarchy = subjectHasHierarchy(topics);
-    const parentIdsWithChildren = new Set(
-      topics
-        .map((t) => t.parent_id)
-        .filter((id): id is number => id !== null)
-    );
-
-    if (hasHierarchy) {
-      const anaUniteler = topics.filter((t) => t.parent_id === null);
-      for (const ana of anaUniteler) {
-        const children = topics.filter((t) => t.parent_id === ana.id);
-        if (!parentIdsWithChildren.has(ana.id) || children.length === 0) {
-          // Yaprak ana ünite — doğrudan seçilebilir
-          rows.push({
-            key: `${subject.id}:${ana.id}`,
-            subjectId: subject.id,
-            topicId: ana.id,
-            anaUniteId: String(ana.id),
-            label: `${dersLabel} · ${ana.name}`,
-          });
-        } else {
-          for (const child of children) {
-            rows.push({
-              key: `${subject.id}:${child.id}`,
-              subjectId: subject.id,
-              topicId: child.id,
-              anaUniteId: String(ana.id),
-              label: `${dersLabel} · ${ana.name} · ${child.name}`,
-            });
-          }
-        }
-      }
-    } else {
-      for (const topic of topics) {
-        rows.push({
-          key: `${subject.id}:${topic.id}`,
-          subjectId: subject.id,
-          topicId: topic.id,
-          anaUniteId: String(topic.id),
-          label: `${dersLabel} · ${topic.name}`,
-        });
-      }
-    }
-  }
-
-  return rows;
 }
 
 interface Props {
@@ -318,10 +257,15 @@ export default function AddTaskModal({
   const selectedSubject = subjects.find((s) => String(s.id) === subjectId);
   const topics = selectedSubject?.topics ?? [];
 
-  const flatTopicOptions = useMemo(
-    () => buildFlatTopicOptions(subjects),
-    [subjects]
-  );
+  const flatTopicOptions = useMemo((): FlatTopicOption[] => {
+    return flattenSelectableTopics(subjects).map((row) => ({
+      key: row.key,
+      subjectId: row.subjectId,
+      topicId: row.topicId,
+      anaUniteId: row.anaUniteId,
+      label: row.label,
+    }));
+  }, [subjects]);
 
   const filteredTopicOptions = useMemo(() => {
     const q = topicQuery.trim();
