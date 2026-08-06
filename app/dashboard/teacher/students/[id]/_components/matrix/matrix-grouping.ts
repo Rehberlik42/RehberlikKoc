@@ -1,9 +1,7 @@
 import type { ProgramSubject } from "../program-types";
 import {
   getTaskTypeShortLabel,
-  TASK_TYPE_SHORT_LABEL,
 } from "@/lib/program/task-type-icons";
-import type { TaskType } from "@/lib/program/task-payload";
 import { getTaskDurationMinutes } from "@/lib/weekly-program-summary";
 
 export type MatrixTask = {
@@ -24,77 +22,76 @@ export type MatrixTask = {
   details: Record<string, string | number> | null;
 };
 
-export type MatrixRowKey = `subject:${number}` | `other:${string}`;
-
-export type TopicBlock = {
-  topicKey: string;
-  topicLabel: string;
-  tasks: MatrixTask[];
-};
-
-export type MatrixRow = {
-  rowKey: MatrixRowKey;
-  label: string;
+/** Aynı gün + subject + topic birleşik blok; derssiz görevler tekil. */
+export type TaskBlock = {
+  /** Sürükle-bırak kimliği */
+  blockId: string;
+  planDate: string;
   subjectId: number | null;
-  /** "Diğer" alt satırları için görev türü */
-  otherTaskType: string | null;
+  topicId: number | null;
+  /** Başlık: "TYT Matematik" veya tür adı */
+  subjectLabel: string;
+  /** Konu satırı; yoksa null (satır render edilmez) */
+  topicLabel: string | null;
+  /** Başlık ikonu için (blokta en küçük order_index) */
+  headerTaskType: string;
+  tasks: MatrixTask[];
+  minOrderIndex: number;
 };
-
-const OTHER_TYPE_ORDER: TaskType[] = [
-  "deneme",
-  "bras_deneme",
-  "kitap_okuma",
-  "manuel",
-  "ders",
-  "soru_cozumu",
-  "video_izleme",
-  "tekrar",
-  "yanlis_analizi",
-  "odev",
-];
 
 export function subjectRowLabel(subject: ProgramSubject): string {
   const prefix = subject.exam ? `${subject.exam} ` : "";
   return `${prefix}${subject.name}`;
 }
 
-export function getTaskRowKey(task: MatrixTask): MatrixRowKey {
-  if (task.subject_id != null) return `subject:${task.subject_id}`;
-  return `other:${task.task_type}`;
+/** Grup anahtarı — subject yoksa her görev ayrı blok. */
+export function getBlockGroupKey(task: MatrixTask): string {
+  if (task.subject_id == null) return `solo:${task.id}`;
+  return `s:${task.subject_id}:t:${task.topic_id ?? "null"}`;
 }
 
-export function cellDroppableId(rowKey: string, dateStr: string): string {
-  return `cell:${rowKey}:${dateStr}`;
+export function makeBlockId(taskIds: string[]): string {
+  return `block:${[...taskIds].sort().join("+")}`;
+}
+
+export function cellDroppableId(dateStr: string, slotIndex: number): string {
+  return `cell:${dateStr}:${slotIndex}`;
 }
 
 export function parseCellDroppableId(
   id: string
-): { rowKey: string; dateStr: string } | null {
+): { dateStr: string; slotIndex: number } | null {
   if (!id.startsWith("cell:")) return null;
   const rest = id.slice("cell:".length);
   const lastColon = rest.lastIndexOf(":");
   if (lastColon <= 0) return null;
-  const dateStr = rest.slice(lastColon + 1);
-  const rowKey = rest.slice(0, lastColon);
-  if (!dateStr || !rowKey) return null;
-  return { rowKey, dateStr };
+  const dateStr = rest.slice(0, lastColon);
+  const slotRaw = rest.slice(lastColon + 1);
+  const slotIndex = Number(slotRaw);
+  if (!dateStr || !Number.isInteger(slotIndex) || slotIndex < 0) return null;
+  return { dateStr, slotIndex };
 }
 
-export function getTopicLabel(task: MatrixTask): string {
-  if (task.topic?.name?.trim()) return task.topic.name.trim();
+export function isBlockDragId(id: string): boolean {
+  return id.startsWith("block:");
+}
+
+export function getTopicLabel(task: MatrixTask): string | null {
+  const name = task.topic?.name?.trim();
+  return name ? name : null;
+}
+
+export function getBlockSubjectLabel(
+  task: MatrixTask,
+  subjects: ProgramSubject[]
+): string {
   if (task.subject_id == null) {
-    const title = task.title?.trim();
-    if (title) return title;
     return getTaskTypeShortLabel(task.task_type);
   }
-  // Başlıktan "TYT X — Konu" kalıbını ayıkla
-  const title = task.title?.trim() ?? "";
-  const dash = title.indexOf("—");
-  if (dash >= 0) {
-    const after = title.slice(dash + 1).trim();
-    if (after) return after;
-  }
-  return title || "Konu yok";
+  const fromList = subjects.find((s) => s.id === task.subject_id);
+  if (fromList) return subjectRowLabel(fromList);
+  const name = task.subject?.name?.trim();
+  return name || `Ders #${task.subject_id}`;
 }
 
 function detailPositiveNumber(
@@ -110,25 +107,29 @@ function detailPositiveNumber(
   return null;
 }
 
-/** details'tan gerçek içerik; tür adı fallback yok. Yoksa null. */
-export function getActivityShortLabel(task: MatrixTask): string | null {
-  const parts: string[] = [];
+/**
+ * Etkinlik satırı metni — her zaman dolu.
+ * Öncelik: soru sayısı → süre → sayfa → tür adı.
+ */
+export function getActivityDisplayLabel(task: MatrixTask): string {
   const d = task.details;
 
   const questions = detailPositiveNumber(d?.planned_question_count);
-  if (questions != null) parts.push(`${Math.floor(questions)} soru`);
+  if (questions != null) return `${Math.floor(questions)} soru çözümü`;
 
   const est = detailPositiveNumber(d?.estimated_duration_minutes);
-  const mins =
-    est != null ? Math.floor(est) : getTaskDurationMinutes(task);
-  if (mins > 0) parts.push(`${mins} dk`);
+  if (est != null) return `${Math.floor(est)} dk`;
+
+  const fromTimes = getTaskDurationMinutes(task);
+  if (fromTimes > 0) return `${fromTimes} dk`;
 
   const pageRaw = d?.page_range;
   if (typeof pageRaw === "string" && pageRaw.trim()) {
     const page = pageRaw.trim();
-    parts.push(/^s\.?\s?/i.test(page) ? page : `s. ${page}`);
-  } else if (typeof pageRaw === "number" && Number.isFinite(pageRaw)) {
-    parts.push(`s. ${pageRaw}`);
+    return /^s\.?\s?/i.test(page) ? page : `s. ${page}`;
+  }
+  if (typeof pageRaw === "number" && Number.isFinite(pageRaw)) {
+    return `s. ${pageRaw}`;
   }
 
   const mockName =
@@ -136,124 +137,113 @@ export function getActivityShortLabel(task: MatrixTask): string | null {
   const mockPublisher =
     typeof d?.mock_publisher === "string" ? d.mock_publisher.trim() : "";
   if (mockName || mockPublisher) {
-    parts.push([mockPublisher, mockName].filter(Boolean).join(" "));
+    return [mockPublisher, mockName].filter(Boolean).join(" ");
   }
 
-  return parts.length > 0 ? parts.join(" · ") : null;
+  return getTaskTypeShortLabel(task.task_type);
 }
 
-/**
- * Etkinlik satırı metni.
- * fallbackType: aynı hücrede birden fazla görevde detay yoksa tür adı göster.
- */
-export function getActivityDisplayLabel(
-  task: MatrixTask,
-  opts?: { fallbackType?: boolean }
-): string | null {
-  const detail = getActivityShortLabel(task);
-  if (detail) return detail;
-  if (opts?.fallbackType) return getTaskTypeShortLabel(task.task_type);
-  return null;
+/** Geriye dönük: kısa etiket; yoksa null (önizleme için). */
+export function getActivityShortLabel(task: MatrixTask): string | null {
+  const label = getActivityDisplayLabel(task);
+  const typeOnly = getTaskTypeShortLabel(task.task_type);
+  return label === typeOnly ? null : label;
 }
 
-export function groupCellTasks(tasks: MatrixTask[]): TopicBlock[] {
+function buildBlock(
+  planDate: string,
+  tasks: MatrixTask[],
+  subjects: ProgramSubject[]
+): TaskBlock {
   const sorted = [...tasks].sort((a, b) => a.order_index - b.order_index);
-  const blocks: TopicBlock[] = [];
-  const indexByKey = new Map<string, number>();
+  const head = sorted[0];
+  return {
+    blockId: makeBlockId(sorted.map((t) => t.id)),
+    planDate,
+    subjectId: head.subject_id,
+    topicId: head.topic_id,
+    subjectLabel: getBlockSubjectLabel(head, subjects),
+    topicLabel: getTopicLabel(head),
+    headerTaskType: head.task_type,
+    tasks: sorted,
+    minOrderIndex: head.order_index,
+  };
+}
 
-  for (const task of sorted) {
-    const topicKey =
-      task.topic_id != null
-        ? `id:${task.topic_id}`
-        : `t:${getTopicLabel(task)}`;
-    const existing = indexByKey.get(topicKey);
-    if (existing != null) {
-      blocks[existing].tasks.push(task);
-      continue;
-    }
-    indexByKey.set(topicKey, blocks.length);
-    blocks.push({
-      topicKey,
-      topicLabel: getTopicLabel(task),
-      tasks: [task],
-    });
+/** Bir günün görevlerini bloklara ayırır; min order_index ile sıralar. */
+export function groupDayIntoBlocks(
+  dayTasks: MatrixTask[],
+  subjects: ProgramSubject[]
+): TaskBlock[] {
+  const byKey = new Map<string, MatrixTask[]>();
+  for (const task of dayTasks) {
+    const key = getBlockGroupKey(task);
+    const list = byKey.get(key) ?? [];
+    list.push(task);
+    byKey.set(key, list);
   }
 
+  const blocks = [...byKey.values()].map((group) =>
+    buildBlock(group[0].plan_date, group, subjects)
+  );
+  blocks.sort((a, b) => {
+    if (a.minOrderIndex !== b.minOrderIndex) {
+      return a.minOrderIndex - b.minOrderIndex;
+    }
+    return a.blockId.localeCompare(b.blockId);
+  });
   return blocks;
 }
 
-export function buildMatrixRows(
+export function buildBlocksByDate(
   tasks: MatrixTask[],
-  subjects: ProgramSubject[]
-): MatrixRow[] {
-  const subjectOrder = new Map(subjects.map((s, i) => [s.id, i]));
-  const subjectIdsWithTasks = new Set<number>();
-  const otherTypesWithTasks = new Set<string>();
+  subjects: ProgramSubject[],
+  weekDateStrs: string[]
+): {
+  blocksByDate: Map<string, TaskBlock[]>;
+  slotCount: number;
+} {
+  const blocksByDate = new Map<string, TaskBlock[]>();
+  let slotCount = 0;
 
-  for (const task of tasks) {
-    if (task.subject_id != null) subjectIdsWithTasks.add(task.subject_id);
-    else otherTypesWithTasks.add(task.task_type);
+  for (const dateStr of weekDateStrs) {
+    const dayTasks = tasks.filter((t) => t.plan_date === dateStr);
+    const blocks = groupDayIntoBlocks(dayTasks, subjects);
+    blocksByDate.set(dateStr, blocks);
+    if (blocks.length > slotCount) slotCount = blocks.length;
   }
 
-  const subjectRows: MatrixRow[] = [];
-  for (const subject of subjects) {
-    if (!subjectIdsWithTasks.has(subject.id)) continue;
-    subjectRows.push({
-      rowKey: `subject:${subject.id}`,
-      label: subjectRowLabel(subject),
-      subjectId: subject.id,
-      otherTaskType: null,
-    });
-  }
-
-  // subjects listesinde olmayan ama görevde geçen subject_id
-  const knownIds = new Set(subjects.map((s) => s.id));
-  const orphanIds = [...subjectIdsWithTasks].filter((id) => !knownIds.has(id));
-  orphanIds.sort((a, b) => a - b);
-  for (const id of orphanIds) {
-    const sample = tasks.find((t) => t.subject_id === id);
-    const name = sample?.subject?.name?.trim() || `Ders #${id}`;
-    subjectRows.push({
-      rowKey: `subject:${id}`,
-      label: name,
-      subjectId: id,
-      otherTaskType: null,
-    });
-  }
-
-  subjectRows.sort((a, b) => {
-    const ai = subjectOrder.get(a.subjectId!) ?? Number.MAX_SAFE_INTEGER;
-    const bi = subjectOrder.get(b.subjectId!) ?? Number.MAX_SAFE_INTEGER;
-    if (ai !== bi) return ai - bi;
-    return a.label.localeCompare(b.label, "tr");
-  });
-
-  const otherRows: MatrixRow[] = [];
-  const orderedOther = [
-    ...OTHER_TYPE_ORDER.filter((t) => otherTypesWithTasks.has(t)),
-    ...[...otherTypesWithTasks].filter(
-      (t) => !OTHER_TYPE_ORDER.includes(t as TaskType)
-    ),
-  ];
-
-  for (const taskType of orderedOther) {
-    otherRows.push({
-      rowKey: `other:${taskType}`,
-      label: TASK_TYPE_SHORT_LABEL[taskType as TaskType] ?? getTaskTypeShortLabel(taskType),
-      subjectId: null,
-      otherTaskType: taskType,
-    });
-  }
-
-  return [...subjectRows, ...otherRows];
+  return { blocksByDate, slotCount };
 }
 
-export function tasksForCell(
-  tasks: MatrixTask[],
-  rowKey: MatrixRowKey,
-  dateStr: string
+export function findBlockById(
+  blocksByDate: Map<string, TaskBlock[]>,
+  blockId: string
+): { dateStr: string; slotIndex: number; block: TaskBlock } | null {
+  for (const [dateStr, blocks] of blocksByDate) {
+    const slotIndex = blocks.findIndex((b) => b.blockId === blockId);
+    if (slotIndex >= 0) {
+      return { dateStr, slotIndex, block: blocks[slotIndex] };
+    }
+  }
+  return null;
+}
+
+/** Blok sırasına göre gün görevlerinin order_index'ini yeniden yazar. */
+export function flattenBlocksToTasks(
+  blocks: TaskBlock[],
+  planDate: string
 ): MatrixTask[] {
-  return tasks
-    .filter((t) => t.plan_date === dateStr && getTaskRowKey(t) === rowKey)
-    .sort((a, b) => a.order_index - b.order_index);
+  const out: MatrixTask[] = [];
+  let order = 0;
+  for (const block of blocks) {
+    for (const task of block.tasks) {
+      out.push({
+        ...task,
+        plan_date: planDate,
+        order_index: order++,
+      });
+    }
+  }
+  return out;
 }

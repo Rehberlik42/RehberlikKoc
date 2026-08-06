@@ -12,20 +12,20 @@ export const WEEKLY_PLAN_GUIDE: {
       content: [
         "Üstteki Günlük Hedef’i ayarla — birim olarak Görev veya Dakika seçebilirsin. Gün başlığındaki renk buna göre değişir.",
         "Taslak Modu’nu aç. Hazırlanırken eklediğin görevler öğrenciye görünmez; etkinlik satırında Taslak rozeti çıkar.",
-        "Haftayı doldur: birçok konu için Toplu Ekle’yi kullan — Zayıf ve Başlanmayan sekmeleri öğrencinin deneme ve kaynak verisinden gelir. Tek bir özel görev için matris hücresindeki + ile Görev Ekle panelini aç (gün ve ders ön seçili gelir). Belirli bir güne hızlı Ders atamak için sütun altındaki Hızlı ekle’yi kullan.",
-        "Gün başlıklarındaki toplam süreye ve Özet’e bak. Hedef aşımında süre uyarı / tehlike renginde görünür. Aşırı veya dengesiz günleri aynı ders satırı içinde sürükle-bırak, Başka Güne Taşı veya Böl ile düzelt.",
+        "Haftayı doldur: birçok konu için Toplu Ekle’yi kullan — Zayıf ve Başlanmayan sekmeleri öğrencinin deneme ve kaynak verisinden gelir. Tek bir özel görev için matris hücresindeki + ile Görev Ekle panelini aç (gün ön seçili gelir). Belirli bir güne hızlı Ders atamak için sütun altındaki Hızlı ekle’yi kullan.",
+        "Gün başlıklarındaki toplam süreye ve Özet’e bak. Hedef aşımında süre uyarı / tehlike renginde görünür. Aşırı veya dengesiz günleri blok sürükle-bırak, Başka Güne Taşı veya Böl ile düzelt.",
         "Program hazır olunca Yayınla ile o haftadaki tüm taslakları birden öğrenciye aç. Taslak yoksa buton pasiftir.",
       ],
     },
     {
       heading: "Matris nasıl okunur",
       content: [
-        "Satırlar dersler (TYT / AYT ayrı satır), sütunlar günlerdir. Bu hafta görevi olmayan ders satırı görünmez.",
-        "Hücre içeriği sola dayalıdır. Konu adının başında renkli tür ikonu vardır — deneme ile kitap okuma böyle ayırt edilir.",
-        "Aynı konuda tek görev varsa yalnızca ikon + konu adı yeterlidir. Birden fazla görev varsa her biri ayrı satırda: detay varsa (40 soru) yazılır, yoksa tür adı (Konu tekrarı) yazılır.",
-        "subject_id’siz görevler (genel deneme, kitap okuma, manuel vb.) en alttaki Diğer grubunda, görev türüne göre alt satırlarda toplanır.",
-        "Boş hücre tamamen boştur; hover’da + ile o gün ve derse Görev Ekle açılır. Sütun altındaki Hızlı ekle soluk bir + satırıdır.",
-        "Etkinlik veya konu satırına tıklayınca menü açılır: Düzenle, Kopyala, Başka Güne Taşı, Tekrarla, Böl, Sil.",
+        "Sütunlar günlerdir. Satırlar görev slotlarıdır — sıra numarası (1, 2, 3…) yalnızca hizalama içindir; Pazartesi’nin 1. bloğu ile Salı’nın 1. bloğu arasında ilişki yoktur.",
+        "Hücredeki her birim bir bloktur. Aynı gün + aynı ders + aynı konudaki görevler tek blokta birleşir (ör. aynı konuya konu tekrarı ve soru çözümü).",
+        "Blokta yukarıdan aşağı: tür ikonu + ders adı (veya ders yoksa tür adı), varsa konu adı, ince ayraç, sonra her görev için etkinlik satırı. Etkinlikte detay varsa (40 soru çözümü, 30 dk, s. 45-60) yazılır; yoksa tür adı yazılır.",
+        "Dersi olmayan görevler (genel deneme, kitap okuma, manuel vb.) ayrı bloklar olarak günün içinde yer alır; Diğer satırı yoktur.",
+        "Bir günün bloğu bittiyse altındaki hücreler boş kalır. Boş hücrede hover’da + ile o güne Görev Ekle açılır. Sütun altındaki Hızlı ekle soluk bir + satırıdır.",
+        "Etkinlik satırına tıklayınca menü açılır: Düzenle, Kopyala, Başka Güne Taşı, Tekrarla, Böl, Sil. Blok başlığına tıklamak menü açmaz.",
       ],
     },
     {
@@ -75,7 +75,7 @@ export const WEEKLY_PLAN_GUIDE: {
       heading: "Üst çubuk (toolbar)",
       content: [
         "Gezinme — ‹ tarih › okları ve Bu Hafta. Haftalar arasında gezinirsin.",
-        "Birincil eylemler — Toplu Ekle, Taslak Modu, Yayınla, Özet. Haftayı kurarken sık kullandığın kontroller.",
+        "Birincil eylemler — Toplu Ekle, Taslak Modu, Yayınla, Özet. Haftayı kururken sık kullandığın kontroller.",
         "Hafta işlemleri ⌄ — Şablon Olarak Kaydet, Şablondan Oluştur, Haftayı Kopyala; Programı Temizle ayrı grupta ve tehlike renginde. Daha seyrek kullanılan işlemler buradadır.",
         "? — Başlığın yanındaki küçük yardım butonu kullanım kılavuzunu açar; birincil eylem değildir.",
       ],
@@ -93,9 +93,9 @@ export const WEEKLY_PLAN_GUIDE: {
     {
       heading: "Sürükle-bırak ve görev menüsü",
       content: [
-        "Bir görev yalnızca kendi ders satırındaki başka bir güne bırakılabilir. Başka derse sürüklemek engellenir (ders değişmez).",
-        "Sürüklerken kaynak satır vurgulanır, diğer satırlar soluklaşır. Aynı hücre içinde sıralama da çalışır.",
-        "Taşıma sonrası yalnızca plan_date (ve sıra) güncellenir; subject_id / topic_id değişmez.",
+        "Sürüklenen birim bloktur. Bloğu herhangi bir güne ve herhangi bir sıraya bırakabilirsin; satır kilidi yoktur.",
+        "Blok taşındığında içindeki tüm görevlerin plan_date ve order_index’i güncellenir. subject_id ve topic_id değişmez.",
+        "Aynı gün içinde blok sırasını değiştirmek (yeniden sıralama) çalışır.",
         "Etkinlik menüsünde Düzenle paneli açar; Kopyala aynı güne bir kopya ekler; Başka Güne Taşı hedef gün seçtirir.",
         "Tekrarla ile görevi sonraki haftalara çoğaltırsın (1–12 hafta).",
         "Böl, soru sayısı veya süresi olan görevi ikiye böler ve yarısını seçtiğin güne taşır. Sayısal miktar yoksa bölünemez.",

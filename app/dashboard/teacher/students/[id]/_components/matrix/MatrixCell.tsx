@@ -1,11 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Check,
@@ -29,9 +25,8 @@ import {
 import {
   cellDroppableId,
   getActivityDisplayLabel,
-  groupCellTasks,
-  type MatrixRowKey,
   type MatrixTask,
+  type TaskBlock,
 } from "./matrix-grouping";
 
 type WeekDayOption = {
@@ -357,7 +352,7 @@ type RowActions = {
   onDelete: (taskId: string) => void;
 };
 
-function SortableActivityRow({
+function ActivityRow({
   task,
   weekDays,
   menuBusy,
@@ -369,85 +364,52 @@ function SortableActivityRow({
   onPrepareSplit,
   onSplit,
   onDelete,
-  fallbackType,
-}: { task: MatrixTask; fallbackType?: boolean } & RowActions) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: String(task.id) });
-
+}: { task: MatrixTask } & RowActions) {
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const Icon = getTaskTypeIcon(task.task_type);
   const iconColor = getTaskTypeColorVar(task.task_type);
-  const label = getActivityDisplayLabel(task, { fallbackType });
+  const label = getActivityDisplayLabel(task);
   const isDraft = task.is_published === false;
   const busy = menuBusy || deletingId === task.id;
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group/row relative ${isDragging ? "opacity-40" : ""}`}
-    >
-      <div className="flex items-center justify-start gap-0.5">
-        <button
-          type="button"
-          className="shrink-0 cursor-grab touch-none rounded p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--text-primary)] group-hover/row:opacity-100 active:cursor-grabbing"
-          aria-label="Sürükle"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3 w-3" />
-        </button>
-
-        <button
-          ref={anchorRef}
-          type="button"
-          disabled={busy}
-          onClick={() => setMenuOpen((v) => !v)}
-          className={`flex min-w-0 flex-1 items-center justify-start gap-1.5 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
-            task.is_completed ? "opacity-60" : ""
+    <div className="group/row relative">
+      <button
+        ref={anchorRef}
+        type="button"
+        disabled={busy}
+        onClick={() => setMenuOpen((v) => !v)}
+        className={`flex w-full min-w-0 items-center justify-start gap-1.5 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
+          task.is_completed ? "opacity-60" : ""
+        }`}
+      >
+        <Icon
+          className="h-3.5 w-3.5 shrink-0 opacity-80"
+          style={{ color: iconColor }}
+        />
+        <span
+          className={`min-w-0 flex-1 text-left text-[11px] leading-tight text-[var(--text-secondary)] ${
+            task.is_completed
+              ? "line-through decoration-[var(--text-muted)]"
+              : ""
           }`}
         >
-          <Icon
-            className="h-3.5 w-3.5 shrink-0 opacity-80"
-            style={{ color: iconColor }}
+          {label}
+        </span>
+        {task.is_completed ? (
+          <Check
+            className="h-3 w-3 shrink-0 text-[var(--success)]"
+            aria-label="Tamamlandı"
           />
-          {label ? (
-            <span
-              className={`min-w-0 flex-1 text-left text-[11px] leading-tight text-[var(--text-secondary)] ${
-                task.is_completed
-                  ? "line-through decoration-[var(--text-muted)]"
-                  : ""
-              }`}
-            >
-              {label}
-            </span>
-          ) : null}
-          {task.is_completed ? (
-            <Check
-              className="h-3 w-3 shrink-0 text-[var(--success)]"
-              aria-label="Tamamlandı"
-            />
-          ) : null}
-          {isDraft ? (
-            <span className="shrink-0 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-1 py-px text-[8px] font-bold uppercase tracking-wider text-[var(--warning)]">
-              Taslak
-            </span>
-          ) : null}
-          <MoreVertical className="h-3 w-3 shrink-0 text-[var(--text-muted)] opacity-0 group-hover/row:opacity-100" />
-        </button>
-      </div>
+        ) : null}
+        {isDraft ? (
+          <span className="shrink-0 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-1 py-px text-[8px] font-bold uppercase tracking-wider text-[var(--warning)]">
+            Taslak
+          </span>
+        ) : null}
+        <MoreVertical className="h-3 w-3 shrink-0 text-[var(--text-muted)] opacity-0 group-hover/row:opacity-100" />
+      </button>
 
       <ActivityMenu
         taskId={task.id}
@@ -469,10 +431,8 @@ function SortableActivityRow({
   );
 }
 
-/** Tek görev → ikon + konu adı (sola dayalı) */
-function TopicTaskAnchor({
-  task,
-  topicLabel,
+function SortableTaskBlock({
+  block,
   weekDays,
   menuBusy,
   deletingId,
@@ -483,7 +443,7 @@ function TopicTaskAnchor({
   onPrepareSplit,
   onSplit,
   onDelete,
-}: { task: MatrixTask; topicLabel: string } & RowActions) {
+}: { block: TaskBlock } & RowActions) {
   const {
     attributes,
     listeners,
@@ -491,14 +451,10 @@ function TopicTaskAnchor({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: String(task.id) });
+  } = useSortable({ id: block.blockId });
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const Icon = getTaskTypeIcon(task.task_type);
-  const iconColor = getTaskTypeColorVar(task.task_type);
-  const busy = menuBusy || deletingId === task.id;
-  const isDraft = task.is_published === false;
+  const HeaderIcon = getTaskTypeIcon(block.headerTaskType);
+  const headerColor = getTaskTypeColorVar(block.headerTaskType);
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -509,77 +465,67 @@ function TopicTaskAnchor({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group/row ${isDragging ? "opacity-40" : ""}`}
+      className={`group/block text-left ${isDragging ? "opacity-40" : ""}`}
     >
-      <div className="flex items-center justify-start gap-0.5">
+      <div className="flex items-start gap-0.5">
         <button
           type="button"
-          className="shrink-0 cursor-grab touch-none rounded p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--text-primary)] group-hover/row:opacity-100 active:cursor-grabbing"
-          aria-label="Sürükle"
+          className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--text-primary)] group-hover/block:opacity-100 active:cursor-grabbing"
+          aria-label="Bloğu sürükle"
           {...attributes}
           {...listeners}
         >
           <GripVertical className="h-3 w-3" />
         </button>
-        <button
-          ref={anchorRef}
-          type="button"
-          disabled={busy}
-          onClick={() => setMenuOpen((v) => !v)}
-          className={`flex min-w-0 flex-1 items-center justify-start gap-1.5 rounded px-0.5 py-px text-left hover:bg-[var(--surface-2)] disabled:opacity-50 ${
-            task.is_completed ? "opacity-60" : ""
-          }`}
-        >
-          <Icon
-            className="h-3.5 w-3.5 shrink-0 opacity-80"
-            style={{ color: iconColor }}
-          />
-          <p
-            className={`min-w-0 flex-1 text-left text-[12px] font-normal leading-tight text-[var(--text-primary)] ${
-              task.is_completed
-                ? "line-through decoration-[var(--text-muted)]"
-                : ""
-            }`}
-          >
-            {topicLabel}
-          </p>
-          {task.is_completed ? (
-            <Check className="h-3 w-3 shrink-0 text-[var(--success)]" />
+
+        <div className="min-w-0 flex-1">
+          {/* Başlık — tıklanınca menü açılmaz */}
+          <div className="flex items-center gap-1.5">
+            <HeaderIcon
+              className="h-3.5 w-3.5 shrink-0 opacity-80"
+              style={{ color: headerColor }}
+            />
+            <p className="min-w-0 flex-1 text-left text-[12px] font-medium leading-tight text-[var(--text-primary)]">
+              {block.subjectLabel}
+            </p>
+          </div>
+
+          {block.topicLabel ? (
+            <p className="mt-px text-left text-[12px] leading-tight text-[var(--text-secondary)]">
+              {block.topicLabel}
+            </p>
           ) : null}
-          {isDraft ? (
-            <span className="shrink-0 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-1 py-px text-[8px] font-bold uppercase tracking-wider text-[var(--warning)]">
-              Taslak
-            </span>
-          ) : null}
-          <MoreVertical className="h-3 w-3 shrink-0 text-[var(--text-muted)] opacity-0 group-hover/row:opacity-100" />
-        </button>
+
+          <div className="my-1 border-t border-[var(--border)]" />
+
+          <div className="space-y-px">
+            {block.tasks.map((task) => (
+              <ActivityRow
+                key={task.id}
+                task={task}
+                weekDays={weekDays}
+                menuBusy={menuBusy}
+                deletingId={deletingId}
+                onEdit={onEdit}
+                onCopy={onCopy}
+                onMove={onMove}
+                onRepeat={onRepeat}
+                onPrepareSplit={onPrepareSplit}
+                onSplit={onSplit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-      <ActivityMenu
-        taskId={task.id}
-        currentDate={task.plan_date}
-        weekDays={weekDays}
-        busy={busy}
-        onEdit={onEdit}
-        onCopy={onCopy}
-        onMove={onMove}
-        onRepeat={onRepeat}
-        onPrepareSplit={onPrepareSplit}
-        onSplit={onSplit}
-        onDelete={onDelete}
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-        anchorRef={anchorRef}
-      />
     </div>
   );
 }
 
 export default function MatrixCell({
-  rowKey,
   dateStr,
-  tasks,
-  dimmed,
-  canAdd,
+  slotIndex,
+  block,
   weekDays,
   menuBusy,
   deletingId,
@@ -592,11 +538,9 @@ export default function MatrixCell({
   onSplit,
   onDelete,
 }: {
-  rowKey: MatrixRowKey;
   dateStr: string;
-  tasks: MatrixTask[];
-  dimmed: boolean;
-  canAdd: boolean;
+  slotIndex: number;
+  block: TaskBlock | null;
   weekDays: WeekDayOption[];
   menuBusy: boolean;
   deletingId: string | null;
@@ -609,10 +553,9 @@ export default function MatrixCell({
   onSplit: (taskId: string, dateStr: string) => Promise<void>;
   onDelete: (taskId: string) => void;
 }) {
-  const droppableId = cellDroppableId(rowKey, dateStr);
+  const droppableId = cellDroppableId(dateStr, slotIndex);
   const { setNodeRef, isOver } = useDroppable({ id: droppableId });
-  const blocks = groupCellTasks(tasks);
-  const sortableIds = tasks.map((t) => String(t.id));
+
   const actions: RowActions = {
     weekDays,
     menuBusy,
@@ -629,59 +572,21 @@ export default function MatrixCell({
   return (
     <div
       ref={setNodeRef}
-      className={`group/cell relative min-h-[1.75rem] border-b border-r border-[var(--border)] px-1 py-0.5 ${
-        isOver ? "bg-[var(--primary)]/10" : dimmed ? "opacity-35" : ""
+      className={`group/cell relative min-h-[2.5rem] border-b border-r border-[var(--border)] px-1 py-1 ${
+        isOver ? "bg-[var(--primary)]/10" : ""
       }`}
     >
-      {canAdd ? (
+      {block ? (
+        <SortableTaskBlock block={block} {...actions} />
+      ) : (
         <button
           type="button"
           onClick={onAdd}
-          className="absolute right-0.5 top-0.5 z-10 rounded border border-[var(--border)] bg-[var(--surface)] p-0.5 text-[var(--text-muted)] opacity-0 hover:text-[var(--accent)] group-hover/cell:opacity-100"
+          className="flex h-full min-h-[2rem] w-full items-center justify-center rounded text-[var(--text-muted)] opacity-0 hover:bg-[var(--surface-2)] hover:text-[var(--accent)] group-hover/cell:opacity-100"
           aria-label="Görev ekle"
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-3.5 w-3.5" />
         </button>
-      ) : null}
-
-      {tasks.length === 0 ? null : (
-        <SortableContext
-          items={sortableIds}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-1 pr-4 text-left">
-            {blocks.map((block) => {
-              if (block.tasks.length === 1) {
-                return (
-                  <TopicTaskAnchor
-                    key={block.topicKey}
-                    task={block.tasks[0]}
-                    topicLabel={block.topicLabel}
-                    {...actions}
-                  />
-                );
-              }
-
-              return (
-                <div key={block.topicKey} className="text-left">
-                  <p className="text-left text-[12px] font-normal leading-tight text-[var(--text-primary)]">
-                    {block.topicLabel}
-                  </p>
-                  <div className="mt-px space-y-px">
-                    {block.tasks.map((task) => (
-                      <SortableActivityRow
-                        key={task.id}
-                        task={task}
-                        fallbackType
-                        {...actions}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SortableContext>
       )}
     </div>
   );

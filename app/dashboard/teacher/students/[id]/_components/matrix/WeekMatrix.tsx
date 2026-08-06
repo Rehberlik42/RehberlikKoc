@@ -11,7 +11,12 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
 import {
   getTaskTypeColorVar,
   getTaskTypeIcon,
@@ -24,15 +29,15 @@ import DayQuickAdd, {
 import MatrixCell from "./MatrixCell";
 import MatrixDayHeader from "./MatrixDayHeader";
 import {
-  buildMatrixRows,
+  buildBlocksByDate,
   cellDroppableId,
-  getActivityShortLabel,
-  getTaskRowKey,
-  getTopicLabel,
+  findBlockById,
+  flattenBlocksToTasks,
+  getActivityDisplayLabel,
+  isBlockDragId,
   parseCellDroppableId,
-  tasksForCell,
-  type MatrixRowKey,
   type MatrixTask,
+  type TaskBlock,
 } from "./matrix-grouping";
 
 type WeekDayOption = {
@@ -57,23 +62,28 @@ function isTodayDate(d: Date): boolean {
   );
 }
 
-function DragPreview({ task }: { task: MatrixTask }) {
-  const Icon = getTaskTypeIcon(task.task_type);
-  const iconColor = getTaskTypeColorVar(task.task_type);
-  const label = getActivityShortLabel(task);
+function DragPreview({ block }: { block: TaskBlock }) {
+  const Icon = getTaskTypeIcon(block.headerTaskType);
+  const iconColor = getTaskTypeColorVar(block.headerTaskType);
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/40 bg-[var(--surface)] px-2 py-1 shadow-lg">
-      <Icon className="h-3.5 w-3.5 opacity-80" style={{ color: iconColor }} />
-      <div className="min-w-0 text-left">
-        <p className="truncate text-left text-[12px] leading-tight text-[var(--text-primary)]">
-          {getTopicLabel(task)}
+    <div className="rounded-lg border border-[var(--primary)]/40 bg-[var(--surface)] px-2 py-1.5 shadow-lg">
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5 opacity-80" style={{ color: iconColor }} />
+        <p className="truncate text-left text-[12px] font-medium leading-tight text-[var(--text-primary)]">
+          {block.subjectLabel}
         </p>
-        {label ? (
-          <p className="truncate text-left text-[11px] leading-tight text-[var(--text-secondary)]">
-            {label}
-          </p>
-        ) : null}
       </div>
+      {block.topicLabel ? (
+        <p className="mt-px truncate text-left text-[11px] leading-tight text-[var(--text-secondary)]">
+          {block.topicLabel}
+        </p>
+      ) : null}
+      <p className="mt-0.5 text-left text-[10px] text-[var(--text-muted)]">
+        {block.tasks.length} etkinlik
+        {block.tasks[0]
+          ? ` · ${getActivityDisplayLabel(block.tasks[0])}`
+          : ""}
+      </p>
     </div>
   );
 }
@@ -135,7 +145,7 @@ export default function WeekMatrix({
   onSplit: (taskId: string, dateStr: string) => Promise<void>;
   onDelete: (taskId: string) => void;
 }) {
-  const [activeTask, setActiveTask] = useState<MatrixTask | null>(null);
+  const [activeBlock, setActiveBlock] = useState<TaskBlock | null>(null);
   /** lg = 1024px — aynı anda iki görünüm mount edilmesin (dnd id çakışması). */
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -156,9 +166,9 @@ export default function WeekMatrix({
     [weekDays]
   );
 
-  const rows = useMemo(
-    () => buildMatrixRows(tasks, subjects),
-    [tasks, subjects]
+  const { blocksByDate, slotCount } = useMemo(
+    () => buildBlocksByDate(tasks, subjects, weekDateStrs),
+    [tasks, subjects, weekDateStrs]
   );
 
   const tasksByDate = useMemo(() => {
@@ -174,88 +184,76 @@ export default function WeekMatrix({
     return map;
   }, [tasks]);
 
-  const activeRowKey = activeTask ? getTaskRowKey(activeTask) : null;
-
-  const findContainer = (
-    id: string
-  ): { rowKey: MatrixRowKey; dateStr: string } | null => {
-    const parsed = parseCellDroppableId(id);
-    if (parsed) {
-      return {
-        rowKey: parsed.rowKey as MatrixRowKey,
-        dateStr: parsed.dateStr,
-      };
+  const allBlockIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const dateStr of weekDateStrs) {
+      for (const block of blocksByDate.get(dateStr) ?? []) {
+        ids.push(block.blockId);
+      }
     }
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return null;
-    return { rowKey: getTaskRowKey(task), dateStr: task.plan_date };
+    return ids;
+  }, [blocksByDate, weekDateStrs]);
+
+  const resolveDropTarget = (
+    overId: string
+  ): { dateStr: string; slotIndex: number } | null => {
+    const cell = parseCellDroppableId(overId);
+    if (cell) return cell;
+    if (isBlockDragId(overId)) {
+      const found = findBlockById(blocksByDate, overId);
+      if (!found) return null;
+      return { dateStr: found.dateStr, slotIndex: found.slotIndex };
+    }
+    return null;
   };
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id);
-    setActiveTask(tasks.find((t) => t.id === id) ?? null);
+    const found = findBlockById(blocksByDate, id);
+    setActiveBlock(found?.block ?? null);
   };
 
   const handleDragCancel = () => {
-    setActiveTask(null);
+    setActiveBlock(null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveTask(null);
+    setActiveBlock(null);
     const { active, over } = event;
     if (!over) return;
 
     const activeId = String(active.id);
     const overId = String(over.id);
     if (activeId === overId) return;
+    if (!isBlockDragId(activeId)) return;
 
-    const activeItem = tasks.find((t) => t.id === activeId);
-    if (!activeItem) return;
-
-    const from = findContainer(activeId);
-    const to = findContainer(overId);
+    const from = findBlockById(blocksByDate, activeId);
+    const to = resolveDropTarget(overId);
     if (!from || !to) return;
 
-    // Satır kilidi — başka derse bırakma engeli
-    if (from.rowKey !== to.rowKey) return;
+    const samePlace =
+      from.dateStr === to.dateStr && from.slotIndex === to.slotIndex;
+    if (samePlace) return;
 
     const prevTasks = tasks;
-    const fromDate = from.dateStr;
-    const toDate = to.dateStr;
+    const moving = from.block;
 
-    if (fromDate === toDate) {
-      const dayTasks = [...(tasksByDate.get(fromDate) ?? [])];
-      const cellTasks = dayTasks.filter(
-        (t) => getTaskRowKey(t) === from.rowKey
-      );
-      const oldCellIndex = cellTasks.findIndex((t) => t.id === activeId);
-      if (oldCellIndex < 0) return;
+    if (from.dateStr === to.dateStr) {
+      const dayBlocks = [...(blocksByDate.get(from.dateStr) ?? [])];
+      const oldIndex = from.slotIndex;
+      let newIndex = Math.min(to.slotIndex, dayBlocks.length - 1);
+      if (oldIndex === newIndex) return;
 
-      let newCellIndex: number;
-      if (parseCellDroppableId(overId)) {
-        newCellIndex = cellTasks.length - 1;
-      } else {
-        newCellIndex = cellTasks.findIndex((t) => t.id === overId);
-      }
-      if (newCellIndex < 0 || oldCellIndex === newCellIndex) return;
-
-      const reorderedCell = arrayMove(cellTasks, oldCellIndex, newCellIndex);
-      const cellIdSet = new Set(reorderedCell.map((t) => t.id));
-      let cellPtr = 0;
-      const merged = dayTasks.map((t) => {
-        if (!cellIdSet.has(t.id)) return t;
-        const next = reorderedCell[cellPtr++];
-        return next;
-      });
-      const reindexed = merged.map((t, i) => ({ ...t, order_index: i }));
+      const reordered = arrayMove(dayBlocks, oldIndex, newIndex);
+      const flattened = flattenBlocksToTasks(reordered, from.dateStr);
 
       onTasksChange([
-        ...prevTasks.filter((t) => t.plan_date !== fromDate),
-        ...reindexed,
+        ...prevTasks.filter((t) => t.plan_date !== from.dateStr),
+        ...flattened,
       ]);
 
       const error = await persistPositions(
-        reindexed.map((t) => ({ id: t.id, order_index: t.order_index }))
+        flattened.map((t) => ({ id: t.id, order_index: t.order_index }))
       );
       if (error) {
         onTasksChange(prevTasks);
@@ -264,48 +262,24 @@ export default function WeekMatrix({
       return;
     }
 
-    // Aynı satır, farklı gün
-    const sourceDay = (tasksByDate.get(fromDate) ?? []).filter(
-      (t) => t.id !== activeId
+    // Farklı gün — bloğu taşı
+    const sourceBlocks = (blocksByDate.get(from.dateStr) ?? []).filter(
+      (b) => b.blockId !== moving.blockId
     );
-    const targetDay = [...(tasksByDate.get(toDate) ?? [])];
-
-    let insertIndex: number;
-    if (parseCellDroppableId(overId)) {
-      // Hedef hücrenin görevlerinin sonuna — gün listesinde o hücrenin son görevinin ardı
-      const targetCell = targetDay.filter(
-        (t) => getTaskRowKey(t) === to.rowKey
-      );
-      if (targetCell.length === 0) {
-        insertIndex = targetDay.length;
-      } else {
-        const last = targetCell[targetCell.length - 1];
-        insertIndex = targetDay.findIndex((t) => t.id === last.id) + 1;
-      }
-    } else {
-      const overIndex = targetDay.findIndex((t) => t.id === overId);
-      insertIndex = overIndex >= 0 ? overIndex : targetDay.length;
-    }
-
-    const moved: MatrixTask = {
-      ...activeItem,
-      plan_date: toDate,
-      order_index: insertIndex,
+    const targetBlocks = [...(blocksByDate.get(to.dateStr) ?? [])];
+    const insertAt = Math.min(to.slotIndex, targetBlocks.length);
+    const movedBlock: TaskBlock = {
+      ...moving,
+      planDate: to.dateStr,
     };
-    targetDay.splice(insertIndex, 0, moved);
+    targetBlocks.splice(insertAt, 0, movedBlock);
 
-    const reindexedSource = sourceDay.map((t, i) => ({
-      ...t,
-      order_index: i,
-    }));
-    const reindexedTarget = targetDay.map((t, i) => ({
-      ...t,
-      order_index: i,
-    }));
+    const reindexedSource = flattenBlocksToTasks(sourceBlocks, from.dateStr);
+    const reindexedTarget = flattenBlocksToTasks(targetBlocks, to.dateStr);
 
     onTasksChange([
       ...prevTasks.filter(
-        (t) => t.plan_date !== fromDate && t.plan_date !== toDate
+        (t) => t.plan_date !== from.dateStr && t.plan_date !== to.dateStr
       ),
       ...reindexedSource,
       ...reindexedTarget,
@@ -314,12 +288,12 @@ export default function WeekMatrix({
     const error = await persistPositions([
       ...reindexedSource.map((t) => ({
         id: t.id,
-        plan_date: fromDate,
+        plan_date: from.dateStr,
         order_index: t.order_index,
       })),
       ...reindexedTarget.map((t) => ({
         id: t.id,
-        plan_date: toDate,
+        plan_date: to.dateStr,
         order_index: t.order_index,
       })),
     ]);
@@ -330,10 +304,10 @@ export default function WeekMatrix({
     }
   };
 
-  const otherRowKeys = new Set(
-    rows.filter((r) => r.subjectId == null).map((r) => r.rowKey)
+  const slotIndexes = useMemo(
+    () => Array.from({ length: slotCount }, (_, i) => i),
+    [slotCount]
   );
-  const firstOtherIndex = rows.findIndex((r) => r.subjectId == null);
 
   const matrixGrid = (
     <div className="overflow-auto rounded-xl border border-[var(--border)]">
@@ -341,12 +315,10 @@ export default function WeekMatrix({
         className="min-w-[56rem]"
         style={{
           display: "grid",
-          gridTemplateColumns: `9.5rem repeat(7, minmax(7rem, 1fr))`,
+          gridTemplateColumns: `2.75rem repeat(7, minmax(7rem, 1fr))`,
         }}
       >
-        <div className="sticky left-0 top-0 z-30 border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1">
-          <p className="text-xs font-bold text-[var(--text-secondary)]">Ders</p>
-        </div>
+        <div className="sticky left-0 top-0 z-30 border-b border-r border-[var(--border)] bg-[var(--surface)]" />
         {weekDays.map((day, colIndex) => {
           const dateStr = toISODate(day);
           return (
@@ -363,52 +335,26 @@ export default function WeekMatrix({
           );
         })}
 
-        {rows.map((row, rowIndex) => {
-          const dimmed = Boolean(activeRowKey && activeRowKey !== row.rowKey);
-          const highlight =
-            Boolean(activeRowKey && activeRowKey === row.rowKey);
-          const showOtherHeading =
-            rowIndex === firstOtherIndex && otherRowKeys.size > 0;
-
-          return (
-            <div key={row.rowKey} className="contents">
-              {showOtherHeading ? (
-                <>
-                  <div className="sticky left-0 z-10 col-span-1 border-b border-r border-[var(--border)] bg-[var(--surface-2)] px-2 py-1">
-                    <p className="text-xs font-bold text-[var(--text-secondary)]">
-                      Diğer
-                    </p>
-                  </div>
-                  {weekDateStrs.map((dateStr) => (
-                    <div
-                      key={`other-h-${dateStr}`}
-                      className="border-b border-r border-[var(--border)] bg-[var(--surface-2)]"
-                    />
-                  ))}
-                </>
-              ) : null}
-
-              <div
-                className={`sticky left-0 z-10 flex items-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-1 ${
-                  dimmed ? "opacity-35" : ""
-                } ${highlight ? "bg-[var(--primary)]/10" : ""}`}
-              >
-                <p className="text-[12px] font-semibold leading-tight text-[var(--text-primary)]">
-                  {row.label}
-                </p>
-              </div>
-              {weekDateStrs.map((dateStr) => (
+        {slotIndexes.map((slotIndex) => (
+          <div key={`slot-${slotIndex}`} className="contents">
+            <div className="sticky left-0 z-10 flex items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-1 pt-2">
+              <span className="text-[11px] font-medium tabular-nums text-[var(--text-muted)]">
+                {slotIndex + 1}
+              </span>
+            </div>
+            {weekDateStrs.map((dateStr) => {
+              const dayBlocks = blocksByDate.get(dateStr) ?? [];
+              const block = dayBlocks[slotIndex] ?? null;
+              return (
                 <MatrixCell
-                  key={`${row.rowKey}-${dateStr}`}
-                  rowKey={row.rowKey}
+                  key={`${dateStr}-${slotIndex}`}
                   dateStr={dateStr}
-                  tasks={tasksForCell(tasks, row.rowKey, dateStr)}
-                  dimmed={dimmed}
-                  canAdd={row.subjectId != null || row.otherTaskType != null}
+                  slotIndex={slotIndex}
+                  block={block}
                   weekDays={weekDayOptions}
                   menuBusy={menuBusy}
                   deletingId={deletingId}
-                  onAdd={() => onAddTask(dateStr, row.subjectId)}
+                  onAdd={() => onAddTask(dateStr, null)}
                   onEdit={onEdit}
                   onCopy={onCopy}
                   onMove={onMove}
@@ -417,14 +363,14 @@ export default function WeekMatrix({
                   onSplit={onSplit}
                   onDelete={onDelete}
                 />
-              ))}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
 
         {/* Hızlı ekle satırı */}
-        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
-          <p className="text-[9px] font-medium text-[var(--text-muted)] opacity-50">
+        <div className="sticky left-0 z-10 border-r border-[var(--border)] bg-[var(--surface)] px-1 py-0.5">
+          <p className="text-center text-[9px] font-medium text-[var(--text-muted)] opacity-50">
             +
           </p>
         </div>
@@ -456,6 +402,7 @@ export default function WeekMatrix({
       {weekDays.map((day, colIndex) => {
         const dateStr = toISODate(day);
         const dayTasks = tasksByDate.get(dateStr) ?? [];
+        const dayBlocks = blocksByDate.get(dateStr) ?? [];
         return (
           <div
             key={dateStr}
@@ -477,35 +424,36 @@ export default function WeekMatrix({
               isToday={isTodayDate(day)}
             />
             <div className="mt-2 space-y-2">
-              {rows.map((row) => {
-                const cellTasks = tasksForCell(tasks, row.rowKey, dateStr);
-                if (cellTasks.length === 0) return null;
-                return (
-                  <div key={row.rowKey}>
-                    <p className="mb-1 text-[11px] font-semibold text-[var(--text-secondary)]">
-                      {row.label}
-                    </p>
-                    <MatrixCell
-                      rowKey={row.rowKey}
-                      dateStr={dateStr}
-                      tasks={cellTasks}
-                      dimmed={false}
-                      canAdd
-                      weekDays={weekDayOptions}
-                      menuBusy={menuBusy}
-                      deletingId={deletingId}
-                      onAdd={() => onAddTask(dateStr, row.subjectId)}
-                      onEdit={onEdit}
-                      onCopy={onCopy}
-                      onMove={onMove}
-                      onRepeat={onRepeat}
-                      onPrepareSplit={onPrepareSplit}
-                      onSplit={onSplit}
-                      onDelete={onDelete}
-                    />
-                  </div>
-                );
-              })}
+              {dayBlocks.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onAddTask(dateStr, null)}
+                  className="flex w-full items-center justify-center rounded-lg border border-dashed border-[var(--border)] py-3 text-[var(--text-muted)] hover:text-[var(--accent)]"
+                  aria-label="Görev ekle"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                dayBlocks.map((block, slotIndex) => (
+                  <MatrixCell
+                    key={block.blockId}
+                    dateStr={dateStr}
+                    slotIndex={slotIndex}
+                    block={block}
+                    weekDays={weekDayOptions}
+                    menuBusy={menuBusy}
+                    deletingId={deletingId}
+                    onAdd={() => onAddTask(dateStr, null)}
+                    onEdit={onEdit}
+                    onCopy={onCopy}
+                    onMove={onMove}
+                    onRepeat={onRepeat}
+                    onPrepareSplit={onPrepareSplit}
+                    onSplit={onSplit}
+                    onDelete={onDelete}
+                  />
+                ))
+              )}
             </div>
             <div className="mt-2">
               <DayQuickAdd
@@ -533,12 +481,17 @@ export default function WeekMatrix({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      {isDesktop ? matrixGrid : mobileList}
+      <SortableContext
+        items={allBlockIds}
+        strategy={verticalListSortingStrategy}
+      >
+        {isDesktop ? matrixGrid : mobileList}
+      </SortableContext>
 
       <DragOverlay dropAnimation={null}>
-        {activeTask ? (
-          <div className="w-40">
-            <DragPreview task={activeTask} />
+        {activeBlock ? (
+          <div className="w-44">
+            <DragPreview block={activeBlock} />
           </div>
         ) : null}
       </DragOverlay>

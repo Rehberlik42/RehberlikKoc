@@ -1719,7 +1719,7 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
                 className="min-w-[56rem]"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "9.5rem repeat(7, minmax(7rem, 1fr))",
+                  gridTemplateColumns: "2.75rem repeat(7, minmax(7rem, 1fr))",
                 }}
               >
                 {Array.from({ length: 32 }).map((_, i) => (
@@ -1768,8 +1768,8 @@ export default function TeacherWeeklyPlan({ studentId }: Props) {
 
           <div className="mt-4 border-t border-[var(--border)] pt-4 text-center">
             <p className="text-[10px] text-[var(--text-muted)]/70">
-              N hızlı ekle · {modKeyLabel()}+Enter panelde kaydet ve yeni · sürükle
-              yalnızca aynı ders satırında
+              N hızlı ekle · {modKeyLabel()}+Enter panelde kaydet ve yeni · bloğu
+              herhangi bir güne sürükle
             </p>
           </div>
         </div>
