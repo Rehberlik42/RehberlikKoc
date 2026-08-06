@@ -13,7 +13,7 @@ export const WEEKLY_PLAN_GUIDE: {
         "Üstteki Günlük Hedef’i ayarla — birim olarak Görev veya Dakika seçebilirsin. Gün başlığındaki renk buna göre değişir.",
         "Taslak Modu’nu aç. Hazırlanırken eklediğin görevler öğrenciye görünmez; etkinlik satırında Taslak rozeti çıkar.",
         "Haftayı doldur: birçok konu için Toplu Ekle’yi kullan — Zayıf ve Başlanmayan sekmeleri öğrencinin deneme ve kaynak verisinden gelir. Tek bir özel görev için matris hücresindeki + ile Görev Ekle panelini aç (gün ön seçili gelir). Belirli bir güne hızlı Ders atamak için sütun altındaki Hızlı ekle’yi kullan.",
-        "Gün başlıklarındaki toplam süreye ve Özet’e bak. Hedef aşımında süre uyarı / tehlike renginde görünür. Aşırı veya dengesiz günleri blok sürükle-bırak, Başka Güne Taşı veya Böl ile düzelt.",
+        "Gün başlıklarındaki yüke (görev sayısı veya süre) ve Özet’e bak. Hedef aşımında gün başlığı uyarı / tehlike renginde görünür. Aşırı veya dengesiz günleri blok sürükle-bırak, Başka Güne Taşı veya Böl ile düzelt.",
         "Program hazır olunca Yayınla ile o haftadaki tüm taslakları birden öğrenciye aç. Taslak yoksa buton pasiftir.",
       ],
     },
